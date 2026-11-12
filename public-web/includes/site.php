@@ -59,7 +59,7 @@ function page_end(): void { ?>
 </main>
 <footer class="site-footer wrap">
 <div><a class="brand" href="index.php"><span class="brand-mark" aria-hidden="true"></span>beam<span>68</span></a><p>A little less searching.<br>A little more Amiga.</p></div>
-<div class="footer-links"><a href="https://github.com/retrocs-org/beam68">Source code ↗</a><a href="https://github.com/retrocs-org/beam68/releases">GitHub Releases ↗</a><a href="get.php">Get Beam68</a><a href="developers.php">Developers</a><a href="source.php">Source</a><a href="marketplace.php">Marketplace</a></div>
+<div class="footer-links"><a href="get.php">Get Beam68</a><a href="developers.php">Developers</a><a href="source.php">Source</a><a href="marketplace.php">Marketplace</a></div>
 <div class="footer-note"><span class="version-dot"></span> Version 0.1 · MIT License<p>No cookies. No trackers.<br>Made for classic AmigaOS.</p><a href="#top">Back to top ↑</a></div>
 </footer>
 </body></html>
