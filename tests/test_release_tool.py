@@ -509,6 +509,40 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(len(m['files']),4)
         self.assertFalse(any(n.endswith('.readme') for n in m['files']))
         self.assertEqual(set(m['aminet_files']),{'Beam68-0.1.lha','Beam68-0.1.readme'})
+    def test_github_permission_denial_is_distinct_from_repository_mismatch(self):
+        m=self.build();api=GithubAPI();adapter=rel.GitHub(m,self.tool.out,api)
+        with patch.object(api,'json',return_value={'html_url':m['github'],'permissions':{'push':False}}):
+            with self.assertRaisesRegex(ReleaseError,'push=false'): adapter.preflight()
+        self.assertIsNone(api.r);self.assertFalse(api.assets)
+        with patch.object(api,'json',return_value={'html_url':'https://github.com/other/repo','permissions':{'push':True}}):
+            with self.assertRaisesRegex(ReleaseError,'identity mismatch'): adapter.preflight()
+        with patch.object(api,'json',return_value={'html_url':m['github']}):
+            with self.assertRaisesRegex(ReleaseError,'did not report'): adapter.preflight()
+    def test_installation_token_uses_repository_membership_not_user_push_role(self):
+        m=self.build();api=GithubAPI();api.installation_token=True
+        repo={'id':42,'html_url':m['github'],'permissions':{'push':False}}
+        def response(url,**kwargs):
+            if '/installation/repositories?' in url:
+                return {'repositories':[repo]}
+            return repo
+        with patch.object(api,'json',side_effect=response):
+            rel.GitHub(m,self.tool.out,api).preflight()
+        self.assertIsNone(api.r);self.assertFalse(api.assets)
+        def missing(url,**kwargs):
+            return {'repositories':[]} if '/installation/repositories?' in url else repo
+        with patch.object(api,'json',side_effect=missing):
+            with self.assertRaisesRegex(ReleaseError,'does not include'):
+                rel.GitHub(m,self.tool.out,api).preflight()
+    def test_installation_repository_must_match_both_identity_fields(self):
+        m=self.build();api=GithubAPI();api.installation_token=True
+        repo={'id':42,'html_url':m['github'],'permissions':{'push':False}}
+        def response(url,**kwargs):
+            if '/installation/repositories?' in url:
+                return {'repositories':[dict(repo,id=43)]}
+            return repo
+        with patch.object(api,'json',side_effect=response):
+            with self.assertRaisesRegex(ReleaseError,'does not include'):
+                rel.GitHub(m,self.tool.out,api).preflight()
     def test_lha_crc_and_independent_reader_when_available(self):
         self.build()
         self.assertEqual(crc16(b'123456789'),0xbb3d)

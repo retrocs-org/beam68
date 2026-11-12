@@ -218,3 +218,14 @@ success and failure. Run `python3 scripts/release.py build --verbose` to stream
 that output while it runs. Credentials are removed from child environments and
 known secret values are redacted. Git/API credential output is not logged.
 The build log is overwritten for each attempt and is excluded from packages.
+
+## GitHub App installation credentials
+
+A helper-created GitHub App installation token is supported through the same
+1Password field. It is not a personal access token and does not appear in the
+personal-token settings lists. Preflight verifies the exact repository ID and
+URL through the installation repository endpoint instead of treating the user
+role permissions.push flag as an App permission. Release creation and uploads
+still require Contents:write, enforced by GitHub. Installation access tokens
+expire after one hour; refresh through your token helper when needed. The helper
+and release configuration must use the same 1Password vault/item/field.

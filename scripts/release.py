@@ -275,6 +275,7 @@ class API:
     """HTTPS only; API calls never forward authorization through redirects."""
     def __init__(self, origin, token, github=False):
         self.origin = origin
+        self.installation_token = github and token.startswith('ghs_')
         self.headers = {'User-Agent': 'Beam68-release', 'Accept': 'application/json'}
         if github:
             self.headers.update({'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json',
@@ -396,7 +397,30 @@ class GitHub:
 
     def preflight(self):
         repo = self.api.json(self.base)
-        need(repo.get('html_url') == self.m['github'] and repo.get('permissions', {}).get('push'), 'GitHub repository or write permission mismatch')
+        need(repo.get('html_url') == self.m['github'], 'GitHub repository identity mismatch; check the configured repository URL')
+        need(not repo.get('archived') and not repo.get('disabled'), 'GitHub repository is archived or disabled')
+        if getattr(self.api,'installation_token',False):
+            # Installation tokens act as an App, not as a repository user.
+            # The user-role permissions.push value is not their Contents grant.
+            found=False
+            for page in range(1,1001):
+                listing=self.api.json('https://api.github.com/installation/repositories?per_page=100&page='+str(page))
+                entries=listing.get('repositories') if isinstance(listing,dict) else None
+                need(isinstance(entries,list),'Invalid GitHub installation repository response')
+                for entry in entries:
+                    if entry.get('id')==repo.get('id') and repo.get('id') is not None and entry.get('html_url')==self.m['github']:
+                        found=True
+                if found or len(entries)<100:
+                    break
+            need(found,'GitHub App token does not include the configured repository')
+            # This read-only check proves installation access. GitHub enforces
+            # Contents:write on release creation/upload; it is not a user role.
+        else:
+            permissions=repo.get('permissions')
+            need(isinstance(permissions,dict) and 'push' in permissions,
+                 'GitHub did not report repository write access for this credential; check the configured token and repository access')
+            need(permissions['push'] is True,
+                 'GitHub reports push=false for the configured user credential. Check its account/resource owner, selected repository, Contents read/write permission and organization approval in the configured credential store')
         release = self.release()
         if release:
             self.verify(release)
