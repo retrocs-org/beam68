@@ -464,6 +464,32 @@ class ReleaseTests(unittest.TestCase):
         with patch.dict(os.environ,{'BEAM68_UPLOADER':''}),contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(tool.main([]),1)
         self.assertFalse((self.root/'dist').exists())
+    def test_build_logs_redact_success_failure_and_verbose_output(self):
+        self.tool.state.mkdir(parents=True)
+        secret='private-'+'logging-test-value'
+        code="import os,sys; assert 'GITHUB_TOKEN' not in os.environ; print(os.environ['LOG_TEST_VALUE']); print('stderr detail',file=sys.stderr)"
+        for verbose in ('0','1'):
+            output=io.StringIO()
+            env={'LOG_TEST_VALUE':secret,'BEAM68_RELEASE_VERBOSE':verbose}
+            with patch.dict(os.environ,{'GITHUB_TOKEN':secret}),contextlib.redirect_stdout(output):
+                ORIGINAL_RUN(self.root,[sys.executable,'-c',code],env)
+                with self.assertRaisesRegex(ReleaseError,'build.log'):
+                    ORIGINAL_RUN(self.root,[sys.executable,'-c',code+'; sys.exit(1)'],env)
+            for name in ('build.log','failed-build.log'):
+                text=(self.tool.state/name).read_text()
+                self.assertNotIn(secret,text);self.assertIn('[redacted]',text)
+                self.assertIn('stderr detail',text)
+            self.assertNotIn(secret,output.getvalue())
+            if verbose=='1': self.assertIn('[redacted]',output.getvalue())
+    def test_build_log_symlinks_refused_before_execution(self):
+        self.tool.state.mkdir(parents=True)
+        target=Path(self.tmp.name)/'private.log';target.write_text('unchanged')
+        (self.tool.state/'build.log').symlink_to(target)
+        with patch.object(rel.subprocess,'run') as command:
+            with self.assertRaisesRegex(ReleaseError,'Linked build log'):
+                ORIGINAL_RUN(self.root,[sys.executable,'-c','print(1)'])
+            command.assert_not_called()
+        self.assertEqual(target.read_text(),'unchanged')
     def test_lha_crc_and_independent_reader_when_available(self):
         self.build()
         self.assertEqual(crc16(b'123456789'),0xbb3d)

@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -129,23 +130,53 @@ def release_tag(value, version):
     need(isinstance(tag,str) and re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*',tag) and '..' not in tag and not tag.endswith(('.','.lock')), 'Invalid release tag (use a simple name such as v0.1 or 0.1)')
     return tag
 
+def redact(text):
+    secrets = ACTIVE_SECRETS | {value for key,value in os.environ.items()
+        if key.upper().endswith(('_TOKEN','_PASSWORD','_SECRET')) and value}
+    for token in sorted(secrets,key=len,reverse=True):
+        text=text.replace(token,'[redacted]')
+    return text
+
 def run(root, args, env=None):
     clean = dict(os.environ)
     for key in list(clean):
         if key in SECRET_ENV or key.upper().endswith(('_TOKEN','_PASSWORD','_SECRET')):
             clean.pop(key, None)
     clean.update(env or {})
-    result = subprocess.run(args, cwd=root, env=clean, capture_output=True)
-    # Tool stderr may contain credentials from machine Git helpers; never echo it.
-    if result.returncode and args[0] != 'git' and (root / 'outputs/release').is_dir():
-        text = (result.stdout + result.stderr).decode(errors='replace')
-        for token in ACTIVE_SECRETS | {os.environ[k] for k in SECRET_ENV if os.environ.get(k)}:
-            text = text.replace(token, '[redacted]')
-        log = root / 'outputs/release/failed-build.log'
-        need(not log.is_symlink(), 'Linked build failure log')
-        log.write_text(text)
-    need(result.returncode == 0, 'Command failed: ' + Path(args[0]).name + ' (build diagnostics: outputs/release/failed-build.log)')
-    return result.stdout.decode().strip()
+    verbose=clean.pop('BEAM68_RELEASE_VERBOSE','0')=='1'
+    is_build=args[0]!='git' and (root/'outputs/release').is_dir()
+    log=root/'outputs/release/build.log'
+    if is_build:
+        need(not log.is_symlink(), 'Linked build log')
+        with log.open('a') as stream:
+            stream.write('\n$ '+redact(shlex.join([str(x) for x in args]))+'\n')
+    if verbose and is_build:
+        output=[]
+        with log.open('a') as stream:
+            process=subprocess.Popen(args,cwd=root,env=clean,stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT,text=True,errors='replace',bufsize=1)
+            for line in process.stdout:
+                output.append(line)
+                safe=redact(line)
+                stream.write(safe);stream.flush()
+                print(safe,end='',flush=True)
+            code=process.wait()
+        text=''.join(output)
+    else:
+        result=subprocess.run(args,cwd=root,env=clean,capture_output=True)
+        code=result.returncode
+        text=result.stdout.decode(errors='replace')
+        if is_build:
+            with log.open('a') as stream:
+                stream.write(redact(text+result.stderr.decode(errors='replace')))
+    # Git helper output is never logged: it may contain transport credentials.
+    if code and is_build:
+        failure=root/'outputs/release/failed-build.log'
+        need(not failure.is_symlink(), 'Linked build failure log')
+        failure.write_text(redact(text if verbose else text+result.stderr.decode(errors='replace')))
+    need(code==0, 'Command failed: '+Path(args[0]).name+
+         (' (see outputs/release/build.log)' if is_build else ' (Git diagnostics withheld)'))
+    return text.strip()
 
 def git(root, *args):
     return run(root, ['git', *args], {'GIT_TERMINAL_PROMPT': '0'})
@@ -521,6 +552,7 @@ class Release:
         version = (root / 'VERSION').read_text().strip()
         need(re.fullmatch(r'[0-9]+(?:\.[0-9]+)+(?:-[A-Za-z0-9][A-Za-z0-9.-]*)?', version), 'Invalid VERSION')
         self.version, self.tag = version, release_tag(tag,version)
+        self.verbose=False
         self.tag_message = tag_message or 'Beam68 '+self.tag
         need(not any(c in self.tag_message for c in ('\0','\r','\n')), 'Invalid tag annotation')
         self.record = self.state / 'build.json'
@@ -567,6 +599,14 @@ class Release:
         need(not self.out.is_symlink() and not self.state.is_symlink(), 'Linked release directory')
         if (self.state / 'receipt.json').exists() or (self.state / 'aminet-receipt.json').exists():
             raise ReleaseError('Keep existing publication receipts; use another checkout for a new build')
+        started=time.monotonic()
+        log=self.state/'build.log'
+        need(not log.is_symlink(), 'Linked build log')
+        log.write_text('Beam68 '+self.version+' build\n')
+        print('Building Beam68 '+self.version,flush=True)
+        print('Detailed log: outputs/release/build.log',flush=True)
+        print('[1/7] Checking sensitive files and source inputs...',flush=True)
+        step_started=time.monotonic()
         module(self.root,'check-sensitive').scan(self.root)
         before = self.inputs()
         if commit(self.root):
@@ -574,12 +614,19 @@ class Release:
         env = dict(self.config['env'])
         if env.get('BEAM68_RELEASE_PYTHON'):
             env['PATH']=str(Path(env['BEAM68_RELEASE_PYTHON']).parent)+os.pathsep+os.environ.get('PATH','')
+        print('      OK (%.1fs)'%(time.monotonic()-step_started),flush=True)
         # Tests run before native binaries exist in a source checkout.
-        for args in self.plan():
+        labels=('Checking translation catalogues','Running portable and release tests',
+                'Building all 17 Amiga executables','Verifying native build records')
+        for index,args in enumerate(self.plan()):
+            print('[%d/7] %s...'%(index+2,labels[index]),flush=True)
+            step_started=time.monotonic()
             step_env = dict(env)
+            step_env['BEAM68_RELEASE_VERBOSE']='1' if self.verbose else '0'
             if args[:2] == ['make', 'host-test']:
                 step_env['BEAM68_SOURCE_ONLY'] = '1'
             run(self.root, args, step_env)
+            print('      OK (%.1fs)'%(time.monotonic()-step_started),flush=True)
         need(self.inputs() == before, 'Release inputs changed during build; rebuild')
         native = self.native()
         record = {'schema': 1, 'version': self.version, 'source_sha256': fingerprint(before),
@@ -588,6 +635,8 @@ class Release:
                              'compiler': native['compiler'], 'compiler_version': native['compiler_version'],
                              'runtime_validation': 'Manual hardware testing remains separate from build success'},
                   'configuration_sha256': hashlib.sha256(canonical(self.binding())).hexdigest()}
+        print('[6/7] Packaging LHA, source, website and checksums...',flush=True)
+        step_started=time.monotonic()
         # Preserve an older build record if preparation fails; check() will reject it.
         with tempfile.TemporaryDirectory(dir=self.out, prefix='.prepare-') as stage_name:
             stage = Path(stage_name)
@@ -611,7 +660,14 @@ class Release:
                 need(not target.is_symlink(), 'Linked release asset')
                 os.replace(stage / name, target)
         atomic_json(self.record, record)
+        print('      OK (%.1fs)'%(time.monotonic()-step_started),flush=True)
+        print('[7/7] Checking archive contents and final checksums...',flush=True)
+        step_started=time.monotonic()
         self.check()
+        print('      OK (%.1fs)'%(time.monotonic()-step_started),flush=True)
+        for name in self.payload_names:
+            print('  %s (%.1f KiB)'%(name,(self.out/name).stat().st_size/1024),flush=True)
+        print('Build verified in %.1fs. No publication performed.'%(time.monotonic()-started),flush=True)
 
     def check(self):
         module(self.root,'check-sensitive').scan(self.root)
@@ -793,9 +849,12 @@ def main(argv=None):
     parser.add_argument('--commit-message')
     parser.add_argument('--tag')
     parser.add_argument('--tag-message')
+    parser.add_argument('--verbose',action='store_true',help='Stream redacted build/test output as it runs')
     args = parser.parse_args(argv)
     need(args.config.is_file(), 'Create external release settings or pass --config; see docs/RELEASING.md')
     tool = Release(ROOT, config_read(ROOT, args.config),args.tag,args.tag_message)
+    tool.verbose=args.verbose
+    need(not args.verbose or args.command=='build', '--verbose applies only to build')
     if args.command=='source':
         push_source(tool.config,args.to.split(','),args.confirm_push,args.dry_run,ROOT,args.initialize,args.commit_message)
         return
@@ -818,6 +877,8 @@ def main(argv=None):
         if args.command=='release':
             tool.prepare(args.notes)
         tool.publish(args.to.split(','), args.confirm_publish)
+    if args.command=='build':
+        return
     print(args.command.capitalize() + ' completed. ' + ('No publication performed.' if args.command not in ('publish','release') else 'See outputs/release/receipt.json.'))
 
 if __name__ == '__main__':

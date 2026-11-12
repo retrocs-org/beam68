@@ -200,3 +200,12 @@ Reference API contracts:
 [GitHub assets](https://docs.github.com/en/rest/releases/assets),
 [GitLab releases](https://docs.gitlab.com/api/releases/),
 [GitLab generic packages](https://docs.gitlab.com/user/packages/generic_packages/).
+
+## Build output
+
+`build` prints each stage, its elapsed time and the final package sizes. Detailed
+compiler and test output is saved to ignored `outputs/release/build.log` on both
+success and failure. Run `python3 scripts/release.py build --verbose` to stream
+that output while it runs. Credentials are removed from child environments and
+known secret values are redacted. Git/API credential output is not logged.
+The build log is overwritten for each attempt and is excluded from packages.
