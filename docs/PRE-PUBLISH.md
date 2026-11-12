@@ -32,7 +32,7 @@ elsewhere; checking current files does not remove older committed secrets.
 4. If submitting to Aminet, configure and review a real uploader contact and the
    readme. A successful submission awaits moderator approval.
 5. Review outputs/release/manifest.json and all prepared files. The website's
-   planned download links assume v0.1 and exact package filenames. Update its
+   planned download links assume 0.1 and exact package filenames. Update its
    awaiting-publication text only when the actual release is available.
 
 See RELEASING.md for commands and receipt recovery. No source pushes or public

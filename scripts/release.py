@@ -18,7 +18,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 from release_support import (ReleaseError, atomic_json, binaries, canonical, fingerprint,
-                             lha_write, runtime_files, sha, source_files, verify_lha,
+                             lha_write, runtime_files, sha, source_files, sdk_entries, verify_lha,
                              verify_zip, zip_write)
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -499,6 +499,7 @@ class Aminet:
         self.m, self.directory, self.state, self.key = manifest, directory, state, manifest_hash
         self.factory = ftp_factory
         self.names = ['Beam68-' + manifest['version'] + '.lha', 'Beam68-' + manifest['version'] + '.readme']
+        self.files=manifest.get('aminet_files',{})
 
     def prior(self):
         if not self.state.exists():
@@ -519,7 +520,7 @@ class Aminet:
         return ftp
 
     def preflight(self):
-        need(self.m['aminet'] and all(n in self.m['files'] for n in self.names), 'Aminet submission was not prepared')
+        need(self.m['aminet'] and all(n in self.files for n in self.names), 'Aminet submission was not prepared')
         if self.prior():
             return
         with self.connect() as ftp:
@@ -538,7 +539,7 @@ class Aminet:
                 with (self.directory / name).open('rb') as stream:
                     reader = HashingReader(stream)
                     ftp.storbinary('STOR ' + name, reader)
-                    need(reader.digest.hexdigest() == self.m['files'][name], 'Aminet input changed during upload; inspect partial submission')
+                    need(reader.digest.hexdigest() == self.files[name], 'Aminet input changed during upload; inspect partial submission')
                 receipt['acknowledged'].append(name)
                 atomic_json(self.state, receipt)
         receipt['state'] = 'submitted_awaiting_moderation'
@@ -557,9 +558,8 @@ class Release:
         need(not any(c in self.tag_message for c in ('\0','\r','\n')), 'Invalid tag annotation')
         self.record = self.state / 'build.json'
         self.manifest = self.state / 'manifest.json'
-        self.names = ['Beam68-' + version + '.lha', 'Beam68-' + version + '-source.zip', 'Beam68-website.zip']
-        if config['aminet']:
-            self.names.append('Beam68-' + version + '.readme')
+        self.sdk_name='Beam68-'+version+'-plugin-sdk.zip'
+        self.names = ['Beam68-' + version + '.lha', self.sdk_name]
         self.payload_names = sorted(self.names)
         self.names = sorted(self.payload_names + [n+'.sha256' for n in self.payload_names])
 
@@ -579,19 +579,40 @@ class Release:
         mod = module(self.root, 'build-provenance')
         return mod.verify()
 
-    def source_entries(self, record):
-        entries = [('Beam68/' + name, (self.root / name).read_bytes(), meta['executable'])
-                   for name, meta in self.inputs().items()]
-        entries += [('Beam68/BUILD-PROVENANCE.json', (self.root / 'BUILD-PROVENANCE.json').read_bytes(), False),
-                    ('Beam68/RELEASE-BUILD.json', canonical(record), False)]
-        return entries
-
     def runtime_entries(self):
         return {'Beam68/' + name: (self.root / name).read_bytes() for name in runtime_files(self.root)}
 
-    def web_entries(self):
-        return [(name[len('public-web/'):], (self.root / name).read_bytes(), meta['executable'])
-                for name, meta in self.inputs().items() if name.startswith('public-web/')]
+    def retire_obsolete(self, folder, ignore=()):
+        legacy={'SHA256SUMS','Beam68-website.zip','Beam68-website.zip.sha256',
+                'Beam68-'+self.version+'-source.zip','Beam68-'+self.version+'-source.zip.sha256',
+                'Beam68-'+self.version+'.readme','Beam68-'+self.version+'.readme.sha256'}
+        existing={p.name for p in folder.iterdir()}-set(ignore)
+        need(existing <= set(self.names)|legacy, 'Unexpected files in release inventory; inspect before rebuilding')
+        obsolete=existing-set(self.names)
+        if obsolete:
+            parent=self.state/'superseded'
+            need(not parent.is_symlink(),'Linked backup directory')
+            parent.mkdir(exist_ok=True)
+            backup=Path(tempfile.mkdtemp(prefix=folder.name+'-',dir=parent))
+            for name in sorted(obsolete):
+                path=folder/name
+                need(path.is_file() and not path.is_symlink(),'Linked or non-file obsolete artifact')
+                os.replace(path,backup/name)
+            print('Retained previous artifacts under outputs/release/superseded/.',flush=True)
+
+    def aminet_files(self):
+        if not self.config['aminet']:
+            return {}
+        folder=self.state/'aminet'
+        names=['Beam68-'+self.version+'.lha','Beam68-'+self.version+'.readme']
+        need(folder.is_dir() and not folder.is_symlink(),'Missing Aminet preparation')
+        need({p.name for p in folder.iterdir()}==set(names),'Unexpected Aminet preparation files')
+        for name in names:
+            need((folder/name).is_file() and not (folder/name).is_symlink(),'Linked Aminet preparation file')
+        need(sha(folder/names[0])==sha(self.out/names[0]),'Aminet runtime differs')
+        mod=module(self.root,'make-aminet-release')
+        need((folder/names[1]).read_bytes()==mod.readme(self.config['author'],self.config['uploader'],names[0]),'Aminet readme changed')
+        return {name:sha(folder/name) for name in names}
 
     def build(self):
         self.out.mkdir(exist_ok=True)
@@ -635,30 +656,31 @@ class Release:
                              'compiler': native['compiler'], 'compiler_version': native['compiler_version'],
                              'runtime_validation': 'Manual hardware testing remains separate from build success'},
                   'configuration_sha256': hashlib.sha256(canonical(self.binding())).hexdigest()}
-        print('[6/7] Packaging LHA, source, website and checksums...',flush=True)
+        print('[6/7] Packaging Amiga LHA, plugin SDK and checksums...',flush=True)
         step_started=time.monotonic()
         # Preserve an older build record if preparation fails; check() will reject it.
         with tempfile.TemporaryDirectory(dir=self.out, prefix='.prepare-') as stage_name:
             stage = Path(stage_name)
             lha_write(stage / ('Beam68-' + self.version + '.lha'), self.runtime_entries(), self.config['env'].get('LHA'))
-            zip_write(stage / ('Beam68-' + self.version + '-source.zip'), self.source_entries(record))
-            zip_write(stage / 'Beam68-website.zip', self.web_entries())
-            if self.config['aminet']:
-                mod = module(self.root, 'make-aminet-release')
-                (stage / ('Beam68-' + self.version + '.readme')).write_bytes(
-                    mod.readme(self.config['author'], self.config['uploader'], 'Beam68-' + self.version + '.lha'))
+            zip_write(stage/self.sdk_name,sdk_entries(self.root))
             for name in self.payload_names:
                 (stage/(name+'.sha256')).write_text(sha(stage/name)+'  '+name+'\n')
-            sums = ''.join(sha(stage / name) + '  ' + name + '\n' for name in self.names)
-            (stage / 'SHA256SUMS').write_text(sums)
             need(self.inputs() == before, 'Release inputs changed during packaging')
-            # Never remove unexpected output files silently.
-            existing = {p.name for p in self.out.iterdir() if p.name != 'release' and p != stage}
-            need(existing <= set(self.names + ['SHA256SUMS']), 'Unexpected files in outputs/')
-            for name in self.names + ['SHA256SUMS']:
+            self.retire_obsolete(self.out,ignore={'release',stage.name})
+            for name in self.names:
                 target = self.out / name
                 need(not target.is_symlink(), 'Linked release asset')
                 os.replace(stage / name, target)
+        if self.config['aminet']:
+            folder=self.state/'aminet'
+            need(not folder.is_symlink(),'Linked Aminet preparation directory')
+            folder.mkdir(exist_ok=True)
+            for name in ('Beam68-'+self.version+'.lha','Beam68-'+self.version+'.readme'):
+                need(not (folder/name).is_symlink(),'Linked Aminet preparation file')
+            shutil.copyfile(self.out/('Beam68-'+self.version+'.lha'),folder/('Beam68-'+self.version+'.lha'))
+            mod=module(self.root,'make-aminet-release')
+            (folder/('Beam68-'+self.version+'.readme')).write_bytes(mod.readme(self.config['author'],self.config['uploader'],'Beam68-'+self.version+'.lha'))
+        record['artifacts']={name:sha(self.out/name) for name in self.names}
         atomic_json(self.record, record)
         print('      OK (%.1fs)'%(time.monotonic()-step_started),flush=True)
         print('[7/7] Checking archive contents and final checksums...',flush=True)
@@ -677,29 +699,18 @@ class Release:
         need(record.get('version') == self.version and record.get('configuration_sha256') == hashlib.sha256(canonical(self.binding())).hexdigest(), 'Release build configuration changed; rebuild')
         self.native()
         need(record.get('native_record_sha256') == sha(self.root / 'BUILD-PROVENANCE.json'), 'Native build record changed; rebuild')
-        expected = set(self.names + ['SHA256SUMS'])
+        expected = set(self.names)
         need(not self.out.is_symlink() and not self.state.is_symlink(), 'Linked release directory')
         actual = {p.name for p in self.out.iterdir() if p.name != 'release'}
         need(actual == expected, 'Missing or unexpected release inventory')
         for name in expected:
             need((self.out / name).is_file() and not (self.out / name).is_symlink(), 'Missing or linked release asset: ' + name)
-        lines = (self.out / 'SHA256SUMS').read_text().splitlines()
-        sums = {}
-        for line in lines:
-            match = re.fullmatch(r'([0-9a-f]{64})  ([A-Za-z0-9_.-]+)', line)
-            need(match and match[2] not in sums, 'Invalid or duplicate checksum entry')
-            sums[match[2]] = match[1]
-        need(set(sums) == set(self.names), 'Checksum inventory mismatch')
-        need(all(sha(self.out / n) == h for n, h in sums.items()), 'Release artifact checksum changed')
+        need(record.get('artifacts')=={name:sha(self.out/name) for name in self.names}, 'Release artifact checksum changed')
         for name in self.payload_names:
             need((self.out/(name+'.sha256')).read_text()==sha(self.out/name)+'  '+name+'\n', 'Changed per-file checksum')
         verify_lha(self.out / ('Beam68-' + self.version + '.lha'), self.runtime_entries(), self.config['env'].get('LHA'))
-        verify_zip(self.out / ('Beam68-' + self.version + '-source.zip'), {n: d for n, d, _ in self.source_entries(record)})
-        verify_zip(self.out / 'Beam68-website.zip', {n: d for n, d, _ in self.web_entries()})
-        if self.config['aminet']:
-            mod = module(self.root, 'make-aminet-release')
-            need((self.out / ('Beam68-' + self.version + '.readme')).read_bytes() ==
-                 mod.readme(self.config['author'], self.config['uploader'], 'Beam68-' + self.version + '.lha'), 'Aminet readme changed')
+        verify_zip(self.out/self.sdk_name,{n:d for n,d,_ in sdk_entries(self.root)})
+        self.aminet_files()
         return {name: sha(self.out / name) for name in sorted(expected)}
 
     def prepare(self, notes):
@@ -708,7 +719,7 @@ class Release:
         need(text and len(text.encode()) <= 100000, 'Missing or oversized release notes')
         need(not any(token and token in text for token in (os.environ.get(x) for x in SECRET_ENV)), 'Release notes contain a credential')
         manifest = {'schema': 1, 'version': self.version, 'tag': self.tag, 'source_sha256': fingerprint(self.inputs()),
-                    'tag_message': self.tag_message, 'commit': commit(self.root), 'build_sha256': sha(self.record), 'notes': text, 'files': files,
+                    'tag_message': self.tag_message, 'commit': commit(self.root), 'build_sha256': sha(self.record), 'notes': text, 'files': files, 'aminet_files': self.aminet_files(),
                     **self.binding()}
         if self.manifest.exists() and load(self.manifest) != manifest:
             need(not (self.state / 'receipt.json').exists() and not (self.state / 'aminet-receipt.json').exists(),
@@ -717,7 +728,7 @@ class Release:
         need(not stage.is_symlink() and not stage.parent.is_symlink(), 'Linked publication stage')
         if stage.exists():
             need(not stage.is_symlink() and not stage.parent.is_symlink(), 'Linked publication stage')
-            need({p.name for p in stage.iterdir()} <= set(files), 'Unexpected prepared assets; inspect stage')
+            self.retire_obsolete(stage)
         stage.mkdir(parents=True,exist_ok=True)
         for name in files:
             target=stage/name
@@ -749,6 +760,7 @@ class Release:
         need(m.get('commit') == clean_checkout(self.root, self.inputs()), 'Prepared commit differs; prepare again')
         need(isinstance(m.get('notes'), str) and m['notes'], 'Missing prepared notes')
         self.prepared_check(m)
+        need(m.get('aminet_files',{})==self.aminet_files(),'Prepared Aminet files changed')
         return m
 
     def tag_preflight(self, m, remote):
@@ -804,7 +816,7 @@ class Release:
         remote_tags = []
         for target in destinations:
             if target == 'aminet':
-                adapter = Aminet(m, stage, self.state / 'aminet-receipt.json', key)
+                adapter = Aminet(m, self.state/'aminet', self.state / 'aminet-receipt.json', key)
             else:
                 direct = self.tag_preflight(m, m[target + '_git'])
                 if direct:
@@ -863,7 +875,7 @@ def main(argv=None):
     if args.command == 'plan':
         for command in tool.plan():
             print(shlex.join(command))
-        print('Package exact source, website and Amiga LHA (LH5 with configured LHA; stored otherwise) into outputs/.')
+        print('Package only the Amiga LHA, plugin SDK ZIP and their .sha256 files into outputs/.')
         print('Target: Amiga m68000 — Available; runtime certification is separate.')
         return
     if args.command == 'build':

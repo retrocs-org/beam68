@@ -17,8 +17,8 @@ Updated 11 November 2026.
   These are controlled failure simulations, not power-loss certification.
 - A synthetic positive-prefix matcher workload preserves its result checksums
   while avoiding unnecessary alias scoring. No universal throughput is claimed.
-- GitHub workflows are supplied. Hosted runner execution remains separate from
-  the local checks above.
+- Tests and native release builds run locally; repository uploads do not start
+  GitHub Actions or GitLab CI jobs.
 
 Physical 68000/minimum-memory testing, a full clean-OS GUI install/update/remove
 cycle, all translated layouts, other supported OS versions, third-party players,

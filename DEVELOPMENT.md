@@ -31,8 +31,8 @@ make HOST_CC='cc -fsanitize=address,undefined -fno-omit-frame-pointer -g -Wno-de
 ```
 
 The deprecation override covers legacy C89 declarations in the host SDK.
-GitHub workflows run portable and sanitizer checks. A manually enabled native
-runner can also build and package with a locally provisioned toolchain.
+Tests, native builds and packaging are run locally with the release script.
+No GitHub Actions or GitLab CI jobs are configured for source or tag uploads.
 
 `BEAM68_CC=/path/to/m68k-amigaos-gcc scripts/build-native-qa.sh` builds test tools
 under build/. Run them only in an isolated AmigaOS test installation:

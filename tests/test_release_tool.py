@@ -107,6 +107,13 @@ class ReleaseTests(unittest.TestCase):
                     'CHANGELOG.md': '# Changes\n\nInitial release.\n', 'Makefile': 'all:\n',
                     'src/main.c': 'int main(void){return 0;}\n', 'scripts/release.py': '# release\n',
                     'public-web/index.php': '<?php echo "Beam68";\n', 'sdk/README.md': 'Protocol 1\n',
+                    'sdk/include/beam68plugin.h':'/* API */\n',
+                    'sdk/src/beam68plugin.c':'/* SDK implementation */\n',
+                    'sdk/Beam68PluginSDK.guide':'manual\n',
+                    'sdk/Example/HelloWorld/HelloWorld.c':'/* example */\n',
+                    'sdk/Example/HelloRexx/HelloRexx.rexx':'/* example */\n',
+                    'sdk/Example/Makefile':'all:\n',
+                    'sdk/tools/package-plugin.py':'# package validator\n',
                     'docs/RELEASE-NOTES.md': 'Reviewed notes\n',
                     'scripts/build-install-amiga.sh': 'runtime_executables="\nBeam68\n"\nruntime_data="\nLICENSE\n"\n'}
         for name, text in contents.items():
@@ -161,10 +168,11 @@ class ReleaseTests(unittest.TestCase):
         self.assertIsNone(m['commit'])
         self.assertEqual(m['tag'], 'v0.1')
         self.assertEqual(self.tool.check(), m['files'])
-        with zipfile.ZipFile(self.tool.out / 'Beam68-0.1-source.zip') as z:
-            self.assertIn('Beam68/RELEASE-BUILD.json', z.namelist())
-            self.assertIn('Beam68/BUILD-PROVENANCE.json', z.namelist())
+        with zipfile.ZipFile(self.tool.out / 'Beam68-0.1-plugin-sdk.zip') as z:
+            self.assertIn('Beam68-PluginSDK/LICENSE', z.namelist())
+            self.assertIn('Beam68-PluginSDK/include/beam68plugin.h', z.namelist())
             self.assertNotIn('Beam68/Beam68', z.namelist())
+        self.assertEqual(set(m['files']), {'Beam68-0.1.lha','Beam68-0.1.lha.sha256','Beam68-0.1-plugin-sdk.zip','Beam68-0.1-plugin-sdk.zip.sha256'})
     def test_source_change_and_binary_change_refused(self):
         self.build()
         (self.root / 'Beam68').write_bytes(b'changed')
@@ -181,9 +189,9 @@ class ReleaseTests(unittest.TestCase):
             self.tool.build()
     def test_missing_duplicate_extra_and_changed_checksums(self):
         self.build()
-        sums = self.tool.out / 'SHA256SUMS'
+        sums = self.tool.out / 'Beam68-0.1.lha.sha256'
         original = sums.read_text()
-        for bad in (original + original.splitlines()[0] + '\n', original.splitlines()[0] + '\n', original.replace(original[:64], '0'*64)):
+        for bad in (original+original,'',original.replace(original[:64],'0'*64)):
             sums.write_text(bad)
             with self.assertRaises(ReleaseError): self.tool.check()
         sums.write_text(original)
@@ -202,7 +210,7 @@ class ReleaseTests(unittest.TestCase):
         with patch.dict(os.environ, {'GITHUB_TOKEN': 'a-test-token-not-for-network'}):
             m = self.build()
         self.assertNotIn('a-test-token-not-for-network', json.dumps(m))
-        with zipfile.ZipFile(self.tool.out / 'Beam68-0.1-source.zip') as z:
+        with zipfile.ZipFile(self.tool.out / 'Beam68-0.1-plugin-sdk.zip') as z:
             self.assertFalse(any('/work/' in n for n in z.namelist()))
     def test_credentials_and_destination_validation(self):
         for url in ('https://u:secret@github.com/org/repo', 'https://github.com/org/../repo',
@@ -276,7 +284,7 @@ class ReleaseTests(unittest.TestCase):
         self.assertIsNone(api.r)
     def test_aminet_partial_not_resubmitted_and_success_is_submission(self):
         m = self.build(True);FTP.uploads=[];FTP.fail=True;FTP.existing=[]
-        adapter = rel.Aminet(m, self.tool.out, self.tool.state / 'aminet-receipt.json', sha(self.tool.manifest), FTP)
+        adapter = rel.Aminet(m, self.tool.state/'aminet', self.tool.state / 'aminet-receipt.json', sha(self.tool.manifest), FTP)
         with self.assertRaises(OSError): adapter.publish()
         self.assertEqual(len(FTP.uploads), 1)
         with self.assertRaisesRegex(ReleaseError, 'partial'): adapter.publish()
@@ -284,11 +292,11 @@ class ReleaseTests(unittest.TestCase):
     def test_aminet_success_receipt_and_manifest_mismatch(self):
         m = self.build(True);FTP.uploads=[];FTP.fail=False;FTP.existing=[]
         state = self.tool.state / 'aminet-receipt.json'
-        adapter = rel.Aminet(m, self.tool.out, state, sha(self.tool.manifest), FTP)
+        adapter = rel.Aminet(m, self.tool.state/'aminet', state, sha(self.tool.manifest), FTP)
         adapter.preflight();adapter.publish();adapter.publish()
         self.assertEqual(len(FTP.uploads), 2)
         self.assertEqual(rel.load(state)['state'], 'submitted_awaiting_moderation')
-        with self.assertRaises(ReleaseError): rel.Aminet(m,self.tool.out,state,'changed',FTP).preflight()
+        with self.assertRaises(ReleaseError): rel.Aminet(m,self.tool.state/'aminet',state,'changed',FTP).preflight()
     def test_receipt_failure_preserves_completed_destination(self):
         m = self.build();m['commit'] = 'a'*40;m['gitlab'] = 'https://gitlab.example.net/team/beam68';m['gitlab_git']='git@gitlab.example.net:team/beam68.git'
         class Adapter:
@@ -317,19 +325,18 @@ class ReleaseTests(unittest.TestCase):
         with self.assertRaises(ReleaseError): self.tool.tag_preflight(dict(m,commit='b'*40),str(remote))
     def test_zip_duplicate_or_changed_members_rejected_even_with_new_checksum(self):
         self.build()
-        archive=self.tool.out/'Beam68-0.1-source.zip'
+        archive=self.tool.out/'Beam68-0.1-plugin-sdk.zip'
         with zipfile.ZipFile(archive,'a') as z:
             z.writestr('Beam68/unexpected.txt','unexpected')
-        sums=self.tool.out/'SHA256SUMS'
-        lines=[]
-        for line in sums.read_text().splitlines():
-            digest,name=line.split('  ')
-            lines.append((sha(archive) if name==archive.name else digest)+'  '+name)
-        sums.write_text('\n'.join(lines)+'\n')
+        (self.tool.out/(archive.name+'.sha256')).write_text(sha(archive)+'  '+archive.name+'\n')
+        record=rel.load(self.tool.record)
+        record['artifacts'][archive.name]=sha(archive)
+        record['artifacts'][archive.name+'.sha256']=sha(self.tool.out/(archive.name+'.sha256'))
+        atomic_json(self.tool.record,record)
         with self.assertRaises(ReleaseError): self.tool.check()
     def test_linked_artifact_rejected(self):
         self.build()
-        asset=self.tool.out/'Beam68-website.zip';copy_path=Path(self.tmp.name)/'asset.zip'
+        asset=self.tool.out/'Beam68-0.1-plugin-sdk.zip';copy_path=Path(self.tmp.name)/'asset.zip'
         shutil.copy(asset,copy_path);asset.unlink();asset.symlink_to(copy_path)
         with self.assertRaisesRegex(ReleaseError,'linked'): self.tool.check()
     def test_notes_and_unexpected_assets_conflict(self):
@@ -358,7 +365,7 @@ class ReleaseTests(unittest.TestCase):
         m=self.build(True);FTP.uploads=[];FTP.fail=False;FTP.existing=['Beam68-0.1.lha']
         try:
             with self.assertRaisesRegex(ReleaseError,'already exist'):
-                rel.Aminet(m,self.tool.out,self.tool.state/'aminet-receipt.json',sha(self.tool.manifest),FTP).preflight()
+                rel.Aminet(m,self.tool.state/'aminet',self.tool.state/'aminet-receipt.json',sha(self.tool.manifest),FTP).preflight()
             self.assertFalse(FTP.uploads)
         finally: FTP.existing=[]
     def test_download_redirect_does_not_forward_token_to_storage(self):
@@ -490,6 +497,18 @@ class ReleaseTests(unittest.TestCase):
                 ORIGINAL_RUN(self.root,[sys.executable,'-c','print(1)'])
             command.assert_not_called()
         self.assertEqual(target.read_text(),'unchanged')
+    def test_legacy_outputs_are_preserved_outside_upload_inventory(self):
+        self.build()
+        old=self.tool.out/'Beam68-0.1-source.zip';old.write_bytes(b'old archive')
+        with patch.object(rel,'run',side_effect=self.command): self.tool.build()
+        self.assertFalse(old.exists())
+        self.assertTrue(any(p.read_bytes()==b'old archive' for p in (self.tool.state/'superseded').rglob('*.zip')))
+        self.assertEqual(set(self.tool.check()),set(self.tool.names))
+    def test_aminet_metadata_never_enters_tagged_release_inventory(self):
+        m=self.build(True)
+        self.assertEqual(len(m['files']),4)
+        self.assertFalse(any(n.endswith('.readme') for n in m['files']))
+        self.assertEqual(set(m['aminet_files']),{'Beam68-0.1.lha','Beam68-0.1.readme'})
     def test_lha_crc_and_independent_reader_when_available(self):
         self.build()
         self.assertEqual(crc16(b'123456789'),0xbb3d)

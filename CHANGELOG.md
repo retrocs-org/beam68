@@ -56,5 +56,5 @@
 - AmigaGuide application and SDK manuals, plus developer and translation guides.
 - Responsive PHP website with screenshots, FAQ, downloads, developer documentation
   and a plugin/theme marketplace listing the bundled additions.
-- Verified source, Amiga LHA and website packaging with checksums and build records.
+- Verified Amiga LHA and plugin SDK packaging with checksums and build records.
 - Release automation for source pushes, GitHub, GitLab and optional Aminet submission.

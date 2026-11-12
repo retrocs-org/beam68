@@ -1,20 +1,13 @@
 #!/usr/bin/env python3
-"""Pack sdk/ as dist/Beam68-PluginSDK-<version>.zip with one top-level drawer."""
+"""Pack the plugin SDK with the same contents and filename as unified releases."""
 from pathlib import Path
-import zipfile
-
-ROOT = Path(__file__).resolve().parent.parent
-VERSION = (ROOT / "VERSION").read_text(encoding="ascii").strip()
-SDK = ROOT / "sdk"
-OUT = ROOT / "dist" / ("Beam68-PluginSDK-%s.zip" % VERSION)
-TOP = "Beam68-PluginSDK"
-
+from release_support import sdk_entries,zip_write,verify_zip,sha
+ROOT=Path(__file__).resolve().parents[1]
+VERSION=(ROOT/'VERSION').read_text().strip()
+OUT=ROOT/'dist'/('Beam68-'+VERSION+'-plugin-sdk.zip')
 OUT.parent.mkdir(exist_ok=True)
-with zipfile.ZipFile(OUT, "w", zipfile.ZIP_DEFLATED) as archive:
-    for path in sorted(SDK.rglob("*")):
-        rel = path.relative_to(SDK)
-        if any(p.startswith(".") or p == "__pycache__" for p in rel.parts):
-            continue
-        if path.is_file() and path.suffix not in (".o", ".pyc", ".lha", ".zip"):
-            archive.write(path, (Path(TOP) / rel).as_posix())
+entries=sdk_entries(ROOT)
+zip_write(OUT,entries)
+verify_zip(OUT,{name:data for name,data,_ in entries})
+OUT.with_name(OUT.name+'.sha256').write_text(sha(OUT)+'  '+OUT.name+'\n')
 print(OUT)

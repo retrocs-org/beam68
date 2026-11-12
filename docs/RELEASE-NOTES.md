@@ -14,5 +14,6 @@ Physical minimum-memory/68000 certification, full clean-install coverage and
 all third-party host combinations remain open. Build success and portable tests
 are separate from native runtime verification.
 
-The LHA contains the Amiga runtime. The source ZIP contains the corresponding
-source, SDK, website and build records. The website ZIP is for manual hosting.
+The LHA contains the Amiga runtime. The plugin SDK ZIP contains the API,
+examples, documentation and package validator. Both have individual SHA-256
+files. Application source is available from the tagged Git repository.

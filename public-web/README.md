@@ -53,8 +53,8 @@ releases. Runtime compatibility limits remain in BUILD_STATUS.md.
 
 ## Release links and marketplace
 
-Download entries are curated in download.php. The planned v0.1 tag expects
-Beam68-0.1.lha and Beam68-0.1-source.zip as GitHub release assets. Publish those
+Download entries are curated in download.php. The planned 0.1 tag expects
+Beam68-0.1.lha and Beam68-0.1-plugin-sdk.zip, each with a .sha256 file, as GitHub release assets. Publish those
 exact filenames before removing the awaiting-publication notice. Add one release
 card per future tag; the site makes no remote API calls. Repository links assume
 the main branch. Developers links to SDK and theme files in the source tree.

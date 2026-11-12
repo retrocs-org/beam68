@@ -94,6 +94,19 @@ def verify_zip(path, expected):
             if archive.read(name) != data:
                 raise ReleaseError('Changed ZIP member: ' + name)
 
+def sdk_entries(root):
+    files=source_files(root)
+    required={'README.md','include/beam68plugin.h','src/beam68plugin.c',
+              'Beam68PluginSDK.guide','Example/HelloWorld/HelloWorld.c',
+              'Example/Makefile','tools/package-plugin.py','Example/HelloRexx/HelloRexx.rexx'}
+    selected={name[4:]:meta for name,meta in files.items() if name.startswith('sdk/')}
+    if not required <= set(selected):
+        raise ReleaseError('Plugin SDK is incomplete')
+    top='Beam68-PluginSDK/'
+    result=[(top+name,(root/'sdk'/name).read_bytes(),meta['executable']) for name,meta in selected.items()]
+    result.append((top+'LICENSE',(root/'LICENSE').read_bytes(),False))
+    return result
+
 def runtime_files(root):
     text = (root / 'scripts/build-install-amiga.sh').read_text()
     result = []

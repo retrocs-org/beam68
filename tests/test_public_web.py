@@ -80,8 +80,8 @@ assert not list(WEB.rglob('*.zip')) and not list(WEB.glob('*.html'))
 assert not (WEB/'downloads').exists()
 assert b'Download' in rendered['index.php']
 assert b'Awaiting publication' in rendered['download.php']
-assert b'/releases/download/v0.1/Beam68-0.1.lha' in rendered['download.php']
-assert b'/releases/download/v0.1/Beam68-0.1-source.zip' in rendered['download.php']
+assert b'/releases/download/0.1/Beam68-0.1.lha' in rendered['download.php']
+assert b'/releases/download/0.1/Beam68-0.1-plugin-sdk.zip' in rendered['download.php']
 assert b'/blob/main/sdk/README.md' in rendered['developers.php']
 assert b'Release status' not in rendered['index.php']
 catalog=json.loads((WEB/'includes/marketplace.json').read_text())
