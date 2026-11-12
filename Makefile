@@ -158,6 +158,7 @@ host-test:
 	python3 tests/test_catalogs.py
 	python3 tests/test_guides.py
 	python3 tests/test_public_web.py
+	python3 tests/test_web_releases.py
 	python3 tests/test_public_source.py
 	python3 tests/test_release_tool.py
 	python3 tests/test_info_icons.py

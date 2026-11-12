@@ -1,0 +1,24 @@
+<?php
+declare(strict_types=1);
+define('BEAM68_PAGE', true);
+require __DIR__ . '/includes/site.php';
+require __DIR__ . '/includes/github-releases.php';
+$data = release_page_data();
+$release = $data['release'];
+page_start('Get Beam68 — Downloads for AmigaOS.', 'Download the latest published Beam68 release for AmigaOS, the plugin SDK and SHA-256 checksums.', 'download');
+?>
+<section class="page-intro wrap"><p class="eyebrow">YOUR NEXT SHORTCUT STARTS HERE</p><h1>Get <span>Beam68.</span></h1><p>A little less searching, a little more Workbench. Download the app for your Amiga, or pick up the SDK and build an extension.</p>
+<?php if ($release): ?><div class="page-meta"><span>Latest release · <?= escape($release['tag']) ?></span><span>Published <?= escape(gmdate('j F Y', (int)strtotime($release['published_at']))) ?></span><span>Free · MIT License</span></div><?php endif; ?></section>
+<section class="wrap get-downloads" aria-labelledby="downloads-title"><div class="section-heading"><div><p class="eyebrow">CHOOSE YOUR DOWNLOAD</p><h2 id="downloads-title">Ready for Workbench.</h2></div><p>Selected automatically from published GitHub releases.</p></div>
+<?php if (!$release): ?><div class="download-notice" role="status"><h3><?= $data['state'] === 'missing' ? 'The first release is on its way.' : 'Check GitHub for the latest download.' ?></h3><p><?= $data['state'] === 'missing' ? 'No public release is available yet. Published packages will appear here automatically.' : 'Release details are temporarily unavailable. You can still view and download published packages directly on GitHub.' ?></p><a class="button button-primary" href="https://github.com/retrocs-org/beam68/releases">View GitHub releases ↗</a></div>
+<?php else: ?>
+<?php if ($data['state'] === 'stale'): ?><p class="release-note" role="status">Showing cached release details while GitHub is temporarily unavailable.</p><?php endif; ?>
+<?php foreach ([['key' => 'runtime', 'title' => 'Beam68 for AmigaOS', 'label' => 'THE APPLICATION', 'description' => 'The launcher, Preferences, all 13 plugins and four portable themes. Unpack the LHA and open Install.', 'requirements' => 'AmigaOS 3.0+ · 68000+ · No FPU required', 'button' => 'Download LHA'], ['key' => 'sdk', 'title' => 'Plugin SDK', 'label' => 'FOR DEVELOPERS', 'description' => 'The C API, C and ARexx examples, AmigaGuide manual, package validator and license. Everything you need to write a plugin.', 'requirements' => 'Source kit · Amiga toolchain needed to build native plugins', 'button' => 'Download SDK ZIP']] as $item): $asset = $release[$item['key']]; ?>
+<article class="get-download-row"><div><p class="eyebrow"><?= escape($item['label']) ?></p><h3><?= escape($item['title']) ?></h3><p><?= escape($item['description']) ?></p><p class="download-requirements"><?= escape($item['requirements']) ?></p></div><div class="download-actions">
+<?php if ($asset): ?><span class="download-version">Release <?= escape($release['tag']) ?> · <?= escape(release_size($asset['size'])) ?></span><a class="button <?= $item['key'] === 'runtime' ? 'button-primary' : 'button-quiet' ?>" href="<?= escape($asset['url']) ?>"><?= escape($item['button']) ?> <span aria-hidden="true">↓</span></a><span class="download-filename"><?= escape($asset['name']) ?></span><?php if ($asset['checksum']): ?><a class="text-link" href="<?= escape($asset['checksum']) ?>">SHA-256 checksum</a><?php else: ?><span class="download-version">Checksum not attached to this release.</span><?php endif; ?>
+<?php else: ?><p>This package is not attached to the latest release.</p><a class="text-link" href="<?= escape($release['url']) ?>">View release assets ↗</a><?php endif; ?></div></article>
+<?php endforeach; ?>
+<div class="get-release-links"><a class="text-link" href="<?= escape($release['url']) ?>">Release notes · <?= escape($release['tag']) ?> ↗</a><a class="text-link" href="<?= escape($release['source_url']) ?>">Tagged source ZIP ↗</a><a class="text-link" href="https://github.com/retrocs-org/beam68/releases">All releases ↗</a></div>
+<?php endif; ?></section>
+<section class="wrap get-practical"><div><p class="eyebrow">BEFORE YOU START</p><h2>A familiar setup.</h2><p>AmigaOS 3.2 and a 68020 are recommended. Free memory needs depend on your index and plugins. Opening drawers through Workbench needs workbench.library V44+; optional integrations need their host applications.</p><p>See <a href="source.php#compatibility">compatibility and testing coverage</a>.</p></div><div><p class="eyebrow">MAKE IT YOUR OWN</p><h2>Small additions.<br>More possibilities.</h2><p>Explore the included <a href="marketplace.php">plugins and themes</a>, follow the <a href="developers.php">developer guides</a>, or <a href="source.php">build Beam68 from source</a>.</p><p>Packages and checksums are hosted on GitHub. The latest stable release is checked automatically; no account is needed to download.</p></div></section>
+<?php page_end(); ?>

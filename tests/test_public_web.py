@@ -3,7 +3,7 @@
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlsplit
-import json,struct,subprocess,os,shutil
+import json,struct,subprocess,os,shutil,tempfile
 ROOT=Path(__file__).resolve().parents[1];WEB=ROOT/'public-web'
 PHP=os.environ.get('BEAM68_PHP') or shutil.which('php')
 assert PHP,'Install PHP CLI or set BEAM68_PHP to run the website checks'
@@ -25,8 +25,13 @@ class SiteParser(HTMLParser):
                 assert a.get('rel')=='stylesheet' and a.get('href')=='site.css'
                 self.assets.append(a['href'])
 pages={};rendered={}
-for name in ('index.php','screenshots.php','download.php','developers.php','source.php','marketplace.php'):
-    result=subprocess.run([PHP,'-n','-d','display_errors=stderr',str(WEB/name)],check=True,capture_output=True)
+fixture=json.loads((ROOT/'tests/fixtures/github-release.json').read_text())
+fixture=json.loads(json.dumps(fixture).replace('0.1','0.2'))
+fixture_file=tempfile.NamedTemporaryFile(mode='w',suffix='.json')
+json.dump(fixture,fixture_file);fixture_file.flush()
+render_env=dict(os.environ,BEAM68_WEB_RELEASE_FIXTURE=fixture_file.name)
+for name in ('index.php','screenshots.php','get.php','developers.php','source.php','marketplace.php'):
+    result=subprocess.run([PHP,'-n','-d','display_errors=stderr',str(WEB/name)],check=True,capture_output=True,env=render_env)
     assert not result.stderr,result.stderr.decode()
     raw=result.stdout;assert raw.lower().startswith(b'<!doctype html>') and len(raw)<32000,name
     assert b'<?php' not in raw and b'javascript:' not in raw.lower(),name
@@ -72,6 +77,8 @@ include=json.dumps(str(WEB/'includes/site.php'))
 probe="define('BEAM68_PAGE',true); require "+include+"; echo escape('<tag>\"&');"
 assert subprocess.check_output([PHP,'-n','-r',probe])==b'&lt;tag&gt;&quot;&amp;'
 assert subprocess.check_output([PHP,'-n',str(WEB/'includes/site.php')])==b''
+assert subprocess.check_output([PHP,'-n',str(WEB/'includes/github-releases.php')])==b''
+assert subprocess.check_output([PHP,'-n',str(WEB/'download.php')])==b''
 css=(WEB/'site.css').read_text()
 assert '@media' in css and 'prefers-reduced-motion' in css and ':focus-visible' in css
 assert '@import' not in css and 'url(' not in css
@@ -79,11 +86,16 @@ assert len(css)<24000
 assert not list(WEB.rglob('*.zip')) and not list(WEB.glob('*.html'))
 assert not (WEB/'downloads').exists()
 assert b'Download' in rendered['index.php']
-assert b'Awaiting publication' in rendered['download.php']
-assert b'/releases/download/0.1/Beam68-0.1.lha' in rendered['download.php']
-assert b'/releases/download/0.1/Beam68-0.1-plugin-sdk.zip' in rendered['download.php']
+assert b'Awaiting publication' not in rendered['get.php']
+assert b'Get Beam68' in rendered['get.php']
+assert b'Latest release' in rendered['get.php']
+assert b'0.2' in rendered['get.php']
+assert b'Beam68 takes care of finding it' not in rendered['index.php']
+assert b'/releases/download/0.2/Beam68-0.2.lha' in rendered['get.php']
+assert b'/releases/download/0.2/Beam68-0.2-plugin-sdk.zip' in rendered['get.php']
 assert b'/blob/main/sdk/README.md' in rendered['developers.php']
 assert b'Release status' not in rendered['index.php']
+assert b'class="nav-source"' not in rendered['get.php']
 catalog=json.loads((WEB/'includes/marketplace.json').read_text())
 assert len(catalog['plugins'])==13 and len(catalog['themes'])==4
 for item in catalog['plugins']+catalog['themes']:

@@ -1,3 +1,3 @@
 <?php
-header('Location: download.php', true, 301);
+header('Location: get.php', true, 301);
 exit;

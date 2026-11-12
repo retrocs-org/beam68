@@ -12,7 +12,7 @@ application directory. JSON support is part of PHP; no extra extensions are
 required by the pages.
 
 Copy the contents of public-web/ to the web server document root, including
-index.php, screenshots.php, download.php, developers.php, source.php, marketplace.php,
+index.php, screenshots.php, get.php, download.php, developers.php, source.php, marketplace.php,
 validation.php and development.php (legacy redirects), includes/, images/, site.css,
 robots.txt and sitemap.xml. Configure the server to execute PHP files and use
 index.php as the directory index. Do not serve PHP files as plain text.
@@ -51,16 +51,30 @@ Release ZIPs stay outside this directory. The website ZIP contains the contents
 at its root for manual upload. Build scripts do not deploy the site or publish
 releases. Runtime compatibility limits remain in BUILD_STATUS.md.
 
-## Release links and marketplace
+## Marketplace
 
-Download entries are curated in download.php. The planned 0.1 tag expects
-Beam68-0.1.lha and Beam68-0.1-plugin-sdk.zip, each with a .sha256 file, as GitHub release assets. Publish those
-exact filenames before removing the awaiting-publication notice. Add one release
-card per future tag; the site makes no remote API calls. Repository links assume
-the main branch. Developers links to SDK and theme files in the source tree.
 Marketplace metadata in includes/marketplace.json mirrors bundled manifests and
-themes; update it when the bundled inventory changes. Third-party listings are
-not yet available.
+themes. Update it when the bundled inventory changes. Repository documentation
+links assume the main branch; Developers and Source cover extension authoring
+and application builds separately.
 
-Source contains application build instructions; Developers contains plugin SDK
-and theme documentation. The previous development.php route redirects to Developers.
+## Automatic Get Beam68 downloads
+
+get.php retrieves the latest published stable release from the public GitHub
+releases API for retrocs-org/beam68. download.php redirects permanently to it.
+The page lists only actual Amiga LHA and plugin SDK assets, their sizes and
+attached checksum files, with tagged source and release-note links. No token,
+database or browser JavaScript is used. Drafts/prereleases are excluded.
+
+PHP needs outbound HTTPS to api.github.com through cURL or allow_url_fopen with
+OpenSSL. TLS verification stays enabled. The response is size-limited and has a
+four-second request timeout. A private per-site folder in the system temporary
+directory holds a ten-minute cache and a refresh lock. Make sure the PHP user
+can write to its temporary directory. Conditional ETags avoid downloading an
+unchanged response. Outages retry at most once per minute and may show validated
+cached details for up to 24 hours, clearly labelled. Without a usable cache, the
+page links directly to GitHub releases rather than inventing package links.
+
+Run tests/test_web_releases.py with PHP CLI for offline cache, failure and URL
+validation checks. BEAM68_WEB_RELEASE_FIXTURE is a CLI-only test fixture; it has
+no effect on HTTP requests. Website updates do not replace published packages.

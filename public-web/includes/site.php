@@ -29,7 +29,7 @@ function screenshot_image(string $file, string $class = '', bool $eager = false)
 }
 function page_start(string $title, string $description, string $page): void {
     header('Content-Type: text/html; charset=UTF-8');
-    $routes = ['home' => '', 'screenshots' => 'screenshots.php', 'download' => 'download.php', 'developers' => 'developers.php', 'source' => 'source.php', 'marketplace' => 'marketplace.php'];
+    $routes = ['home' => '', 'screenshots' => 'screenshots.php', 'download' => 'get.php', 'developers' => 'developers.php', 'source' => 'source.php', 'marketplace' => 'marketplace.php'];
     $canonical = 'https://beam68.retrocs.org/' . $routes[$page];
     ?>
 <!doctype html>
@@ -47,11 +47,10 @@ function page_start(string $title, string $description, string $page): void {
 <nav aria-label="Main navigation">
 <a href="index.php"<?= $page === 'home' ? ' aria-current="page"' : '' ?>>Overview</a>
 <a href="screenshots.php"<?= $page === 'screenshots' ? ' aria-current="page"' : '' ?>>Screenshots</a>
-<a href="download.php"<?= $page === 'download' ? ' aria-current="page"' : '' ?>>Download</a>
+<a href="get.php"<?= $page === 'download' ? ' aria-current="page"' : '' ?>>Get Beam68</a>
 <a href="developers.php"<?= $page === 'developers' ? ' aria-current="page"' : '' ?>>Developers</a>
 <a href="source.php"<?= $page === 'source' ? ' aria-current="page"' : '' ?>>Source</a>
 <a href="marketplace.php"<?= $page === 'marketplace' ? ' aria-current="page"' : '' ?>>Marketplace</a>
-<a class="nav-source" href="https://github.com/retrocs-org/beam68">GitHub <span aria-hidden="true">↗</span></a>
 </nav>
 </header>
 <main id="main">
@@ -60,7 +59,7 @@ function page_end(): void { ?>
 </main>
 <footer class="site-footer wrap">
 <div><a class="brand" href="index.php"><span class="brand-mark" aria-hidden="true"></span>beam<span>68</span></a><p>A little less searching.<br>A little more Amiga.</p></div>
-<div class="footer-links"><a href="https://github.com/retrocs-org/beam68">Source code ↗</a><a href="https://github.com/retrocs-org/beam68/releases">GitHub Releases ↗</a><a href="download.php">Download</a><a href="developers.php">Developers</a><a href="source.php">Source</a><a href="marketplace.php">Marketplace</a></div>
+<div class="footer-links"><a href="https://github.com/retrocs-org/beam68">Source code ↗</a><a href="https://github.com/retrocs-org/beam68/releases">GitHub Releases ↗</a><a href="get.php">Get Beam68</a><a href="developers.php">Developers</a><a href="source.php">Source</a><a href="marketplace.php">Marketplace</a></div>
 <div class="footer-note"><span class="version-dot"></span> Version 0.1 · MIT License<p>No cookies. No trackers.<br>Made for classic AmigaOS.</p><a href="#top">Back to top ↑</a></div>
 </footer>
 </body></html>

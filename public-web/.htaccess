@@ -4,5 +4,5 @@ DirectoryIndex index.php
 <IfModule mod_alias.c>
 RedirectMatch 301 ^/index\.html$ /
 RedirectMatch 301 ^/screenshots\.html$ /screenshots.php
-RedirectMatch 301 ^/validation\.html$ /download.php
+RedirectMatch 301 ^/validation\.html$ /get.php
 </IfModule>
