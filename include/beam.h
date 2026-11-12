@@ -150,7 +150,7 @@ struct BeamPlugin {
     struct BeamPluginSetting setting_defs[BEAM_MAX_PLUGIN_SETTINGS];
     unsigned char setting_count;
     char trigger;
-    unsigned char protocol;  /* manifest VERSION: 1 (reply file) or 2 (rows) */
+    unsigned char protocol;  /* public manifest VERSION: 1 (native rows or ARexx text) */
     unsigned char preview;   /* PREVIEW=YES: run after a typing pause */
     /* Package metadata (optional for local plugins, required in packages). */
     char id[64];             /* stable unique ID, e.g. org.example.weather */
