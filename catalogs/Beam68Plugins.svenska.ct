@@ -1,0 +1,262 @@
+## version $VER: Beam68Plugins.catalog 0.1 (27.10.2026)
+## language svenska
+## codeset 0
+;
+PLMSG_REXX_NONE
+Inga makron inställda; redigera ARexxRunner.cfg
+;No configured macros; edit ARexxRunner.cfg
+PLMSG_REXX_LIST
+Makron: 
+;Macros: 
+PLMSG_REXX_NAME
+Använd bara inställda makronamn (bokstäver, siffror, _ eller -)
+;Use a configured macro name only (letters, numbers, _ or -)
+PLMSG_REXX_UNKNOWN
+Okänt makro; använd rexx:list
+;Unknown macro; use rexx:list
+PLMSG_REXX_MISSING
+Inställt ARexx-skript hittades inte
+;Configured ARexx script was not found
+PLMSG_REXX_FAILED
+ARexx-makrot misslyckades
+;ARexx macro failed
+PLMSG_REXX_DONE
+Makrot %s klart
+;Macro %s completed
+PLMSG_CALC_ERROR
+ERROR=Ogiltigt uttryck, division med noll eller spill\n
+;ERROR=Invalid expression, divide by zero or overflow\n
+PLMSG_CLIP_EMPTY
+Urklipp är tomt eller inte FTXT-text
+;Clipboard is empty or is not FTXT text
+PLMSG_CLIP_CLEARED
+Urklipp tömt
+;Clipboard cleared
+PLMSG_CLIP_CLEAR_FAILED
+Kunde inte tömma urklipp
+;Could not clear clipboard
+PLMSG_CLIP_SET
+Text lagd i urklipp
+;Clipboard text set
+PLMSG_CLIP_UPDATE_FAILED
+Kunde inte uppdatera urklipp
+;Could not update clipboard
+PLMSG_CLIP_SAVE_USAGE
+Använd save:volym:sökväg
+;Use save:volume:path
+PLMSG_CLIP_CREATE_FAILED
+Kunde inte skapa målfilen
+;Could not create destination file
+PLMSG_CLIP_WRITE_FAILED
+Kunde inte skriva hela filen
+;Could not write complete file
+PLMSG_CLIP_SAVED
+Urklippstexten sparad
+;Clipboard text saved
+PLMSG_CLIP_USAGE
+Använd show, set:text, clear, upper, lower eller save:sökväg
+;Use show, set:text, clear, upper, lower, or save:path
+PLMSG_CLOCK_SECONDS
+TEXT=Lokal tid %02ld:%02ld:%02ld\n
+;TEXT=Local time %02ld:%02ld:%02ld\n
+PLMSG_CLOCK
+TEXT=Lokal tid %02ld:%02ld\n
+;TEXT=Local time %02ld:%02ld\n
+PLMSG_DATE_FORMAT_FAILED
+Kunde inte formatera systemdatum
+;Could not format system date
+PLMSG_DATE_ADD_USAGE
+Använd date:add:<dagar>
+;Use date:add:<days>
+PLMSG_DATE_RANGE
+Datumet ligger utanför giltigt intervall
+;Date is outside the supported range
+PLMSG_DATE_WEEKDAY_USAGE
+Använd weekday:ÅÅÅÅ-MM-DD
+;Use weekday:YYYY-MM-DD
+PLMSG_DATE_EPOCH
+Amiga-sekunder: %lu (sedan 1978-01-01)
+;Amiga epoch seconds: %lu (since 1978-01-01)
+PLMSG_DATE_USAGE
+Prova today, add:7, weekday:2026-10-24 eller timestamp
+;Try today, add:7, weekday:2026-10-24, or timestamp
+PLMSG_DEV_HEX_USAGE
+Använd hex:<decimalt eller $hex>
+;Use hex:<decimal or $hex>
+PLMSG_DEV_DEC_USAGE
+Använd dec:$FF eller dec:0xFF
+;Use dec:$FF or dec:0xFF
+PLMSG_DEV_ASCII_RANGE
+ASCII-värdet måste vara 0..255
+;ASCII value must be 0..255
+PLMSG_DEV_ASCII_CONTROL
+ASCII %lu = styrtecken = $%02lX
+;ASCII %lu = control/non-printing = $%02lX
+PLMSG_DEV_MASK_USAGE
+Använd mask:0,3,7 (bitar 0..31)
+;Use mask:0,3,7 (bits 0..31)
+PLMSG_DEV_MASK_SEPARATE
+Skilj bitarna åt med kommatecken
+;Separate mask bits with commas
+PLMSG_DEV_MASK
+Bitmask = $%08lX (%lu)
+;Bit mask = $%08lX (%lu)
+PLMSG_DEV_PROT
+Skyddsbitar $%02lX: R%c W%c E%c D%c
+;Protection $%02lX: R%c W%c E%c D%c
+PLMSG_DEV_PROT_USAGE
+Använd prot:RWED eller prot:$0F
+;Use prot:RWED or prot:$0F
+PLMSG_DEV_PROT_MASK
+Tillåtet RWED -> Amigas spärrmask $%02lX
+;Allowed RWED -> Amiga deny mask $%02lX
+PLMSG_DEV_USAGE
+Prova hex:255, ascii:65, mask:0,3,7 eller prot:RWED
+;Try hex:255, ascii:65, mask:0,3,7, or prot:RWED
+PLMSG_DOS_LOCK_FAILED
+Kunde inte låsa DOS-listan
+;Could not lock DOS list
+PLMSG_DOS_NO_VOLUMES
+Inga monterade volymer
+;No mounted volumes
+PLMSG_DOS_NO_ASSIGNS
+Inga tilldelningar
+;No assigns
+PLMSG_DOS_NOT_FOUND
+Sökvägen hittades inte
+;Path not found
+PLMSG_DOS_NO_MEMORY
+För lite minne
+;Not enough memory
+PLMSG_DOS_INFO_FAILED
+Kunde inte läsa diskinformation
+;Could not read disk information
+PLMSG_DOS_FREE
+%s%s %lu KiB ledigt av %lu KiB
+;%s%s %lu KiB free of %lu KiB
+PLMSG_DOS_OPEN_USAGE
+Använd open:RAM: eller en annan AmigaDOS-sökväg
+;Use open:RAM: or another AmigaDOS path
+PLMSG_DOS_OPENED
+Öppnad på Workbench
+;Opened on Workbench
+PLMSG_DOS_OPEN_FAILED
+Workbench kunde inte öppna det
+;Workbench could not open that object
+PLMSG_DOS_USAGE
+Använd volumes, assigns, diskfree:sökväg eller open:sökväg
+;Use volumes, assigns, diskfree:path, or open:path
+PLMSG_FIND_USAGE
+Använd find:<del av ett fil- eller lådnamn>
+;Use find:<part of a file or drawer name>
+PLMSG_FIND_UNREADABLE
+Inga träffar; %lu låda/lådor kunde inte läsas
+;No matches; %lu drawer(s) could not be read
+PLMSG_FIND_NONE
+Inga matchande filer eller lådor
+;No matching files or drawers in indexed roots
+PLMSG_MEMORY
+TEXT=Ledigt: Chip %lu KiB / Fast %lu KiB\n
+;TEXT=Free Chip %lu KiB / Fast %lu KiB\n
+PLMSG_MUSIC_NO_ANSWER
+spelaren svarar inte
+;player did not answer
+PLMSG_MUSIC_ACCEPTED
+%s: kommandot godtaget
+;%s: command accepted
+PLMSG_MUSIC_USAGE
+Använd status, play, pause, stop, next, previous, volume up/down/0-100 eller players
+;Use status, play, pause, stop, next, previous, volume up/down/0-100, or players
+PLMSG_MUSIC_NOT_RUNNING
+%s körs inte
+;%s is not running
+PLMSG_MUSIC_NONE
+Ingen spelare som stöds körs (HippoPlayer, AmigaAMP eller EaglePlayer 2)
+;No supported player is running (HippoPlayer, AmigaAMP or EaglePlayer 2)
+PLMSG_MUSIC_REJECTED
+Spelaren avvisade ARexx-kommandot
+;The player rejected the ARexx command
+PLMSG_SYS_MEMORY
+Ledigt: Chip %lu KiB / Fast %lu KiB
+;Free Chip %lu KiB / Fast %lu KiB
+PLMSG_SYS_FLUSH_FAILED
+Avail FLUSH misslyckades
+;Avail FLUSH failed
+PLMSG_SYS_FLUSHED
+Bibliotek rensade; ledigt Chip %lu KiB / Fast %lu KiB
+;Libraries flushed; free Chip %lu KiB / Fast %lu KiB
+PLMSG_SYS_REBOOT_CONFIRM
+Varning: skriv reboot confirm
+;Destructive: type reboot confirm
+PLMSG_SYS_REBOOTING
+Startar om Amigan...
+;Rebooting the Amiga...
+PLMSG_SYS_SHUTDOWN_CONFIRM
+Varning: skriv shutdown confirm
+;Destructive: type shutdown confirm
+PLMSG_SYS_SHUTDOWN
+Startar C:ShutDown...
+;Starting C:ShutDown...
+PLMSG_SYS_USAGE
+Använd avail, version, flush, reboot confirm eller shutdown confirm
+;Use avail, version, flush, reboot confirm, or shutdown confirm
+PLMSG_TASK_NONE
+Inga processnamn tillgängliga
+;No task names available
+PLMSG_TASK_USAGE
+Använd tasks eller task:break:<namn>:confirm
+;Use tasks or task:break:<name>:confirm
+PLMSG_TASK_CONFIRM
+Signalen kräver :confirm
+;Signal action requires :confirm
+PLMSG_TASK_NAME
+Processnamnet saknas eller är för långt
+;Task name is missing or too long
+PLMSG_TASK_NOT_FOUND
+Processen hittades inte
+;Task was not found
+PLMSG_TASK_SELF
+Process-tillägget signalerar inte sig självt
+;Refusing to signal the Task Manager plugin itself
+PLMSG_TASK_SENT
+Skickade Ctrl-C till %s
+;Sent Ctrl-C break signal to %s
+PLMSG_WIN_NONE
+Inga Workbench-fönster med titel är öppna
+;No titled Workbench windows are open
+PLMSG_WIN_NOT_FOUND
+Inget matchande fönster eller skärm hittades
+;No matching window or screen was found
+PLMSG_WIN_FRONT
+Lade %s överst
+;Brought %s to front
+PLMSG_DAY_SUNDAY
+söndag
+;Sunday
+PLMSG_DAY_MONDAY
+måndag
+;Monday
+PLMSG_DAY_TUESDAY
+tisdag
+;Tuesday
+PLMSG_DAY_WEDNESDAY
+onsdag
+;Wednesday
+PLMSG_DAY_THURSDAY
+torsdag
+;Thursday
+PLMSG_DAY_FRIDAY
+fredag
+;Friday
+PLMSG_DAY_SATURDAY
+lördag
+;Saturday
+PLMSG_MUSIC_RUNNING
+Körs: 
+;Running: 
+PLMSG_MUSIC_PREFERRED
+ | Föredragen: 
+; | Preferred: 
+PLMSG_DATE_WEEKDAY
+%04d-%02d-%02d är en %s
+;%04d-%02d-%02d is %s

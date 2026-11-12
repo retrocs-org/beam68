@@ -1,0 +1,565 @@
+## version $VER: Beam68.catalog 0.1 (27.10.2026)
+## language svenska
+## codeset 0
+;
+MSG_HELP_APP_TITLE
+Programsökning
+;Application search
+MSG_HELP_APP
+app:<text> söker bland program och körbara filer
+;app:<text> searches tools and executables
+MSG_HELP_FILE_TITLE
+Filsökning
+;File search
+MSG_HELP_FILE
+file:<text> söker bland indexerade filer
+;file:<text> searches indexed files
+MSG_HELP_DRAWER_TITLE
+Lådsökning
+;Drawer search
+MSG_HELP_DRAWER
+drawer:<text> söker bland indexerade lådor
+;drawer:<text> searches indexed drawers
+MSG_HELP_PLUGIN_TITLE
+Insticksprogram
+;Plugin search
+MSG_HELP_PLUGIN
+plugin:<text> hittar exempel och hjälp för insticksprogram
+;plugin:<text> finds plugin examples and help
+MSG_HELP_RECENT_TITLE
+Senast använda
+;Recent search
+MSG_HELP_RECENT
+recent:<text> visar bara tidigare startade poster
+;recent:<text> limits results to launched items
+MSG_HELP_VOLUME_TITLE
+Volymsökning
+;Volume search
+MSG_HELP_VOLUME
+volume:<text> söker bland indexerade volymer
+;volume:<text> searches indexed volume roots
+MSG_HELP_FAV_TITLE
+Favoritgrupp
+;Favorite group
+MSG_HELP_FAV
+fav:<grupp> [text], till exempel fav:games
+;fav:<group> [text], for example fav:games
+MSG_HELP_GAME_TITLE
+WHDLoad-spel
+;WHDLoad games
+MSG_HELP_GAME
+game:<text> söker bland installerade WHDLoad-spel
+;game:<text> searches installed WHDLoad games
+MSG_HELP_SHELL_TITLE
+AmigaDOS-skal
+;AmigaDOS shell
+MSG_HELP_SHELL
+shell:<kommando> öppnar en hanterad konsol
+;shell:<command> opens a managed console
+MSG_HELP_RESTART_WB_TITLE
+Starta om Workbench
+;Restart Workbench
+MSG_HELP_SECOND_ENTER
+Kräver ett andra Enter
+;Requires a second Enter
+MSG_HELP_RESTART_AMIGA_TITLE
+Starta om Amigan
+;Restart Amiga
+MSG_HELP_COLD_REBOOT
+Kallstart kräver ett andra Enter
+;Cold reboot requires a second Enter
+MSG_KEY_UPDOWN
+Välj resultat, börjar om vid slutet
+;Select and wrap through results
+MSG_KEY_TAB
+Fyll i förslag eller välj åtgärd
+;Complete a suggestion or choose a result action
+MSG_KEY_F2
+Bygg om indexet
+;Rebuild the index
+MSG_KEY_F3
+Läs om inställningar / insticksprogram
+;Reload settings / reload plugins
+MSG_KEY_F4
+Avsluta / Inställningar / fäst eller lossa
+;Quit / Preferences / pin or unpin
+MSG_KEY_F7
+Sökhistorik / senaste skalkommando
+;Query history / last shell command
+MSG_LOWMEM_CAP
+ | minnesgräns %ld
+; | low-memory cap %ld
+MSG_BADGE_COMPLETE
+KOMPLETTERA  
+;COMPLETE  
+MSG_BADGE_PLUGIN
+TILLÄGG  
+;PLUGIN  
+MSG_BADGE_ALIAS
+ALIAS  
+;ALIAS  
+MSG_BADGE_KEY
+TANGENT  
+;KEY  
+MSG_BADGE_COMMAND
+KOMMANDO  
+;COMMAND  
+MSG_PLUGIN_LINE
+TILLÄGG  %s%s%s
+;PLUGIN  %s%s%s
+MSG_CALC_HINT
+Skriv ett uttryck, t.ex. =12*(3+4)
+;Type an expression, e.g. =12*(3+4)
+MSG_CALC_INVALID
+Ofullständigt eller ogiltigt uttryck
+;Incomplete or invalid expression
+MSG_BADGE_SHELL
+SKAL  
+;SHELL  
+MSG_SHELL_COMMAND
+AmigaDOS-kommando
+;AmigaDOS command
+MSG_SHELL_DISABLED_LABEL
+avstängt
+;disabled
+MSG_SHELL_HINT
+Skriv shell:dir SYS: eller kortare >dir SYS:
+;Type shell:dir SYS: or the shorter >dir SYS:
+MSG_RESTART_ACTION
+ÅTGÄRD  Omstart - bekräftelse krävs
+;ACTION  System restart - confirmation required
+MSG_RESTART_AMIGA_DESC
+Starta om hela Amigan (kallstart)
+;Restart the complete Amiga (cold reboot)
+MSG_RESTART_WB_DESC
+Stäng och öppna Workbench igen
+;Close and reopen the Workbench desktop
+MSG_EMPTY_LINE1
+Sök program | shell: kommando | = Räkna @ Klocka ? Minne
+;Search programs | shell: command | = Calculate @ Clock ? Memory
+MSG_EMPTY_LINE2
+Favoriter först, sedan senaste | F7: sökhistorik
+;Favorites first, then recent apps | F7: query history
+MSG_BADGE_ACTION
+ÅTGÄRD  
+;ACTION  
+MSG_BADGE_RECENT
+SENASTE  
+;RECENT  
+MSG_BADGE_FAVORITE
+PROG * 
+;APP * 
+MSG_BADGE_GAME
+SPEL  
+;GAME  
+MSG_BADGE_FILE
+FIL  
+;FILE  
+MSG_BADGE_DRAWER
+LÅDA  
+;DRAWER  
+MSG_BADGE_VOLUME
+VOLYM  
+;VOLUME  
+MSG_BADGE_APP
+PROG  
+;APP  
+MSG_FOOT_HELP
+Upp/Ned: välj | Enter: infoga exempel | F1/Esc: stäng hjälp
+;Up/Down: select | Enter: insert example | F1/Esc: close help
+MSG_FOOT_COMPLETE
+%u/%u | Upp/Ned: förslag | Tab: komplettera
+;%u/%u | Up/Down: suggestion | Tab: complete
+MSG_FOOT_RESTART_CONFIRM
+Enter igen: BEKRÄFTA omstart | Esc: avbryt
+;Enter again: CONFIRM restart | Esc: cancel
+MSG_FOOT_RESTART_ARM
+Enter: förbered omstart | Esc: avbryt
+;Enter: arm restart | Esc: cancel
+MSG_FOOT_SHELL
+Enter: kör | F7: sökhistorik | F8: senaste kommando
+;Enter: run | F7: query history | F8: shell recall
+MSG_FOOT_SHELL_OFF
+F5: Inställningar | Esc: stäng
+;F5: Preferences | Esc: close
+MSG_FOOT_RESULTS
+%d/%d | Upp/Ned: välj | Enter: %s | Tab: åtgärd | F6: fäst
+;%d/%d | Up/Down: select | Enter: %s | Tab: action | F6: pin
+MSG_FOOT_RESULT
+Resultat: 
+;Result: 
+MSG_FOOT_LAST
+Senast: %s - %.80s (%lu.%lus)
+;Last: %s - %.80s (%lu.%lus)
+MSG_FOOT_DEFAULT
+F4 avsluta | F5 Inst. | F6 fäst | F7 historik
+;F4 quit | F5 Prefs | F6 pin | F7 query history
+MSG_WINDOW_TITLE
+Beam68 - Programstartare
+;Beam68 - Application Launcher
+MSG_PLUGIN_RUNNING
+körs - Esc avbryter väntan
+;running - Esc cancels waiting
+MSG_PLUGIN_QUARANTINED_NOW
+spärrat efter 3 fel i rad
+;quarantined after 3 consecutive failures
+MSG_PLUGIN_CANCELED
+%s avbrutet efter %lu.%lus; processen kan fortfarande köra klart
+;%s canceled after %lu.%lus; child may still finish
+MSG_PLUGIN_INVALID_RESPONSE
+ogiltigt svar
+;invalid response
+MSG_PLUGIN_TIMEOUT_QUARANTINED
+tidsgräns nådd, spärrat efter 3 fel
+;timed out and was quarantined after 3 failures
+MSG_PLUGIN_TIMEOUT
+tidsgräns nådd; processen kan fortfarande köra
+;timed out; child may still be running
+MSG_PLUGIN_BUSY
+körs redan
+;is already running
+MSG_PLUGIN_IS_QUARANTINED
+är spärrat; aktivera det igen i Inställningar
+;is quarantined; re-enable it in Preferences
+MSG_PLUGIN_SYSTEM_CONFIRM
+SYSTEM-tillägg: tryck Enter igen för att bekräfta
+;SYSTEM plugin: press Enter again to confirm
+MSG_PLUGIN_ERROR
+fel:
+;error:
+MSG_PLUGIN_ERR_QUERY
+fel: ogiltig fråga till tillägget
+;error: invalid plugin query
+MSG_PLUGIN_ERR_LONG
+fel: för lång indata
+;error: input too long
+MSG_PLUGIN_ERR_PATH
+fel: ogiltig programsökväg
+;error: invalid executable path
+MSG_PLUGIN_ERR_START
+fel: kunde inte starta
+;error: could not start
+MSG_WB_CLOSE_FIRST
+Stäng Workbench-fönstren och försök igen
+;Close Workbench drawers/windows, then try again
+MSG_WB_RESTARTED
+Workbench omstartad
+;Workbench restarted
+MSG_SHELL_DISABLED
+Skalkommandon är avstängda
+;Shell commands are disabled
+MSG_SHELL_EMPTY
+Skriv ett kommando efter shell: eller >
+;Type a command after shell: or >
+MSG_SHELL_FAILED
+Kunde inte köra skalkommandot
+;Could not run shell command
+MSG_SHELL_STARTED
+Skal startat; konsolen väntar på Stäng eller Ctrl-\\
+;Shell started; console waits for Close or Ctrl-\\
+MSG_DRAWER_OPEN_FAILED
+Workbench kunde inte öppna lådan
+;Workbench could not open containing drawer
+MSG_DRAWER_NEEDS_V44
+Att öppna lådor kräver Workbench 3.1.4/3.5 eller nyare
+;Opening drawers needs Workbench 3.1.4/3.5 or newer
+MSG_ACTION_INVALID
+Egen åtgärd är ogiltig eller för lång
+;Custom action is invalid or too long
+MSG_ACTION_FAILED
+Programåtgärden misslyckades
+;Application action failed
+MSG_WB_LAUNCH_FAILED
+Workbench kunde inte starta programmet
+;Workbench could not launch this tool
+MSG_OPEN_NEEDS_V44
+Detta kräver Workbench 3.1.4/3.5 eller nyare
+;Opening this needs Workbench 3.1.4/3.5 or newer
+MSG_UNSAFE_PATH
+Osäkert tecken i programsökvägen
+;Unsafe character in executable path
+MSG_SHELL_LAUNCH_FAILED
+Start via skalet misslyckades
+;Shell launch failed
+MSG_FAV_FULL
+Favoriterna är fulla eller ogiltig sökväg
+;Favorites full or invalid path
+MSG_FAV_SAVE_FAILED
+Kunde inte spara favoriterna i ENVARC:
+;Could not save favorites to ENVARC:
+MSG_FAV_ENV_FAILED
+Favoriterna sparade; skrivning till ENV: misslyckades
+;Saved permanent favorites; ENV: write failed
+MSG_FAV_PINNED
+Fäst (F6 för att lossa)
+;Pinned (F6 to unpin)
+MSG_FAV_UNPINNED
+Lossad
+;Unpinned
+MSG_PLUGINS_CANCEL_FIRST
+Avbryt det aktiva tillägget först
+;Cancel the active plugin before reloading
+MSG_SAFE_PLUGINS_OFF
+Felsäkert läge: tilläggen förblir avstängda
+;Safe mode: plugins remain disabled
+MSG_PLUGINS_RELOADED_ERRORS
+Tilläggen omlästa; %ld saknas eller krockar
+;Plugins reloaded; %ld unavailable or conflicting
+MSG_PLUGINS_RELOADED
+%ld tillägg omlästa
+;Reloaded %ld plugins
+MSG_PREFS_MISSING
+Beam68Prefs är inte installerat
+;Beam68Prefs not installed
+MSG_PREFS_PATH_LONG
+Sökvägen till Inställningar är för lång
+;Preferences path too long
+MSG_PREFS_PATH_INVALID
+Ogiltig sökväg till Inställningar
+;Invalid Preferences path
+MSG_PREFS_START_FAILED
+Kunde inte starta Inställningar
+;Could not start Preferences
+MSG_RELOAD_NO_MEMORY
+För lite minne för att läsa om inställningarna
+;Insufficient memory to reload settings
+MSG_CONFIG_INVALID
+Ogiltig eller saknad konfiguration
+;Invalid or missing configuration
+MSG_HOTKEY_INVALID
+Ogiltig snabbtangent
+;Invalid hotkey descriptor
+MSG_INDEX_NO_MEMORY
+För lite minne för indexet
+;Insufficient memory for index
+MSG_HOTKEY_FAILED
+Kunde inte byta snabbtangent
+;Could not change hotkey
+MSG_SETTINGS_PLUGIN_ERRORS
+Inställningar inlästa; %ld tillägg saknas eller krockar
+;Settings loaded; %ld plugin(s) unavailable or conflicting
+MSG_SETTINGS_SCANNING
+Inställningar inlästa; indexerar i bakgrunden
+;Settings loaded; scanning in background
+MSG_SETTINGS_UPDATED
+Inställningar och index uppdaterade
+;Settings and index updated
+MSG_SCANNING
+Indexerar lådor i bakgrunden...
+;Scanning directories in background...
+MSG_NO_COMPLETION
+Inget förslag finns
+;No completion available
+MSG_NO_HISTORY
+Ingen mer sökhistorik
+;No more query history
+MSG_NO_SHELL_RECALL
+Inget skalkommando att hämta
+;No shell command to recall
+MSG_CX_DESCRIPTION
+Minnessnål programstartare för tangentbordet
+;Low-memory keyboard application launcher
+MSG_INDEX_UPDATING
+Uppdaterar index efter filändring
+;Updating index after filesystem change
+MSG_RECOVERY_SAFE
+Felsäkert läge: förra starten kraschade
+;Recovery safe mode: previous run did not exit cleanly
+MSG_SAFE_MODE
+Felsäkert läge: tillägg och egna teman avstängda
+;Safe mode: plugins and custom themes disabled
+MSG_PROGRESS_CACHED
+Indexcache: %lu program
+;Index cache: %lu applications
+MSG_PROGRESS_SCANNING
+Indexerar %lu/%lu lådor | %lu poster | %lu program
+;Indexing %lu/%lu drawers | %lu entries | %lu apps
+MSG_PROGRESS_FULL
+Indexet fullt vid %lu program; öka MAX_ITEMS
+;Index full at %lu apps; increase MAX_ITEMS
+MSG_PROGRESS_PROBLEMS
+Index klart: %lu program | %lu oläsbara | %lu fel
+;Index complete: %lu apps | %lu unreadable | %lu errors
+MSG_PROGRESS_DONE
+%lu program indexerade från %lu lådor
+;Indexed %lu apps from %lu drawers
+MSG_NORESULT_SCANNING1
+Indexering pågår; resultaten kan vara ofullständiga
+;Indexing directories; results may be incomplete
+MSG_NORESULT_SCANNING2
+Fortsätt skriva eller tryck F2 för att börja om
+;Keep typing or press F2 to restart the scan
+MSG_NORESULT_EMPTY1
+Inga indexerade program ännu
+;No indexed applications yet
+MSG_NORESULT_EMPTY2
+Tryck F2 för att indexera eller F5 för att välja lådor
+;Press F2 to index or F5 to choose directories
+MSG_NORESULT_NONE1
+Inga matchande program
+;No matching indexed applications
+MSG_NORESULT_NONE2
+Färre ord, F7 historik eller Ctrl+L för att rensa
+;Try fewer words, F7 history, or Ctrl+L to clear
+MSG_ACTION_OPEN_DRAWER
+Öppna låda
+;Open drawer
+MSG_ACTION_LAUNCH
+Starta
+;Launch
+MSG_KICK_MISSING
+Behöver %s i DEVS:Kickstarts - Enter igen startar ändå
+;Needs %s in DEVS:Kickstarts - Enter again to start anyway
+MSG_HELP_RANDOM_TITLE
+Slumpa spel
+;Random game
+MSG_HELP_RANDOM
+game:random väljer ett WHDLoad-spel åt dig
+;game:random picks a WHDLoad game for you
+MSG_BADGE_RANDOM
+SLUMP  
+;RANDOM  
+MSG_ACTION_INFO
+Information
+;Information
+MSG_ACTION_COPY
+Kopiera sökväg
+;Copy path
+MSG_INFO_FAILED
+Workbench kunde inte visa information
+;Workbench could not show information
+MSG_COPIED
+Sökvägen kopierad till urklipp
+;Path copied to the clipboard
+MSG_COPY_FAILED
+Kunde inte skriva till urklipp
+;Could not write to the clipboard
+MSG_ACTION_ARGS
+Kör med argument
+;Run with arguments
+MSG_ARGS_PROMPT
+Argument för %s - Enter kör, Esc avbryter
+;Arguments for %s - Enter runs, Esc cancels
+MSG_BADGE_ARGS
+ARGUMENT  
+;ARGS  
+MSG_ARGS_NEEDS_PROGRAM
+Bara program tar argument
+;Only programs take arguments
+MSG_QUICK_NONE
+Ingen favorit på den här tangenten
+;No favorite on this key
+MSG_BROWSE_STATUS
+%s - %ld poster | skriv för att filtrera | Vänster: upp
+;%s - %ld entries | type to filter | Left: parent
+MSG_BROWSE_EMPTY
+Tom eller oläsbar låda
+;Empty or unreadable drawer
+MSG_ROWS_STATUS
+%s: %ld resultat | Enter: använd | Esc: tillbaka
+;%s: %ld results | Enter: use | Esc: back
+MSG_BADGE_ROW
+RESULTAT  
+;RESULT  
+MSG_BADGE_ASSIGN
+TILLDELN.  
+;ASSIGN  
+MSG_BADGE_DOC
+DOK  
+;DOC  
+MSG_BADGE_HIDDEN
+DOLD  
+;HIDDEN  
+MSG_HIDDEN_ON
+Dold - hidden: visar dolda resultat
+;Hidden - hidden: lists hidden results
+MSG_HIDDEN_OFF
+Visas igen
+;Shown again
+MSG_HIDDEN_FULL
+Listan med dolda resultat är full
+;Hidden list is full
+MSG_HELP_DOC_TITLE
+Senaste dokument
+;Recent documents
+MSG_HELP_DOC
+doc:<text> söker bland öppnade dokument
+;doc:<text> searches documents you opened
+MSG_HELP_HIDDEN_TITLE
+Dolda resultat
+;Hidden results
+MSG_HELP_HIDDEN
+hidden: visar resultat dolda med Shift+Del
+;hidden: lists results hidden with Shift+Del
+MSG_ACTION_DOPUS
+Visa i Directory Opus
+;Show in Directory Opus
+MSG_DOPUS_FAILED
+Directory Opus svarar inte
+;Directory Opus did not answer
+MSG_CTL_USAGE
+Användning: Beam68Ctl RELOAD|RELOADPLUGINS|REINDEX|SHOW|HIDE|QUIT|QUITWAIT|STATUS\n
+;Usage: Beam68Ctl RELOAD|RELOADPLUGINS|REINDEX|SHOW|HIDE|QUIT|QUITWAIT|STATUS\n
+MSG_CTL_NOT_RUNNING
+Beam68-startaren körs inte.\n
+;Beam68 launcher is not running.\n
+MSG_REXX_NOT_RUNNING
+ARexx körs inte (starta RexxMast)
+;ARexx is not running (start RexxMast)
+MSG_BADGE_MODULE
+MOD  
+;MOD  
+MSG_BADGE_SCRIPT
+REXX  
+;REXX  
+MSG_BADGE_WEB
+WEBB  
+;WEB  
+MSG_BADGE_SNIPPET
+TEXT  
+;SNIP  
+MSG_SNIPPET_COPIED
+Textsnutt kopierad till urklipp
+;Snippet copied to the clipboard
+MSG_SOURCE_LAUNCH_FAILED
+Kunde inte starta - kontrollera MODULE_COMMAND / URL_COMMAND
+;Could not start it - check MODULE_COMMAND / URL_COMMAND
+MSG_STATS_LAUNCHES
+%lu starter
+;%lu launches
+MSG_HELP_MOD_TITLE
+Musikmoduler
+;Music modules
+MSG_HELP_MOD
+mod:<text> spelar en modul (INDEX_MODULES)
+;mod:<text> plays a module (INDEX_MODULES)
+MSG_HELP_WEB_TITLE
+Bokmärken
+;Bookmarks
+MSG_HELP_WEB
+web:<text> öppnar ett bokmärke (BOOKMARK_FILES)
+;web:<text> opens a bookmark (BOOKMARK_FILES)
+MSG_HELP_SNIP_TITLE
+Textsnuttar
+;Snippets
+MSG_HELP_SNIP
+snip:<text> kopierar en snutt från Snippets.txt
+;snip:<text> copies a snippet from Snippets.txt
+MSG_HELP_SCRIPT_TITLE
+ARexx-skript
+;ARexx scripts
+MSG_HELP_SCRIPT
+script:<text> kör ett skript från REXX:
+;script:<text> runs a script from REXX:
+MSG_HELP_PREFS_TITLE
+Inställningar
+;Preferences
+MSG_HELP_PREFS
+prefs:<text> visar programmen i SYS:Prefs
+;prefs:<text> lists the SYS:Prefs programs
+MSG_HELP_STATS_TITLE
+Användningsstatistik
+;Usage statistics
+MSG_HELP_STATS
+stats: visar det du startar mest
+;stats: lists your most-launched items

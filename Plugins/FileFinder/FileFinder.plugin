@@ -1,0 +1,16 @@
+VERSION=1
+ID=org.beam68.filefinder
+PLUGIN_VERSION=0.1
+MIN_BEAM68=0.1
+AUTHOR=Beam68 contributors
+LICENSE=MIT
+NAME=File Finder
+TRIGGER=/
+PREFIX=FIND:
+COMMAND=PLUGINDIR:FileFinder
+DESCRIPTION=find:<name> searches configured drawers for files and folders.
+CATEGORY=Files
+CAPABILITIES=FILES
+ICON=PROGDIR:Beam68
+EXAMPLE=find:screenmode
+HELP=Searches the configured index roots for matching file and drawer names.

@@ -1,0 +1,17 @@
+# An ARexx plugin: COMMAND points at a .rexx script (protocol 1 only).
+VERSION=1
+ID=org.example.hellorexx
+PLUGIN_VERSION=1.0
+MIN_BEAM68=0.1
+NAME=Hello ARexx
+AUTHOR=Your Name
+LICENSE=MIT
+TRIGGER=;
+PREFIX=HIREXX:
+COMMAND=PLUGINDIR:HelloRexx.rexx
+DESCRIPTION=Greets whoever you type, written in ARexx.
+CATEGORY=Examples
+CAPABILITIES=READONLY
+PREVIEW=YES
+EXAMPLE=hirexx:Amiga
+HELP=Type hirexx: and a name.

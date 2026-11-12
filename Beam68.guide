@@ -1,0 +1,668 @@
+@database Beam68.guide
+@$VER: Beam68.guide 0.1 (27.10.2026)
+@author "Beam68 contributors"
+@(c) "MIT License"
+@wordwrap
+@node MAIN "Beam68 0.1 - Manual"
+
+                    @{b}Beam68 0.1@{ub}
+     A keyboard application launcher for AmigaOS 3.x
+
+  @{" Introduction       " link INTRO}  What Beam68 does
+  @{" Requirements       " link REQUIREMENTS}  What you need
+  @{" Installation       " link INSTALL}  Install, update, uninstall
+  @{" First steps        " link FIRSTSTEPS}  Opening the launcher
+
+  @{" Searching          " link SEARCH}  How results are found and ranked
+  @{" Search scopes      " link SCOPES}  app: file: game: fav: ...
+  @{" Keyboard           " link KEYS}  All launcher keys
+  @{" Result actions     " link ACTIONS}  Launch, open drawer, custom
+  @{" Browsing drawers   " link BROWSE}  Right and Left on drawers
+  @{" Shell commands     " link SHELL}  shell: and >
+  @{" WHDLoad games      " link WHDLOAD}  Finding and starting games
+  @{" More sources       " link SOURCES}  Modules, bookmarks, snippets
+
+  @{" Plugins            " link PLUGINS}  Calculator, clock and more
+  @{" Plugin packages    " link PACKAGES}  Installing third-party plugins
+  @{" Preferences        " link PREFS}  Beam68Prefs, page by page
+  @{" Configuration file " link CONFIG}  Every Beam68.cfg setting
+  @{" ARexx and Shell    " link AREXX}  Remote control
+  @{" Languages          " link LANGUAGES}  Translations
+
+  @{" Safe mode          " link SAFEMODE}  When something goes wrong
+  @{" Troubleshooting    " link TROUBLE}  Common questions
+  @{" Licence and credits" link CREDITS}
+
+@endnode
+
+@node INTRO "Introduction"
+@{b}Introduction@{ub}
+
+Beam68 is a Spotlight/Launchy-style launcher.  Press a hotkey anywhere,
+type a few letters of a program, document, drawer or game, and press
+Enter.
+
+It is written for real Amiga hardware: one program runs on every CPU from
+the 68000 to the 68060, it needs no MUI, ReAction, FPU or TCP/IP stack,
+it uses little memory, and it indexes your drawers in the background
+without slowing down the machine.
+
+Beam68 consists of:
+
+  @{b}Beam68@{ub}        the resident launcher (a Commodity)
+  @{b}Beam68Prefs@{ub}   the settings program in SYS:Prefs
+  @{b}Beam68Ctl@{ub}     a Shell tool to control the launcher
+  @{b}Plugins@{ub}       small programs started from the search field
+
+@endnode
+
+@node REQUIREMENTS "Requirements"
+@{b}Requirements@{ub}
+
+  @{b}AmigaOS 3.0@{ub} or newer (Kickstart 39).  AmigaOS 3.2 is
+  recommended.
+
+  @{b}Any 680x0 CPU@{ub}.  A 68020 or faster with Fast RAM is recommended
+  for large indexes; a 68000 works fine with the default settings.
+
+  @{b}Memory@{ub}: about 300 KB for the resident launcher with the default
+  512-entry index.
+
+Optional:
+
+  workbench.library V44+ (OS 3.1.4, 3.5, 3.9, 3.2) to open drawers from
+  results.  On 3.0/3.1, programs, projects and games still start.
+
+  The @{b}Installer@{ub} utility for the graphical installation (part of
+  OS 3.1 and later; Installer 43.3 for 3.0 is on Aminet).
+
+  @{b}C:LhA@{ub} or @{b}C:UnZip@{ub} (Aminet) to install plugin archives.
+
+  @{b}WHDLoad@{ub} for game support.
+
+@endnode
+
+@node INSTALL "Installation"
+@{b}Installation, update and removal@{ub}
+
+Double-click the @{b}Install@{ub} icon.  The Installer asks what to do:
+
+@{b}Install or update@{ub}
+
+  Choose the drawer in which the Beam68 drawer is created (default
+  SYS:Utilities), the plugins to install and whether Beam68 starts with
+  Workbench.  Beam68Prefs always goes to SYS:Prefs.
+
+  An update stops a running launcher first, keeps all your settings in
+  ENVARC:Beam68 and your icons, adds newly chosen plugins to your
+  configuration and leaves third-party plugins alone.
+
+@{b}Uninstall@{ub}
+
+  Removes the Beam68 drawer (including all plugins), Beam68Prefs and the
+  startup entry, and asks whether to keep your settings.
+
+The chosen drawer is remembered in ENVARC:Beam68/InstallDir.  For
+scripted installs use the Shell installer: @{b}Execute scripts/Install-Beam68@{ub}.
+
+@endnode
+
+@node FIRSTSTEPS "First steps"
+@{b}First steps@{ub}
+
+Start Beam68 (it starts automatically with Workbench if you chose so).
+No window opens: Beam68 waits in the background.
+
+Press @{b}Ctrl+Alt+Space@{ub}.  The launcher opens on the screen you are
+working on.  Type @{i}multi@{ui} and press Enter to start MultiView.
+
+The first start indexes SYS:Tools, SYS:Utilities, SYS:Prefs and
+SYS:System.  This runs in the background and is saved, so later starts
+are instant.  Add your own drawers, such as Work: or Games:, on the
+@{"Indexing page" link PREFS_INDEXING} of Beam68Prefs.
+
+Press the hotkey again or Esc to close the launcher.
+
+@endnode
+
+@node SEARCH "Searching"
+@{b}Searching@{ub}
+
+Beam68 finds a program by:
+
+  the exact name               @{i}ed@{ui}       finds Ed
+  the start of the name        @{i}multi@{ui}    finds MultiView
+  the start of a word          @{i}paint@{ui}    finds Deluxe Paint
+  initial letters              @{i}dp@{ui}       finds Deluxe Paint
+  any part of the name         @{i}view@{ui}     finds MultiView
+  one typing mistake           @{i}scren@{ui}    finds ScreenMode
+  several words                @{i}paint lux@{ui} finds Deluxe Paint
+  aliases and keywords you added in Beam68Prefs
+
+The letters that matched are underlined in the results.
+
+Pinned favorites (F6) and frequently launched programs rank a little
+higher.  With @{b}QUICK_LAUNCH=control alt@{ub} in the configuration,
+Ctrl+Alt+1 ... 9 start favorites 1-9 from anywhere.  With an empty search field the launcher shows your favorites
+and recently used programs.
+
+@endnode
+
+@node SCOPES "Search scopes"
+@{b}Search scopes@{ub}
+
+Start the query with a scope to search only one kind of result:
+
+  @{b}app:@{ub}      tools and executables
+  @{b}file:@{ub}     indexed files (enable Files on the Indexing page)
+  @{b}drawer:@{ub}   drawers
+  @{b}game:@{ub}     WHDLoad games, see @{"WHDLoad games" link WHDLOAD}
+  @{b}volume:@{ub}   mounted volumes and assigns, read live from DOS
+  @{b}doc:@{ub}      documents you opened through Beam68 (last 16)
+  @{b}hidden:@{ub}   results you hid with Shift+Del
+  @{b}mod:@{ub}      music modules (INDEX_MODULES=YES)
+  @{b}web:@{ub}      browser bookmarks (BOOKMARK_FILES)
+  @{b}snip:@{ub}     text snippets; Enter copies the text
+  @{b}script:@{ub}   ARexx scripts in REXX:
+  @{b}prefs:@{ub}    the preference programs in SYS:Prefs
+  @{b}stats:@{ub}    your most-launched programs with their counts
+  @{b}recent:@{ub}   programs you launched before
+  @{b}fav:@{ub}      favorites; @{i}fav:games@{ui} shows the group "games"
+  @{b}plugin:@{ub}   plugin examples and help
+
+@endnode
+
+@node KEYS "Keyboard"
+@{b}Launcher keys@{ub}
+
+  Ctrl+Alt+Space    open or close (changeable in Preferences)
+  Enter             launch the selected result
+  Up / Down         select a result
+  Shift+Up/Down     a page at a time (also PageUp/PageDown)
+  Ctrl+Up/Down      first / last result (also Home/End)
+  Tab               accept a completion, or cycle the result action
+  Ctrl+L or Ctrl+U  clear the search
+  Amiga+V           paste the first clipboard line
+  Ctrl+1 ... Ctrl+9 start favorite 1-9 (in pin order)
+  Mouse wheel       select a result
+  Shift+Del         hide the selected result (in hidden: show it again)
+  Right             on a drawer result (cursor at the end): browse it
+  Left              while browsing (cursor at the start): parent drawer
+  F1 or Help        searchable list of commands, plugins and keys
+  F2                update the index (results stay usable)
+  Shift+F2          rebuild the index from scratch
+  F3 / Shift+F3     reload settings / reload plugins only
+  F4                quit Beam68
+  F5                open Beam68Prefs
+  F6                pin or unpin the selected result as a favorite
+  F7 / Shift+F7     older / newer query history
+  F8                recall the last shell command
+  Esc               cancel a running plugin, or close the launcher
+
+@endnode
+
+@node ACTIONS "Result actions"
+@{b}Result actions@{ub}
+
+Press @{b}Tab@{ub} on a result to cycle its action, then Enter:
+
+  @{b}Launch@{ub}          start it (default)
+  @{b}Run with arguments@{ub}  type arguments, Enter runs the program in a
+                  console (needs Built-in Shell Commands)
+  @{b}Open drawer@{ub}     open the drawer that contains it
+  @{b}Show in Directory Opus@{ub}  open the drawer in an Opus lister (only
+                  offered while Directory Opus 4/5 or Magellan runs)
+  @{b}Information@{ub}     Workbench's Information window
+  @{b}Copy path@{ub}       put the path on the clipboard
+  @{b}custom action@{ub}   defined on the Applications page of Beam68Prefs,
+                  e.g. "Edit" with the command @{i}C:Ed {path}@{ui}
+
+@{b}{path}@{ub} and @{b}{drawer}@{ub} are replaced by the quoted path of the
+result and of its drawer.
+
+@endnode
+
+@node BROWSE "Browsing drawers"
+@{b}Browsing drawers@{ub}
+
+Select a drawer or volume result and press @{b}Right@{ub} (with the cursor at
+the end of the search text).  The launcher lists that drawer: drawers
+first, then files.  Type to filter, Enter opens a file or enters a drawer,
+@{b}Left@{ub} (cursor at the start) goes to the parent, Esc returns to the
+normal search.  Browsing reads the drawer directly; it does not need the
+drawer to be indexed.
+
+@endnode
+
+@node SHELL "Shell commands"
+@{b}Shell commands@{ub}
+
+Type @{b}shell:@{ub} or simply @{b}>@{ub} followed by an AmigaDOS command:
+
+  >dir SYS:
+  shell:list RAM: ALL
+
+The output appears in a console window that closes after success and
+waits when there is something to read.  F8 recalls the last command.
+
+Because this runs any command, it can be switched off on the Plugins page
+of Beam68Prefs (@{b}Built-in Shell Commands@{ub}).
+
+@{b}restart workbench@{ub} and @{b}restart amiga@{ub} restart the Workbench or
+the whole computer; both need a second Enter.
+
+@endnode
+
+@node SOURCES "More index sources"
+@{b}Modules, bookmarks, snippets and scripts@{ub}
+
+@{b}Music modules@{ub}  With INDEX_MODULES=YES, MOD/MED/XM/S3M/IT/AHX and
+similar files (mod.name or name.mod) in the indexed drawers become MOD
+results.  If the player is already running (its ARexx port, by default
+HIPPOPLAYER, exists) Enter sends it the module with the Player ARexx
+command, by default LOAD "{file}", so no second copy starts.  Otherwise
+MODULE_COMMAND starts the player, by default Run >NIL: HippoPlayer
+"{file}".  For other players set the port and command from their ARexx
+documentation.  Add your music drawer as a directory.
+
+@{b}Bookmarks@{ub}  BOOKMARK_FILES lists hotlist files separated by ';'.
+Any layout is read: HTML with one or several links per line or links
+spread over lines (NetSurf, IBrowse and AWeb HTML exports), and plain text
+files with bare http:// addresses, which take the text before the address
+as their title.  Enter opens a bookmark with URL_COMMAND, by default
+OpenURL "{url}" (the OpenURL package on Aminet sends it to your browser).
+
+@{b}Snippets@{ub}  ENVARC:Beam68/Snippets.txt holds name<TAB>text lines.
+Enter copies the text to the clipboard; paste it with Amiga+V.
+
+@{b}ARexx scripts@{ub}  Every .rexx in REXX: is indexed (INDEX_REXX) and
+runs with RX in a console window.
+
+@{b}Preferences@{ub}  prefs: always lists the programs in SYS:Prefs, read
+directly when you search, even if SYS:Prefs is not an indexed drawer.
+
+All of these are set on the @{"Sources page" link PREFS_SOURCES} of Beam68Prefs.
+
+These sources are read on a full index update: F2 picks up new and
+removed entries; after changing an existing snippet's text or a bookmark's
+title press Shift+F2 (complete rebuild).
+
+@endnode
+
+@node WHDLOAD "WHDLoad games"
+@{b}WHDLoad games@{ub}
+
+Beam68 recognises WHDLoad installations in the drawers it indexes:
+
+  @{b}Game icons@{ub} whose Default Tool is WHDLoad - the normal way a
+  WHDLoad game is installed - appear as @{b}GAME@{ub} results and start
+  exactly as if you had double-clicked the icon, with all its tool types.
+
+  @{b}.slave files@{ub} without such an icon also appear.  They are started
+  with @{i}WHDLoad SLAVE=<slave> DATA=<drawer> PRELOAD@{ui}.
+
+Beam68 reads each game's real title and copyright from its slave, so
+"final fight" finds TurricanII, and shows it next to the result.  If the
+game needs a Kickstart image that is missing from DEVS:Kickstarts, Beam68
+says so; press Enter again to start it anyway.  @{b}game:random@{ub} picks a
+game for you.
+
+To use it, add your games drawer (for example Games: or Work:Games) on the
+@{"Indexing page" link PREFS_INDEXING} and keep @{b}WHDLoad games@{ub} ticked.
+A depth of 3 or 4 covers the usual Games/A/Name/ layout.  Type
+@{b}game:@{ub} to search only games.
+
+Configuration: @{b}INDEX_GAMES=YES|NO@{ub} and @{b}WHDLOAD_COMMAND=@{ub}
+(default "WHDLoad", found through the Shell path; use C:WHDLoad or a full
+path if needed).
+
+@endnode
+
+@node PLUGINS "Plugins"
+@{b}Plugins@{ub}
+
+Plugins are small programs you start from the search field with a
+trigger character or a readable prefix, then Enter:
+
+  @{b}=@{ub}  Calculator          =12*(3+4), =$FF+%1010 (hex/binary)
+  @{b}\@@{ub}  Clock               \@
+  @{b}?@{ub}  Memory              ?
+  @{b}/@{ub}  File Finder         find:readme
+  @{b}!@{ub}  System Commands     system:avail, reboot confirm
+  @{b}#@{ub}  Assigns and Volumes dos:assigns, diskfree:RAM:
+  @{b}^@{ub}  Task Manager        tasks, task:break:name:confirm
+  @{b}&@{ub}  Clipboard Tools     clip:show, clip:upper
+  @{b}:@{ub}  Date Utilities      date:add:7, date:weekday:2026-12-24
+  @{b}~@{ub}  Workbench Windows   windows, window:shell
+  @{b}$@{ub}  Developer Tools     dev:hex:255, dev:prot:RWED
+  @{b}%@{ub}  ARexx Runner        rexx:list
+  @{b}|@{ub}  Music Controls      music:next, music:volume 50
+
+Some plugins answer with a list: File Finder, for example, shows up to
+eight matches.  Select one and press Enter to open it; Esc goes back.
+
+The calculator accepts $FF or 0xFF (hexadecimal) and %1010 (binary) and
+shows every result in decimal, hexadecimal and, up to 65535, binary.
+
+@{b}PLUGIN_CACHE=YES@{ub} copies each plugin to T:Beam68/PluginCache the first
+time it runs and starts it from RAM afterwards - much faster on a floppy
+or slow CompactFlash.  (True "resident" programs must be re-entrant, which
+ordinary plugins are not, so each run still starts a fresh copy.)
+
+Press F1 in the launcher for the full list with examples.  Plugins marked
+@{b}SYSTEM@{ub} ask for a second Enter.  A plugin that fails three times in
+a row is quarantined until you enable it again in Beam68Prefs.
+
+@endnode
+
+@node PACKAGES "Plugin packages"
+@{b}Plugin packages@{ub}
+
+Every plugin is a drawer under Beam68/Plugins/ with a .plugin manifest,
+the program and any extra files.  Third-party plugins are distributed as
+.lha or .zip archives containing such a drawer.
+
+To install one, open the @{"Plugins page" link PREFS_PLUGINS} of Beam68Prefs and
+drop the archive (or an unpacked plugin drawer) on the window, or type or
+Browse its path and click @{b}Add@{ub}.  Beam68Prefs shows the plugin's
+author, version, licence and what it may access, and asks before
+installing.  A newer version of an installed plugin replaces it.
+
+Beam68Prefs reads the contents of LHA archives itself and refuses unsafe
+paths before anything is unpacked.  Archives are unpacked with
+@{b}C:LhA@{ub} or @{b}C:UnZip@{ub}.  Without them,
+unpack the archive yourself and install the drawer.
+
+@{b}Remove@{ub} takes a plugin off the list and can also delete its files.
+
+Plugins can also be written in ARexx: a package whose COMMAND is a .rexx
+script runs through RX (RexxMast must be running).  Some plugins show
+their answer while you type (live preview), for example dev:hex:255.
+
+The catalogue (Extras page) lists plugins and themes published as a
+simple index file; select one and choose Install.
+
+Writing plugins: see the @{b}Beam68PluginSDK.guide@{ub} in the SDK archive.
+
+@endnode
+
+@node PREFS "Preferences"
+@{b}Beam68Prefs@{ub}
+
+Open SYS:Prefs/Beam68Prefs, or press F5 in the launcher.  The pages:
+
+  @{" General       " link PREFS_GENERAL}
+  @{" Indexing      " link PREFS_INDEXING}
+  @{" Plugins       " link PREFS_PLUGINS}
+  @{" Appearance    " link PREFS_APPEARANCE}
+  @{" Favorites     " link PREFS_FAVORITES}
+  @{" Applications  " link PREFS_APPLICATIONS}
+  @{" Accessibility " link PREFS_ACCESSIBILITY}
+  @{" Extras        " link PREFS_EXTRAS}
+  @{" Sources       " link PREFS_SOURCES}
+
+@{b}Use@{ub} applies the settings until reboot, @{b}Save@{ub} keeps them,
+@{b}Cancel@{ub} discards changes.  F7/F8 or Left/Right switch pages; the
+Help key opens this manual at the current page.
+
+@endnode
+
+@node PREFS_GENERAL "Preferences: General"
+@{b}General@{ub}
+
+  @{b}Hotkey@{ub}        click Capture... and press the new key combination
+  @{b}Launcher@{ub}      shows whether Beam68 runs; Start (F9), Restart
+                (Shift+F9) and Stop (F10)
+  @{b}Results, size@{ub} number of visible results and window size
+  @{b}History@{ub}       learn from launches to rank programs
+  @{b}Index cache@{ub}   save the index so starting is instant
+
+@{"Back to Preferences" link PREFS}
+@endnode
+
+@node PREFS_INDEXING "Preferences: Indexing"
+@{b}Indexing@{ub}
+
+  @{b}Directories@{ub}   the drawers that are searched (drop drawers here)
+  @{b}Depth@{ub}         how many levels of sub-drawers are searched
+  @{b}Icons@{ub}         index Workbench tools and projects
+  @{b}Executables@{ub}   index programs without icons (slower to scan)
+  @{b}Files@{ub}         index plain files (uses many index entries)
+  @{b}Drawers@{ub}       index drawers
+  @{b}WHDLoad games@{ub} index WHDLoad games, see @{"WHDLoad games" link WHDLOAD}
+  @{b}File patterns@{ub} which files are indexed, e.g. *.guide,*.txt
+  @{b}Excluded@{ub}      drawers to skip, separated by ;
+
+Changes to drawers are noticed automatically; F2 rebuilds the whole index.
+
+@{"Back to Preferences" link PREFS}
+@endnode
+
+@node PREFS_PLUGINS "Preferences: Plugins"
+@{b}Plugins@{ub}
+
+The list shows every plugin with its trigger.  Select one and use
+@{b}Details@{ub} (what it is and may access), @{b}Settings@{ub},
+@{b}Enable/Disable@{ub}, @{b}Up/Down@{ub} (order) and @{b}Remove@{ub}.
+
+Install third-party plugins by dropping their archive on the window - see
+@{"Plugin packages" link PACKAGES}.  With a plugin selected, the Help key
+opens that plugin's own guide if it has one.
+
+@{b}Timeout@{ub} is how long the launcher waits for a plugin.
+@{b}Export report@{ub} writes RAM:Beam68-Diagnostics.txt.
+@{b}Built-in Shell Commands@{ub} enables shell: and >.
+
+@{"Back to Preferences" link PREFS}
+@endnode
+
+@node PREFS_APPEARANCE "Preferences: Appearance"
+@{b}Appearance@{ub}
+
+Choose the Workbench colours, one of four Catppuccin-inspired themes or
+your own colours.  @{b}Edit colours...@{ub} opens red/green/blue sliders for
+each colour of the custom theme.  More themes are in Beam68/Themes and in
+the plugin catalogue; load one with Theme file -> Import.  Changes are previewed in the open launcher.  Themes can
+be exported to and imported from .theme files.  On screens with few
+colours Beam68 falls back to the Workbench colours.
+
+@{"Back to Preferences" link PREFS}
+@endnode
+
+@node PREFS_FAVORITES "Preferences: Favorites"
+@{b}Favorites@{ub}
+
+Favorites appear first when the search field is empty.  Each has a group,
+so @{b}fav:games@{ub} lists only the "games" group.  Add programs by
+dropping their icons here, or press F6 on a result in the launcher.
+
+@{"Back to Preferences" link PREFS}
+@endnode
+
+@node PREFS_APPLICATIONS "Preferences: Applications"
+@{b}Applications@{ub}
+
+Give programs extra search words (aliases), for example "paint graphics"
+for Deluxe Paint, and an optional custom action with a label and a
+command; see @{"Result actions" link ACTIONS}.
+
+@{"Back to Preferences" link PREFS}
+@endnode
+
+@node PREFS_ACCESSIBILITY "Preferences: Accessibility"
+@{b}Accessibility@{ub}
+
+  @{b}Launcher font@{ub}  any font from FONTS: (Choose... opens a requester)
+  @{b}Row spacing@{ub}    space between result rows
+  @{b}High-contrast@{ub}  selection drawn in the Workbench fill colours
+  @{b}Larger gadgets@{ub} for Beam68Prefs
+  @{b}Reduced colors@{ub} never allocate theme colours
+  @{b}Compact@{ub}        smaller launcher on low-resolution screens
+
+@{"Back to Preferences" link PREFS}
+@endnode
+
+@node PREFS_EXTRAS "Preferences: Extras"
+@{b}Extras@{ub}
+
+  @{b}Favorite keys@{ub}    qualifiers for global favorite keys, e.g.
+                   "control alt" gives Ctrl+Alt+1 ... 9 (empty = off)
+  @{b}WHDLoad command@{ub}  how icon-less .slave files are started
+  @{b}Opus ARexx port@{ub}  Directory Opus port, normally DOPUS.1
+  @{b}Open drawers in Directory Opus@{ub}  while Opus runs
+  @{b}Run plugins from a RAM copy@{ub}  faster on floppy or slow CF
+  @{b}Results kept@{ub}     8-64 results that can be scrolled
+  @{b}Browse entries@{ub}   16-512 entries listed when browsing a drawer
+  @{b}Hidden max@{ub}       1-256 results you can hide
+  @{b}Recent docs@{ub}      1-64 documents remembered for doc:
+  @{b}Export/Import preset@{ub}  save or load a complete setup (settings,
+                   favorites, aliases, hidden results, plugin settings) as
+                   one .preset file
+  @{b}Plugin catalogue@{ub}  browse and install plugins and themes from a
+                   catalogue index (URL or file).  Downloads use
+                   DOWNLOAD_COMMAND, by default wget from Aminet.
+
+@{"Back to Preferences" link PREFS}
+@endnode
+
+@node PREFS_SOURCES "Preferences: Sources"
+@{b}Sources@{ub}
+
+  @{b}Index music modules@{ub}  modules in the indexed drawers (mod:)
+  @{b}Player port@{ub}          ARexx port of a running player (HIPPOPLAYER)
+  @{b}Player ARexx@{ub}         command sent to it, {file} = the module
+  @{b}Start player@{ub}         command when the player is not running
+  @{b}Index ARexx scripts@{ub}  scripts in REXX: (script:)
+  @{b}Bookmark files@{ub}       hotlists, ';'-separated; Browse adds one
+  @{b}Open URL with@{ub}        command for bookmarks, {url} = the address
+
+See @{"More index sources" link SOURCES}.
+
+@{"Back to Preferences" link PREFS}
+@endnode
+
+@node CONFIG "Configuration file"
+@{b}Configuration@{ub}
+
+Settings are plain text: ENV:Beam68/Beam68.cfg (current) and
+ENVARC:Beam68/Beam68.cfg (saved).  Beam68Prefs edits them for you; after a
+manual edit press F3 in the launcher.
+
+  HOTKEY=rawkey control alt space
+  DIR=SYS:Tools               (repeat for each drawer)
+  EXCLUDE_DIR=SYS:Trashcan    (repeat)
+  MAX_DEPTH=4                 MAX_ITEMS=512
+  SCAN_ICONS=YES              SCAN_EXECUTABLES=NO
+  INDEX_FILES=NO              INDEX_DRAWERS=YES
+  INDEX_GAMES=YES             WHDLOAD_COMMAND=WHDLoad
+  QUICK_LAUNCH=control alt    (optional: global keys for favorites 1-9)
+  DOPUS_PORT=DOPUS.1          OPEN_DRAWERS_IN_DOPUS=NO
+  PLUGIN_CACHE=NO             (YES: run plugins from a RAM copy)
+  RESULTS_MAX=32  BROWSE_MAX=128  HIDDEN_MAX=32  RECENT_DOCS=16
+  CATALOGUE_URL=http://...    DOWNLOAD_COMMAND=wget -q -O "{file}" "{url}"
+  INDEX_REXX=YES  INDEX_MODULES=NO  BOOKMARK_FILES=a.html;b.html
+  MODULE_COMMAND=Run >NIL: HippoPlayer "{file}"   URL_COMMAND=OpenURL "{url}"
+  MODULE_PORT=HIPPOPLAYER     MODULE_AREXX=LOAD "{file}"
+  FILE_PATTERNS=*             INDEX_CACHE=YES
+  HISTORY=YES                 SHELL_COMMANDS=YES
+  VISIBLE_RESULTS=6           WINDOW_WIDTH=550   WINDOW_HEIGHT=0
+  THEME=WORKBENCH             CUSTOM_COLORS=CDD6F4,585B70,F38BA8,1E1E2E,11111B
+  FONT_NAME=topaz.font        FONT_SIZE=8        ROW_SPACING=7
+  HIGH_CONTRAST=NO            LARGE_GADGETS=NO   REDUCED_COLORS=NO
+  COMPACT_MODE=AUTO           PLUGIN_TIMEOUT=30  ICON_PREVIEW=NO
+  PLUGIN=PROGDIR:Plugins/Calc/Calc.plugin       (repeat)
+  PLUGIN_DISABLED=...         INSTALL_DIR=SYS:Utilities/Beam68
+
+Other files in ENVARC:Beam68: Favorites.txt, Aliases.txt, History.txt and
+the Plugins drawer with plugin settings.  The index cache is
+Beam68.index next to the launcher.
+
+@endnode
+
+@node AREXX "ARexx and Shell"
+@{b}ARexx and Shell control@{ub}
+
+ARexx port @{b}BEAM68@{ub}:
+
+  SHOW  HIDE  RELOAD  RELOADPLUGINS  REINDEX  QUIT
+  STATUS  INDEX  VERSION  PLUGINS  PLUGIN <n>  HELP
+
+Example: @{i}rx "address BEAM68 'SHOW'"@{ui}
+
+From the Shell: @{b}Beam68Ctl RELOAD|RELOADPLUGINS|REINDEX|SHOW|HIDE|QUIT@{ub}
+@{b}Beam68Ctl STATUS@{ub} returns 0 when Beam68 runs and 5 when not;
+@{b}Beam68Ctl QUITWAIT@{ub} quits and waits until it has stopped.
+
+@{b}TIMING@{ub} reports the last search, cache-load, scan and startup times
+in microseconds - useful when tuning a slow machine.
+
+Start @{b}Beam68 SAFE@{ub} for a single start in safe mode.
+
+@endnode
+
+@node LANGUAGES "Languages"
+@{b}Languages@{ub}
+
+The launcher speaks the language set in the Locale preferences when a
+translation exists.  Included: @{b}deutsch@{ub} and @{b}svenska@{ub}.  Catalogs
+are installed in Beam68/Catalogs/<language>/Beam68.catalog; a catalog in
+LOCALE:Catalogs works too.  Without a translation English is used.
+
+Translators: start from catalogs/Beam68.cd in the source archive (the
+standard CatComp/FlexCat format) and send the .ct file to the project.
+
+Beam68Prefs and the bundled plugins have their own catalogs
+(Beam68Prefs.catalog, Beam68Plugins.catalog) in LOCALE:Catalogs; Beam68Ctl
+uses the launcher's catalog.  The installer follows the Locale language
+too.  Deliberately left in English: ARexx replies and Beam68Ctl STATUS
+output (scripts parse them), plugin command words such as "find:" or
+"reboot confirm", and the weekday names of Date Utilities.
+
+@endnode
+
+@node SAFEMODE "Safe mode"
+@{b}Safe mode@{ub}
+
+If Beam68 crashes within its first seconds - for example because of a
+broken plugin or theme - the next start runs in @{b}safe mode@{ub}: no
+plugins, Workbench colours.  The start after that is normal again.
+Switching the Amiga off never triggers safe mode.
+
+Force it with @{b}Beam68 SAFE@{ub} or by creating ENV:Beam68/SafeMode.
+
+@endnode
+
+@node TROUBLE "Troubleshooting"
+@{b}Troubleshooting@{ub}
+
+@{b}Nothing happens when I press the hotkey.@{ub}
+  Check that Beam68 runs (Exchange lists it).  Another program may use the
+  same keys: choose a different hotkey on the General page.
+
+@{b}A program is not found.@{ub}
+  Is its drawer listed on the Indexing page and within the depth?  Press F2
+  to rebuild the index.  "Index full" in the status line: raise MAX_ITEMS.
+
+@{b}Opening a drawer does nothing on OS 3.1.@{ub}
+  That needs workbench.library V44 (OS 3.1.4 or newer).
+
+@{b}A plugin times out.@{ub}
+  Raise the timeout on the Plugins page; after three failures a plugin is
+  quarantined - use Enable/Disable to clear it.
+
+@{b}Installing a plugin archive fails.@{ub}
+  Install C:LhA or C:UnZip from Aminet, or unpack the archive and drop the
+  plugin drawer on the Plugins page.
+
+@endnode
+
+@node CREDITS "Licence and credits"
+@{b}Licence@{ub}
+
+Beam68 is free software under the MIT licence.  Copyright 2026 Beam68
+contributors.
+
+Built with vbcc and the AmigaOS 3.2 NDK.  Themes inspired by Catppuccin.
+WHDLoad is by Bert Jahn.
+
+@endnode

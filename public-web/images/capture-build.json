@@ -1,0 +1,23 @@
+{
+  "version": "0.1",
+  "code_sha256": "2c3b0b2334723f8ba8b2be369a12ce3d011af301f38d83bee50a314646698dee",
+  "binaries": {
+    "Beam68": "438da80359bbf6a019a2370c26cc7550f8b4dae8093430ff4484b123cde541e8",
+    "Beam68Prefs": "7ae0e4babf3d10f38bf8fcf35e8957331490ea38086a2508c658e82361a0a90a",
+    "Beam68Ctl": "6f6676c640f78f8eb897eba78209169bd0a5b14483966dd7bb47ebb1fc97212a",
+    "CreateIcons": "8cbcf8a82fca57012d80a9a1b1734c8984c77c9528db0fd6fcbc0da7d63f1c45",
+    "Plugins/ARexxRunner/ARexxRunner": "83bf808ae82e8f3f5e81fb2ba1c26acdd847b17d55149ff1933c4ab60379fd6f",
+    "Plugins/Calc/Calc": "f05e844ffd9b9086645111c7c034bdfa9bb21af40783df5da7e47bc10a8b5cf7",
+    "Plugins/ClipboardTools/ClipboardTools": "1add8fe7482a7a83d95f5ed44339715166cc1d20b391b62f2f5eaba1a93e0e43",
+    "Plugins/Clock/Clock": "f86e279f35bedbfe1f587300a99838b6ce39e1cdd663824c945e4398c9b13a7b",
+    "Plugins/DateUtilities/DateUtilities": "840d3805c0cf05105620e41db7a0974faa5616d4396243c2eb6a50868c38869f",
+    "Plugins/DeveloperTools/DeveloperTools": "8adfa9d161542750f30f828c35e04756551ce1d1d4608d52c685cec71712d89d",
+    "Plugins/DosTools/DosTools": "00817a550a869a189bb371260ee04291b5d4df9db1405e14cf8532260e41828a",
+    "Plugins/FileFinder/FileFinder": "e96bd23e8bc79f9ae482647d07e5a2d69db7536dc542d8fbb5c683ac05da513b",
+    "Plugins/Memory/Memory": "fc0ce14b505523539acd35cb958fbbe0e6ef9c9fe926a982105614b90f9e2e69",
+    "Plugins/MusicControls/MusicControls": "971f140a3f881da51216782b61dc5f3e4556d03bdfe2bb8b87de10d547b2ad7f",
+    "Plugins/SystemCommands/SystemCommands": "1a0e0a01befe2d6dbeb24ad7c68bde977189352334e7aae8cda18e6eb1a43f4f",
+    "Plugins/TaskManager/TaskManager": "3a2e3bd25dd3db1daa336a4d06ffa2667e5bcf8d7f8b4369d6d146462f6514f6",
+    "Plugins/WindowSwitcher/WindowSwitcher": "46e1bf4a36381ac6750a23bd229e12c6cdd9a4aa3bf44417f3c913f612a61b84"
+  }
+}

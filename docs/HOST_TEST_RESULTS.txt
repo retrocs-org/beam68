@@ -1,0 +1,81 @@
+gcc -std=c89 -O2 -Wall -Wextra -Werror -Iinclude -o build/test_core tests/test_core.c src/matcher.c src/calc_engine.c src/protocol.c
+./build/test_core
+All portable core tests passed.
+gcc -std=c89 -O2 -Wall -Wextra -Werror -Iinclude -o build/test_search_rank tests/test_search_rank.c src/search_rank.c src/matcher.c
+./build/test_search_rank
+Search rank: names, aliases, pins, history and blank-query order: PASS
+gcc -std=c99 -O2 -Wall -Wextra -Werror -Itests/fake_ndk -Iinclude -o build/test_aliases tests/test_aliases.c tests/fake_dos.c src/aliases.c src/config.c src/appearance.c
+./build/test_aliases
+Aliases: validation, replacement, persistence and fallback: PASS
+gcc -std=c99 -O2 -Wall -Wextra -Werror -Itests/fake_ndk -Iinclude -o build/test_config tests/test_config.c tests/fake_dos.c src/config.c src/appearance.c
+./build/test_config
+Config read/write, ENV/ENVARC fallback, backup, unknown keys: PASS
+gcc -std=c99 -O2 -Wall -Wextra -Werror -Itests/fake_ndk -Iinclude -o build/test_plugin_settings tests/test_plugin_settings.c tests/fake_dos.c src/config.c src/appearance.c
+./build/test_plugin_settings
+Plugin enable/disable, manual order, dedup, persistence, stale cleanup: PASS
+gcc -std=c99 -O2 -Wall -Wextra -Werror -Itests/fake_ndk -Iinclude -o build/test_history tests/test_history.c tests/fake_dos.c src/history.c
+./build/test_history
+Bounded text history, load/save, case folding, saturation: PASS
+gcc -std=c99 -O2 -Wall -Wextra -Werror -Itests/fake_ndk -Iinclude -o build/test_query_history tests/test_query_history.c tests/fake_dos.c src/query_history.c
+./build/test_query_history
+Recent query history, recall, dedup and persistence: PASS
+gcc -std=c99 -O2 -Wall -Wextra -Werror -Itests/fake_ndk -Iinclude -o build/test_plugin_health tests/test_plugin_health.c tests/fake_dos.c src/plugin_health.c
+./build/test_plugin_health
+Plugin health counters, quarantine, reset and persistence: PASS
+gcc -std=c99 -O2 -Wall -Wextra -Werror -Itests/fake_ndk -Iinclude -o build/test_favorites tests/test_favorites.c tests/fake_dos.c src/favorites.c
+./build/test_favorites
+Favorites: case folding, toggle, comment parsing, capacity, ENV priority, atomic files: PASS
+gcc -std=c89 -O2 -Wall -Wextra -Werror -Iinclude -o build/test_actions tests/test_actions.c src/actions.c
+./build/test_actions
+Result actions, drawer parsing, shell/restart commands, navigation: PASS
+gcc -std=c99 -O2 -Wall -Wextra -Werror -Itests/fake_ndk -Iinclude -o build/test_cache tests/test_cache.c tests/fake_dos.c src/index_cache.c
+./build/test_cache
+Text index cache, fingerprint, hex escaping, corruption recovery: PASS
+gcc -std=c89 -O2 -Wall -Wextra -Werror -Iinclude -o build/test_plugin_job tests/test_plugin_job.c src/plugin_job.c src/protocol.c
+./build/test_plugin_job
+Async plugin job, hex encoding, reply validation, timeout: PASS
+gcc -std=c99 -O2 -Wall -Wextra -Werror -Itests/fake_ndk -Iinclude -o build/test_plugin_reply tests/test_plugin_reply.c tests/fake_dos.c src/plugin_reply.c
+./build/test_plugin_reply
+Atomic plugin result publication, bounds and cleanup: PASS
+gcc -std=c99 -O2 -Wall -Wextra -Werror -Itests/fake_ndk -Iinclude -o build/test_plugin_common tests/test_plugin_common.c tests/fake_dos.c src/protocol.c src/plugin_reply.c src/plugin_common.c
+./build/test_plugin_common
+Plugin command text helpers: PASS
+gcc -std=c89 -O2 -Wall -Wextra -Werror -Iinclude -o build/test_scan_status tests/test_scan_status.c src/scan_status.c
+./build/test_scan_status
+Index scan progress, cache-completeness policy and diagnostics: PASS
+gcc -std=c89 -O2 -Wall -Wextra -Werror -Iinclude -o build/test_completion tests/test_completion.c src/completion.c
+./build/test_completion
+Visible completion candidates, deduplication and wrapping selection: PASS
+gcc -std=c89 -O2 -Wall -Wextra -Werror -Iinclude -o build/test_music_control tests/test_music_control.c src/music_control.c
+./build/test_music_control
+Music controls parsing and player-specific ARexx mapping: PASS
+gcc -std=c89 -O2 -Wall -Wextra -Werror -Iinclude -o build/test_wb_drop tests/test_wb_drop.c src/wb_drop.c
+./build/test_wb_drop
+Workbench drop filters, bounds and paths: PASS
+gcc -std=c89 -O2 -Wall -Wextra -Werror -Iinclude -o build/test_hotkey_capture tests/test_hotkey_capture.c src/hotkey_capture.c
+./build/test_hotkey_capture
+Hotkey capture formatting tests passed.
+gcc -std=c89 -O2 -Wall -Wextra -Werror -Iinclude -o build/test_launcher_ui tests/test_launcher_ui.c src/launcher_ui.c
+./build/test_launcher_ui
+Launcher inline edit, limits, mouse hit testing: PASS
+gcc -std=c89 -O2 -Wall -Wextra -Werror -Iinclude -o build/test_appearance tests/test_appearance.c src/appearance.c
+./build/test_appearance
+appearance tests passed
+gcc -std=c89 -O2 -Wall -Wextra -Werror -Iinclude -o build/test_recovery tests/test_recovery.c src/recovery.c
+./build/test_recovery
+Low-memory retry and no-results assistance: PASS
+gcc -std=c89 -O2 -Wall -Wextra -Werror -Iinclude -o build/test_rexx_commands tests/test_rexx_commands.c src/rexx_commands.c src/plugin_diagnostics.c
+./build/test_rexx_commands
+rexx command and plugin diagnostic tests: PASS
+gcc -std=c99 -O2 -Wall -Wextra -Werror -Itests/fake_ndk -Iinclude -o build/test_plugin_catalog tests/test_plugin_catalog.c tests/fake_dos.c src/config.c src/appearance.c src/plugin_catalog.c src/plugin_diagnostics.c
+./build/test_plugin_catalog
+Plugin details, triggers, disabled, missing files, bundled discovery, safe settings path, install dir: PASS
+FINAL RUN — 25 October 2026
+- `make host-test`: PASS, 26 portable C test programs.
+- New coverage: search-scope parsing, filename patterns, excluded drawers,
+  grouped favorites, plugin capability parsing and portable theme-file
+  import/export with invalid-file rollback, plus safe discovery of shipped
+  manifests as disabled entries for older configurations.
+- Beam68.info and Beam68Prefs.info binary DiskObject checks: PASS.
+- `python3 tests/test_public_web.py`: PASS.
+

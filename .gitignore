@@ -1,0 +1,57 @@
+# Local build output
+/build/
+*.o
+*.pyc
+__pycache__/
+.pytest_cache/
+*.swp
+.DS_Store
+
+# Native binaries and generated archives
+/Beam68
+/Beam68Prefs
+/Beam68Ctl
+/CreateIcons
+/Plugins/ARexxRunner/ARexxRunner
+/Plugins/Calc/Calc
+/Plugins/ClipboardTools/ClipboardTools
+/Plugins/Clock/Clock
+/Plugins/DateUtilities/DateUtilities
+/Plugins/DeveloperTools/DeveloperTools
+/Plugins/DosTools/DosTools
+/Plugins/FileFinder/FileFinder
+/Plugins/Memory/Memory
+/Plugins/MusicControls/MusicControls
+/Plugins/SystemCommands/SystemCommands
+/Plugins/TaskManager/TaskManager
+/Plugins/WindowSwitcher/WindowSwitcher
+/Plugins/*.lha
+/Plugins/*.zip
+/*.zip
+/dist/
+
+# Generated, verified release metadata (included by the archive packager).
+/BUILD-PROVENANCE.json
+
+# Machine-specific release settings, prepared artifacts and publication receipts
+/work/
+/outputs/
+
+# Private credentials and local editor settings
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+.netrc
+.npmrc
+.pypirc
+.git-credentials
+id_rsa
+id_ed25519
+*.log
+/release-config.json
+/RELEASE-BUILD.json
+/.vscode/
+/sdk/Example/HelloWorld/HelloWorld

@@ -1,0 +1,78 @@
+FailAt 20
+Echo "Beam68 0.1 Music Controls AmigaOS test started" >Bin:Beam68/music-test.log
+Bin:Beam68/Plugins/MusicControls/MusicControls 706C6179657273 T:Beam68-Music-Players
+If WARN
+ Echo "Music player discovery: FAIL" >>Bin:Beam68/music-test.log
+ Quit 10
+EndIf
+Type T:Beam68-Music-Players >>Bin:Beam68/music-test.log
+Delete T:Beam68-Music-Players >NIL:
+Echo "Music player discovery: PASS" >>Bin:Beam68/music-test.log
+Bin:Beam68/Plugins/MusicControls/MusicControls 737461747573 T:Beam68-Music-Status
+If WARN
+ Echo "No-player status handling: FAIL" >>Bin:Beam68/music-test.log
+ Quit 10
+EndIf
+Type T:Beam68-Music-Status >>Bin:Beam68/music-test.log
+Delete T:Beam68-Music-Status >NIL:
+Echo "No-player status handling: PASS" >>Bin:Beam68/music-test.log
+Run >NIL: <NIL: SYS:Audio/HippoPlayer HIDE
+Wait 3
+Bin:Beam68/Plugins/MusicControls/MusicControls 686970706F20737461747573 T:Beam68-Music-Hippo
+Type T:Beam68-Music-Hippo >>Bin:Beam68/music-test.log
+Search FROM T:Beam68-Music-Hippo SEARCH "not running" QUIET
+If WARN
+ Search FROM T:Beam68-Music-Hippo SEARCH "ERROR=" QUIET
+ If WARN
+  Echo "HippoPlayer ARexx status: PASS" >>Bin:Beam68/music-test.log
+ Else
+  Echo "HippoPlayer ARexx status: FAIL" >>Bin:Beam68/music-test.log
+  Quit 10
+ EndIf
+Else
+ Echo "HippoPlayer ARexx status: FAIL" >>Bin:Beam68/music-test.log
+ Quit 10
+EndIf
+Delete T:Beam68-Music-Hippo >NIL:
+Rx "ADDRESS 'HIPPOPLAYER'; QUIT" >NIL:
+Wait 2
+Run >NIL: <NIL: SYS:Audio/AmigaAMP3/AmigaAMP
+Wait 4
+Bin:Beam68/Plugins/MusicControls/MusicControls 616D696761616D7020737461747573 T:Beam68-Music-AmigaAMP
+Type T:Beam68-Music-AmigaAMP >>Bin:Beam68/music-test.log
+Search FROM T:Beam68-Music-AmigaAMP SEARCH "not running" QUIET
+If WARN
+ Search FROM T:Beam68-Music-AmigaAMP SEARCH "ERROR=" QUIET
+ If WARN
+  Echo "AmigaAMP ARexx status: PASS" >>Bin:Beam68/music-test.log
+ Else
+  Echo "AmigaAMP ARexx status: FAIL" >>Bin:Beam68/music-test.log
+  Quit 10
+ EndIf
+Else
+ Echo "AmigaAMP ARexx status: FAIL" >>Bin:Beam68/music-test.log
+ Quit 10
+EndIf
+Delete T:Beam68-Music-AmigaAMP >NIL:
+Rx "ADDRESS 'AMIGAAMP'; QUIT" >NIL:
+Wait 2
+Run >NIL: <NIL: SYS:Audio/Eagleplayer2/Eagleplayer NoGUI
+Wait 4
+Bin:Beam68/Plugins/MusicControls/MusicControls 6561676C6520737461747573 T:Beam68-Music-Eagle
+Type T:Beam68-Music-Eagle >>Bin:Beam68/music-test.log
+Search FROM T:Beam68-Music-Eagle SEARCH "not running" QUIET
+If WARN
+ Search FROM T:Beam68-Music-Eagle SEARCH "ERROR=" QUIET
+ If WARN
+  Echo "EaglePlayer 2 ARexx status: PASS" >>Bin:Beam68/music-test.log
+ Else
+  Echo "EaglePlayer 2 ARexx status: FAIL" >>Bin:Beam68/music-test.log
+  Quit 10
+ EndIf
+Else
+ Echo "EaglePlayer 2 ARexx status: FAIL" >>Bin:Beam68/music-test.log
+ Quit 10
+EndIf
+Delete T:Beam68-Music-Eagle >NIL:
+Rx "ADDRESS 'rexx_EP'; QUIT" >NIL:
+Echo "Beam68 0.1 Music Controls AmigaOS test: PASS" >>Bin:Beam68/music-test.log

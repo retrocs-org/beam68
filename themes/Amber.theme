@@ -1,0 +1,8 @@
+# Beam68 0.1 portable theme
+#ID=org.beam68.theme.amber
+#NAME=Amber
+#VERSION=1.0
+#AUTHOR=Beam68 contributors
+#DESCRIPTION=Warm amber on near-black, like an old terminal
+BEAM68THEME=1
+COLORS=FFB000,6B4A00,FFB000,1A1200,140E00

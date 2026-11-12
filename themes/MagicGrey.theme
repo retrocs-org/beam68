@@ -1,0 +1,8 @@
+# Beam68 0.1 portable theme
+#ID=org.beam68.theme.magicgrey
+#NAME=MagicGrey
+#VERSION=1.0
+#AUTHOR=Beam68 contributors
+#DESCRIPTION=MagicWB-style greys with a blue selection
+BEAM68THEME=1
+COLORS=000000,7B7B7B,6B8CB5,FFFFFF,AAAAAA

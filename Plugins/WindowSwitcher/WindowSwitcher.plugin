@@ -1,0 +1,16 @@
+VERSION=1
+ID=org.beam68.windowswitcher
+PLUGIN_VERSION=0.1
+MIN_BEAM68=0.1
+AUTHOR=Beam68 contributors
+LICENSE=MIT
+NAME=Workbench Windows
+TRIGGER=~
+PREFIX=WINDOW:
+COMMAND=PLUGINDIR:WindowSwitcher
+DESCRIPTION=windows lists titles; window:name or screen:name brings one forward.
+CATEGORY=Workbench
+CAPABILITIES=WORKBENCH
+ICON=PROGDIR:Beam68
+EXAMPLE=window:windows
+HELP=Searches public screens and Workbench windows and brings a match forward.

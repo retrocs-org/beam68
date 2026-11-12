@@ -1,0 +1,16 @@
+# Beam68 external plugin protocol v1
+VERSION=1
+ID=org.beam68.calc
+PLUGIN_VERSION=0.1
+MIN_BEAM68=0.1
+AUTHOR=Beam68 contributors
+LICENSE=MIT
+NAME=Calculator
+TRIGGER==
+COMMAND=PLUGINDIR:Calc
+DESCRIPTION=Type = 2*(5+3), then press Enter. Integer, no FPU needed.
+CATEGORY=Utilities
+CAPABILITIES=READONLY
+ICON=PROGDIR:Beam68
+EXAMPLE==12*(3+4)
+HELP=Integer arithmetic with +, -, *, / and parentheses.

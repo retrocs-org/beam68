@@ -1,0 +1,17 @@
+VERSION=1
+ID=org.beam68.developertools
+PLUGIN_VERSION=0.1
+MIN_BEAM68=0.1
+AUTHOR=Beam68 contributors
+LICENSE=MIT
+NAME=Developer Tools
+TRIGGER=$
+PREFIX=DEV:
+COMMAND=PLUGINDIR:DeveloperTools
+DESCRIPTION=hex:N, dec:$FF, ascii:N, mask:0,3,7, or prot:RWED.
+CATEGORY=Development
+CAPABILITIES=READONLY
+PREVIEW=YES
+ICON=PROGDIR:Beam68
+EXAMPLE=dev:hex:255
+HELP=Number conversion, ASCII, bit masks and Amiga protection bits.

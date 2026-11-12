@@ -1,0 +1,276 @@
+; AmigaOS 3.x Shell installer (run from the folder containing built executables).
+; Most users should double-click the "Install" icon instead: the GUI
+; installer (AmigaOS Installer utility) also updates and uninstalls.
+; Execute scripts/Install-Beam68
+; Copies new executables while preserving existing ENV/ENVARC settings.
+; Close an existing resident Beam68 using Exchange or Beam68Ctl QUIT
+; and confirm it is gone before running the installer. Never install
+; over a running launcher on a classic filesystem.
+; Make missing build products fatal before changing SYS: directories.
+IF NOT EXISTS Beam68
+ Echo "Missing Beam68: build the m68k binaries first."
+ Quit 20
+ENDIF
+IF NOT EXISTS Beam68Prefs
+ Echo "Missing Beam68Prefs: build the m68k binaries first."
+ Quit 20
+ENDIF
+IF NOT EXISTS Beam68.info
+ Echo "Missing Beam68 Workbench icon."
+ Quit 20
+ENDIF
+IF NOT EXISTS Beam68Prefs.info
+ Echo "Missing Beam68Prefs Workbench icon."
+ Quit 20
+ENDIF
+IF NOT EXISTS Beam68Ctl
+ Echo "Missing Beam68Ctl: build the m68k binaries first."
+ Quit 20
+ENDIF
+IF NOT EXISTS CreateIcons
+ Echo "Missing CreateIcons: build the m68k binaries first."
+ Quit 20
+ENDIF
+IF NOT EXISTS Aliases.txt
+ Echo "Missing Aliases.txt template."
+ Quit 20
+ENDIF
+IF NOT EXISTS Plugins/Calc/Calc
+ Echo "Missing Calc executable."
+ Quit 20
+ENDIF
+IF NOT EXISTS Plugins/Clock/Clock
+ Echo "Missing Clock executable."
+ Quit 20
+ENDIF
+IF NOT EXISTS Plugins/Memory/Memory
+ Echo "Missing Memory executable."
+ Quit 20
+ENDIF
+IF NOT EXISTS Plugins/MusicControls/MusicControls
+ Echo "Missing Music Controls executable."
+ Quit 20
+ENDIF
+; Abort the script on failed copies or icon generation.
+FailAt 5
+IF NOT EXISTS SYS:Utilities/Beam68
+ MakeDir SYS:Utilities/Beam68
+ENDIF
+IF NOT EXISTS SYS:Utilities/Beam68/Plugins
+ MakeDir SYS:Utilities/Beam68/Plugins
+ENDIF
+IF NOT EXISTS ENV:Beam68
+ MakeDir ENV:Beam68
+ENDIF
+IF NOT EXISTS ENVARC:Beam68
+ MakeDir ENVARC:Beam68
+ENDIF
+IF NOT EXISTS ENVARC:Beam68/Plugins
+ MakeDir ENVARC:Beam68/Plugins
+ENDIF
+IF NOT EXISTS SYS:WBStartup
+ MakeDir SYS:WBStartup
+ENDIF
+Copy Beam68 SYS:Utilities/Beam68/Beam68
+Copy Beam68.info SYS:Utilities/Beam68/Beam68.info
+Copy Beam68Prefs SYS:Prefs/Beam68Prefs
+Copy Beam68Prefs.info SYS:Prefs/Beam68Prefs.info
+Copy Beam68Ctl SYS:Utilities/Beam68/Beam68Ctl
+Copy Aliases.txt SYS:Utilities/Beam68/Aliases.txt
+Copy Beam68.cfg SYS:Utilities/Beam68/Beam68.cfg
+; Each plugin is a self-contained drawer (a plugin package).
+; Upgrades from the flat 0.1 layout remove Plugins/<Name> files first,
+; because a drawer of the same name replaces them.
+IF EXISTS SYS:Utilities/Beam68/Plugins/Calc.plugin
+ Delete SYS:Utilities/Beam68/Plugins/Calc.plugin QUIET FORCE
+ Delete SYS:Utilities/Beam68/Plugins/Calc QUIET FORCE
+ENDIF
+IF NOT EXISTS SYS:Utilities/Beam68/Plugins/Calc
+ MakeDir SYS:Utilities/Beam68/Plugins/Calc
+ENDIF
+Copy Plugins/Calc/Calc SYS:Utilities/Beam68/Plugins/Calc/Calc CLONE
+Copy Plugins/Calc/Calc.plugin SYS:Utilities/Beam68/Plugins/Calc/Calc.plugin
+IF EXISTS SYS:Utilities/Beam68/Plugins/Clock.plugin
+ Delete SYS:Utilities/Beam68/Plugins/Clock.plugin QUIET FORCE
+ Delete SYS:Utilities/Beam68/Plugins/Clock QUIET FORCE
+ENDIF
+IF NOT EXISTS SYS:Utilities/Beam68/Plugins/Clock
+ MakeDir SYS:Utilities/Beam68/Plugins/Clock
+ENDIF
+Copy Plugins/Clock/Clock SYS:Utilities/Beam68/Plugins/Clock/Clock CLONE
+Copy Plugins/Clock/Clock.plugin SYS:Utilities/Beam68/Plugins/Clock/Clock.plugin
+IF NOT EXISTS ENVARC:Beam68/Plugins/Clock.cfg
+ Copy Plugins/Clock/Clock.cfg ENVARC:Beam68/Plugins/Clock.cfg
+ENDIF
+IF EXISTS SYS:Utilities/Beam68/Plugins/Memory.plugin
+ Delete SYS:Utilities/Beam68/Plugins/Memory.plugin QUIET FORCE
+ Delete SYS:Utilities/Beam68/Plugins/Memory QUIET FORCE
+ENDIF
+IF NOT EXISTS SYS:Utilities/Beam68/Plugins/Memory
+ MakeDir SYS:Utilities/Beam68/Plugins/Memory
+ENDIF
+Copy Plugins/Memory/Memory SYS:Utilities/Beam68/Plugins/Memory/Memory CLONE
+Copy Plugins/Memory/Memory.plugin SYS:Utilities/Beam68/Plugins/Memory/Memory.plugin
+IF EXISTS SYS:Utilities/Beam68/Plugins/FileFinder.plugin
+ Delete SYS:Utilities/Beam68/Plugins/FileFinder.plugin QUIET FORCE
+ Delete SYS:Utilities/Beam68/Plugins/FileFinder QUIET FORCE
+ENDIF
+IF NOT EXISTS SYS:Utilities/Beam68/Plugins/FileFinder
+ MakeDir SYS:Utilities/Beam68/Plugins/FileFinder
+ENDIF
+Copy Plugins/FileFinder/FileFinder SYS:Utilities/Beam68/Plugins/FileFinder/FileFinder CLONE
+Copy Plugins/FileFinder/FileFinder.plugin SYS:Utilities/Beam68/Plugins/FileFinder/FileFinder.plugin
+IF EXISTS SYS:Utilities/Beam68/Plugins/SystemCommands.plugin
+ Delete SYS:Utilities/Beam68/Plugins/SystemCommands.plugin QUIET FORCE
+ Delete SYS:Utilities/Beam68/Plugins/SystemCommands QUIET FORCE
+ENDIF
+IF NOT EXISTS SYS:Utilities/Beam68/Plugins/SystemCommands
+ MakeDir SYS:Utilities/Beam68/Plugins/SystemCommands
+ENDIF
+Copy Plugins/SystemCommands/SystemCommands SYS:Utilities/Beam68/Plugins/SystemCommands/SystemCommands CLONE
+Copy Plugins/SystemCommands/SystemCommands.plugin SYS:Utilities/Beam68/Plugins/SystemCommands/SystemCommands.plugin
+IF EXISTS SYS:Utilities/Beam68/Plugins/DosTools.plugin
+ Delete SYS:Utilities/Beam68/Plugins/DosTools.plugin QUIET FORCE
+ Delete SYS:Utilities/Beam68/Plugins/DosTools QUIET FORCE
+ENDIF
+IF NOT EXISTS SYS:Utilities/Beam68/Plugins/DosTools
+ MakeDir SYS:Utilities/Beam68/Plugins/DosTools
+ENDIF
+Copy Plugins/DosTools/DosTools SYS:Utilities/Beam68/Plugins/DosTools/DosTools CLONE
+Copy Plugins/DosTools/DosTools.plugin SYS:Utilities/Beam68/Plugins/DosTools/DosTools.plugin
+IF EXISTS SYS:Utilities/Beam68/Plugins/TaskManager.plugin
+ Delete SYS:Utilities/Beam68/Plugins/TaskManager.plugin QUIET FORCE
+ Delete SYS:Utilities/Beam68/Plugins/TaskManager QUIET FORCE
+ENDIF
+IF NOT EXISTS SYS:Utilities/Beam68/Plugins/TaskManager
+ MakeDir SYS:Utilities/Beam68/Plugins/TaskManager
+ENDIF
+Copy Plugins/TaskManager/TaskManager SYS:Utilities/Beam68/Plugins/TaskManager/TaskManager CLONE
+Copy Plugins/TaskManager/TaskManager.plugin SYS:Utilities/Beam68/Plugins/TaskManager/TaskManager.plugin
+IF EXISTS SYS:Utilities/Beam68/Plugins/ClipboardTools.plugin
+ Delete SYS:Utilities/Beam68/Plugins/ClipboardTools.plugin QUIET FORCE
+ Delete SYS:Utilities/Beam68/Plugins/ClipboardTools QUIET FORCE
+ENDIF
+IF NOT EXISTS SYS:Utilities/Beam68/Plugins/ClipboardTools
+ MakeDir SYS:Utilities/Beam68/Plugins/ClipboardTools
+ENDIF
+Copy Plugins/ClipboardTools/ClipboardTools SYS:Utilities/Beam68/Plugins/ClipboardTools/ClipboardTools CLONE
+Copy Plugins/ClipboardTools/ClipboardTools.plugin SYS:Utilities/Beam68/Plugins/ClipboardTools/ClipboardTools.plugin
+IF EXISTS SYS:Utilities/Beam68/Plugins/DateUtilities.plugin
+ Delete SYS:Utilities/Beam68/Plugins/DateUtilities.plugin QUIET FORCE
+ Delete SYS:Utilities/Beam68/Plugins/DateUtilities QUIET FORCE
+ENDIF
+IF NOT EXISTS SYS:Utilities/Beam68/Plugins/DateUtilities
+ MakeDir SYS:Utilities/Beam68/Plugins/DateUtilities
+ENDIF
+Copy Plugins/DateUtilities/DateUtilities SYS:Utilities/Beam68/Plugins/DateUtilities/DateUtilities CLONE
+Copy Plugins/DateUtilities/DateUtilities.plugin SYS:Utilities/Beam68/Plugins/DateUtilities/DateUtilities.plugin
+IF EXISTS SYS:Utilities/Beam68/Plugins/WindowSwitcher.plugin
+ Delete SYS:Utilities/Beam68/Plugins/WindowSwitcher.plugin QUIET FORCE
+ Delete SYS:Utilities/Beam68/Plugins/WindowSwitcher QUIET FORCE
+ENDIF
+IF NOT EXISTS SYS:Utilities/Beam68/Plugins/WindowSwitcher
+ MakeDir SYS:Utilities/Beam68/Plugins/WindowSwitcher
+ENDIF
+Copy Plugins/WindowSwitcher/WindowSwitcher SYS:Utilities/Beam68/Plugins/WindowSwitcher/WindowSwitcher CLONE
+Copy Plugins/WindowSwitcher/WindowSwitcher.plugin SYS:Utilities/Beam68/Plugins/WindowSwitcher/WindowSwitcher.plugin
+IF EXISTS SYS:Utilities/Beam68/Plugins/DeveloperTools.plugin
+ Delete SYS:Utilities/Beam68/Plugins/DeveloperTools.plugin QUIET FORCE
+ Delete SYS:Utilities/Beam68/Plugins/DeveloperTools QUIET FORCE
+ENDIF
+IF NOT EXISTS SYS:Utilities/Beam68/Plugins/DeveloperTools
+ MakeDir SYS:Utilities/Beam68/Plugins/DeveloperTools
+ENDIF
+Copy Plugins/DeveloperTools/DeveloperTools SYS:Utilities/Beam68/Plugins/DeveloperTools/DeveloperTools CLONE
+Copy Plugins/DeveloperTools/DeveloperTools.plugin SYS:Utilities/Beam68/Plugins/DeveloperTools/DeveloperTools.plugin
+IF EXISTS SYS:Utilities/Beam68/Plugins/ARexxRunner.plugin
+ Delete SYS:Utilities/Beam68/Plugins/ARexxRunner.plugin QUIET FORCE
+ Delete SYS:Utilities/Beam68/Plugins/ARexxRunner QUIET FORCE
+ENDIF
+IF NOT EXISTS SYS:Utilities/Beam68/Plugins/ARexxRunner
+ MakeDir SYS:Utilities/Beam68/Plugins/ARexxRunner
+ENDIF
+Copy Plugins/ARexxRunner/ARexxRunner SYS:Utilities/Beam68/Plugins/ARexxRunner/ARexxRunner CLONE
+Copy Plugins/ARexxRunner/ARexxRunner.plugin SYS:Utilities/Beam68/Plugins/ARexxRunner/ARexxRunner.plugin
+IF NOT EXISTS ENVARC:Beam68/Plugins/ARexxRunner.cfg
+ Copy Plugins/ARexxRunner/ARexxRunner.cfg ENVARC:Beam68/Plugins/ARexxRunner.cfg
+ENDIF
+IF EXISTS SYS:Utilities/Beam68/Plugins/MusicControls.plugin
+ Delete SYS:Utilities/Beam68/Plugins/MusicControls.plugin QUIET FORCE
+ Delete SYS:Utilities/Beam68/Plugins/MusicControls QUIET FORCE
+ENDIF
+IF NOT EXISTS SYS:Utilities/Beam68/Plugins/MusicControls
+ MakeDir SYS:Utilities/Beam68/Plugins/MusicControls
+ENDIF
+Copy Plugins/MusicControls/MusicControls SYS:Utilities/Beam68/Plugins/MusicControls/MusicControls CLONE
+Copy Plugins/MusicControls/MusicControls.plugin SYS:Utilities/Beam68/Plugins/MusicControls/MusicControls.plugin
+IF NOT EXISTS ENVARC:Beam68/Plugins/MusicControls.cfg
+ Copy Plugins/MusicControls/MusicControls.cfg ENVARC:Beam68/Plugins/MusicControls.cfg
+ENDIF
+IF NOT EXISTS SYS:Utilities/Beam68/scripts
+ MakeDir SYS:Utilities/Beam68/scripts
+ENDIF
+Copy scripts/Beam68Status.rexx SYS:Utilities/Beam68/scripts/Beam68Status.rexx
+Copy Beam68.guide SYS:Utilities/Beam68/Beam68.guide
+IF NOT EXISTS ENVARC:Beam68/Snippets.txt
+ Copy Snippets.txt ENVARC:Beam68/Snippets.txt
+ENDIF
+IF NOT EXISTS SYS:Utilities/Beam68/Themes
+ MakeDir SYS:Utilities/Beam68/Themes
+ENDIF
+Copy themes/#?.theme SYS:Utilities/Beam68/Themes QUIET
+IF NOT EXISTS SYS:Utilities/Beam68/Beam68.guide.info
+ Copy Beam68.guide.info SYS:Utilities/Beam68/Beam68.guide.info
+ENDIF
+IF NOT EXISTS SYS:Utilities/Beam68/Catalogs
+ MakeDir SYS:Utilities/Beam68/Catalogs
+ENDIF
+IF NOT EXISTS SYS:Utilities/Beam68/Catalogs/deutsch
+ MakeDir SYS:Utilities/Beam68/Catalogs/deutsch
+ENDIF
+IF NOT EXISTS SYS:Utilities/Beam68/Catalogs/svenska
+ MakeDir SYS:Utilities/Beam68/Catalogs/svenska
+ENDIF
+Copy catalogs/deutsch/Beam68.catalog SYS:Utilities/Beam68/Catalogs/deutsch/Beam68.catalog
+Copy catalogs/svenska/Beam68.catalog SYS:Utilities/Beam68/Catalogs/svenska/Beam68.catalog
+IF NOT EXISTS LOCALE:Catalogs/deutsch
+ MakeDir LOCALE:Catalogs/deutsch
+ENDIF
+IF NOT EXISTS LOCALE:Catalogs/svenska
+ MakeDir LOCALE:Catalogs/svenska
+ENDIF
+Copy catalogs/deutsch/Beam68Prefs.catalog LOCALE:Catalogs/deutsch/Beam68Prefs.catalog
+Copy catalogs/svenska/Beam68Prefs.catalog LOCALE:Catalogs/svenska/Beam68Prefs.catalog
+Copy catalogs/deutsch/Beam68Plugins.catalog LOCALE:Catalogs/deutsch/Beam68Plugins.catalog
+Copy catalogs/svenska/Beam68Plugins.catalog LOCALE:Catalogs/svenska/Beam68Plugins.catalog
+IF NOT EXISTS ENVARC:Beam68/Beam68.cfg
+ Copy Beam68.cfg ENVARC:Beam68/Beam68.cfg
+ENDIF
+IF NOT EXISTS ENV:Beam68/Beam68.cfg
+ Copy Beam68.cfg ENV:Beam68/Beam68.cfg
+ENDIF
+; Existing installations keep their settings but receive the new bundled
+; Music Controls entry exactly once.
+FailAt 10
+Search FROM ENVARC:Beam68/Beam68.cfg SEARCH "MusicControls.plugin" QUIET
+IF WARN
+ Echo "PLUGIN=PROGDIR:Plugins/MusicControls/MusicControls.plugin" >>ENVARC:Beam68/Beam68.cfg
+ENDIF
+Search FROM ENV:Beam68/Beam68.cfg SEARCH "MusicControls.plugin" QUIET
+IF WARN
+ Echo "PLUGIN=PROGDIR:Plugins/MusicControls/MusicControls.plugin" >>ENV:Beam68/Beam68.cfg
+ENDIF
+FailAt 5
+IF NOT EXISTS ENVARC:Beam68/Aliases.txt
+ Copy Aliases.txt ENVARC:Beam68/Aliases.txt
+ENDIF
+IF NOT EXISTS ENV:Beam68/Aliases.txt
+ Copy Aliases.txt ENV:Beam68/Aliases.txt
+ENDIF
+CreateIcons
+; Record the location for the GUI installer's update/uninstall.
+Echo >ENVARC:Beam68/InstallDir "SYS:Utilities/Beam68" NOLINE
+Echo >ENV:Beam68/InstallDir "SYS:Utilities/Beam68" NOLINE
+Echo "Installed Beam68, Beam68Prefs and WBStartup project icon."
+Echo "Double-click SYS:Prefs/Beam68Prefs to configure."
+Echo "Reboot Workbench or run SYS:Utilities/Beam68/Beam68 now."

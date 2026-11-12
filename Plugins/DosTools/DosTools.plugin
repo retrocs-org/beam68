@@ -1,0 +1,16 @@
+VERSION=1
+ID=org.beam68.dostools
+PLUGIN_VERSION=0.1
+MIN_BEAM68=0.1
+AUTHOR=Beam68 contributors
+LICENSE=MIT
+NAME=Assigns and Volumes
+TRIGGER=#
+PREFIX=DOS:
+COMMAND=PLUGINDIR:DosTools
+DESCRIPTION=volumes, assigns, diskfree:path, or open:path.
+CATEGORY=System
+CAPABILITIES=FILES
+ICON=PROGDIR:Beam68
+EXAMPLE=open:RAM:
+HELP=Lists DOS assigns/volumes, reports free space, or opens a drawer.

@@ -1,0 +1,18 @@
+# Beam68 external plugin protocol v1
+VERSION=1
+ID=org.beam68.arexxrunner
+PLUGIN_VERSION=0.1
+MIN_BEAM68=0.1
+AUTHOR=Beam68 contributors
+LICENSE=MIT
+NAME=ARexx Runner
+TRIGGER=%
+PREFIX=REXX:
+COMMAND=PLUGINDIR:ARexxRunner
+SETTINGS=ENVARC:Beam68/Plugins/ARexxRunner.cfg
+CATEGORY=Automation
+CAPABILITIES=AREXX
+ICON=PROGDIR:Beam68
+DESCRIPTION=Run configured ARexx macros by name; query text cannot supply arbitrary script paths.
+EXAMPLE=rexx:list
+HELP=Use rexx:list or rexx:<configured-name>. Edit ARexxRunner.cfg to map names to absolute script paths.

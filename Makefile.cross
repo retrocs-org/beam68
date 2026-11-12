@@ -1,0 +1,70 @@
+# macOS cross-build for classic AmigaOS using vbcc and the NDK 3.2 headers.
+VC ?= vc +aos68k -notmpfile
+# -O2: verify with a native runtime check; fall back to -O if vbcc misbehaves.
+CFLAGS ?= -O2 -cpu=68000
+INC = -Iinclude -Isdk/include
+COMMON = src/config.c src/control.c
+PLUGIN_COMMON = src/protocol.c src/plugin_common.c src/plugin_locale.c src/beam68plugins_strings.c sdk/src/beam68plugin.c
+NEW_PLUGINS = Plugins/FileFinder/FileFinder Plugins/SystemCommands/SystemCommands Plugins/DosTools/DosTools Plugins/TaskManager/TaskManager Plugins/ClipboardTools/ClipboardTools Plugins/DateUtilities/DateUtilities Plugins/WindowSwitcher/WindowSwitcher Plugins/DeveloperTools/DeveloperTools Plugins/ARexxRunner/ARexxRunner Plugins/MusicControls/MusicControls
+
+.PHONY: all clean
+
+all: Beam68 Beam68Prefs Beam68Ctl CreateIcons Plugins/Calc/Calc Plugins/Clock/Clock Plugins/Memory/Memory $(NEW_PLUGINS)
+
+Beam68: src/main.c src/rexx_sequence.c src/matcher.c src/search_rank.c src/search_scope.c src/calc_engine.c src/history.c src/query_history.c src/plugin_health.c src/favorites.c src/aliases.c src/index_cache.c src/actions.c src/plugin_job.c src/launcher_ui.c src/appearance.c src/recovery.c src/rexx_commands.c src/plugin_diagnostics.c src/scan_status.c src/completion.c src/item_index.c src/dos_compat.c src/wb_launch.c src/stack_guard.c src/startup_error.c src/icon_info.c src/whdload.c src/clip.c src/hidden.c src/sources.c src/locale_support.c src/beam68_strings.c $(COMMON)
+	$(VC) $(CFLAGS) $(INC) -o $@ src/main.c src/rexx_sequence.c src/matcher.c src/search_rank.c src/search_scope.c src/calc_engine.c src/history.c src/query_history.c src/plugin_health.c src/favorites.c src/aliases.c src/index_cache.c src/actions.c src/plugin_job.c src/launcher_ui.c src/appearance.c src/recovery.c src/rexx_commands.c src/plugin_diagnostics.c src/scan_status.c src/completion.c src/item_index.c src/dos_compat.c src/wb_launch.c src/stack_guard.c src/startup_error.c src/icon_info.c src/whdload.c src/clip.c src/hidden.c src/sources.c src/locale_support.c src/beam68_strings.c $(COMMON)
+
+Beam68Prefs: src/prefs.c src/launcher_ui.c src/hotkey_capture.c src/plugin_catalog.c src/plugin_diagnostics.c src/plugin_health.c src/favorites.c src/aliases.c src/wb_drop.c src/appearance.c src/theme_file.c src/dos_compat.c src/stack_guard.c src/startup_error.c src/plugin_package.c src/plugin_install.c src/preset.c src/catalogue.c src/catalogue_window.c src/beam68prefs_strings.c $(COMMON)
+	$(VC) $(CFLAGS) $(INC) -o $@ src/prefs.c src/launcher_ui.c src/hotkey_capture.c src/plugin_catalog.c src/plugin_diagnostics.c src/plugin_health.c src/favorites.c src/aliases.c src/wb_drop.c src/appearance.c src/theme_file.c src/dos_compat.c src/stack_guard.c src/startup_error.c src/plugin_package.c src/plugin_install.c src/preset.c src/catalogue.c src/catalogue_window.c src/beam68prefs_strings.c $(COMMON)
+
+Beam68Ctl: src/ctl.c src/control.c
+	$(VC) $(CFLAGS) $(INC) -o $@ src/ctl.c src/control.c src/locale_support.c src/beam68_strings.c
+
+CreateIcons: scripts/create_icons.c
+	$(VC) $(CFLAGS) $(INC) -o $@ scripts/create_icons.c
+
+Plugins/Calc/Calc: Plugins/Calc/Calc.c src/calc_engine.c $(PLUGIN_COMMON)
+	$(VC) $(CFLAGS) $(INC) -o $@ Plugins/Calc/Calc.c src/calc_engine.c $(PLUGIN_COMMON)
+
+Plugins/Clock/Clock: Plugins/Clock/Clock.c $(PLUGIN_COMMON)
+	$(VC) $(CFLAGS) $(INC) -o $@ Plugins/Clock/Clock.c $(PLUGIN_COMMON)
+
+Plugins/Memory/Memory: Plugins/Memory/Memory.c $(PLUGIN_COMMON)
+	$(VC) $(CFLAGS) $(INC) -o $@ Plugins/Memory/Memory.c $(PLUGIN_COMMON)
+
+Plugins/FileFinder/FileFinder: Plugins/FileFinder/FileFinder.c src/config.c src/appearance.c $(PLUGIN_COMMON)
+	$(VC) $(CFLAGS) $(INC) -o $@ Plugins/FileFinder/FileFinder.c src/config.c src/appearance.c $(PLUGIN_COMMON)
+
+Plugins/SystemCommands/SystemCommands: Plugins/SystemCommands/SystemCommands.c src/dos_compat.c $(PLUGIN_COMMON)
+	$(VC) $(CFLAGS) $(INC) -o $@ Plugins/SystemCommands/SystemCommands.c src/dos_compat.c $(PLUGIN_COMMON)
+
+Plugins/DosTools/DosTools: Plugins/DosTools/DosTools.c $(PLUGIN_COMMON)
+	$(VC) $(CFLAGS) $(INC) -o $@ Plugins/DosTools/DosTools.c $(PLUGIN_COMMON)
+
+Plugins/TaskManager/TaskManager: Plugins/TaskManager/TaskManager.c $(PLUGIN_COMMON)
+	$(VC) $(CFLAGS) $(INC) -o $@ Plugins/TaskManager/TaskManager.c $(PLUGIN_COMMON)
+
+Plugins/ClipboardTools/ClipboardTools: Plugins/ClipboardTools/ClipboardTools.c $(PLUGIN_COMMON)
+	$(VC) $(CFLAGS) $(INC) -o $@ Plugins/ClipboardTools/ClipboardTools.c $(PLUGIN_COMMON)
+
+Plugins/DateUtilities/DateUtilities: Plugins/DateUtilities/DateUtilities.c $(PLUGIN_COMMON)
+	$(VC) $(CFLAGS) $(INC) -o $@ Plugins/DateUtilities/DateUtilities.c $(PLUGIN_COMMON)
+
+Plugins/WindowSwitcher/WindowSwitcher: Plugins/WindowSwitcher/WindowSwitcher.c $(PLUGIN_COMMON)
+	$(VC) $(CFLAGS) $(INC) -o $@ Plugins/WindowSwitcher/WindowSwitcher.c $(PLUGIN_COMMON)
+
+Plugins/DeveloperTools/DeveloperTools: Plugins/DeveloperTools/DeveloperTools.c $(PLUGIN_COMMON)
+	$(VC) $(CFLAGS) $(INC) -o $@ Plugins/DeveloperTools/DeveloperTools.c $(PLUGIN_COMMON)
+
+Plugins/ARexxRunner/ARexxRunner: Plugins/ARexxRunner/ARexxRunner.c src/dos_compat.c $(PLUGIN_COMMON)
+	$(VC) $(CFLAGS) $(INC) -o $@ Plugins/ARexxRunner/ARexxRunner.c src/dos_compat.c $(PLUGIN_COMMON)
+
+Plugins/MusicControls/MusicControls: Plugins/MusicControls/MusicControls.c src/music_control.c $(PLUGIN_COMMON)
+	$(VC) $(CFLAGS) $(INC) -o $@ Plugins/MusicControls/MusicControls.c src/music_control.c $(PLUGIN_COMMON)
+
+clean:
+	rm -f Beam68 Beam68Prefs Beam68Ctl CreateIcons Plugins/Calc/Calc Plugins/Clock/Clock Plugins/Memory/Memory $(NEW_PLUGINS)
+	find src Plugins scripts -type f -name '*.o' -delete
+
+# Header/catalog changes must invalidate every affected executable.
+Beam68 Beam68Prefs Beam68Ctl Plugins/Calc/Calc Plugins/Clock/Clock Plugins/Memory/Memory $(NEW_PLUGINS): $(wildcard include/*.h sdk/include/*.h)

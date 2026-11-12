@@ -1,0 +1,19 @@
+# Beam68 external plugin protocol v1
+VERSION=1
+ID=org.beam68.musiccontrols
+PLUGIN_VERSION=0.1
+MIN_BEAM68=0.1
+AUTHOR=Beam68 contributors
+LICENSE=MIT
+NAME=Music Controls
+TRIGGER=|
+PREFIX=MUSIC:
+COMMAND=PLUGINDIR:MusicControls
+SETTINGS=ENVARC:Beam68/Plugins/MusicControls.cfg
+CATEGORY=Media
+CAPABILITIES=AREXX
+ICON=PROGDIR:Beam68
+DESCRIPTION=Control HippoPlayer, AmigaAMP or EaglePlayer 2 through their documented ARexx ports.
+EXAMPLE=music:status
+HELP=Use music:status|play|pause|stop|next|previous|volume up|volume down|volume 0-100|players. Prefix a player name to target it.
+SETTING=PREFERRED_PLAYER|Preferred player|CHOICE|Auto|Auto,HippoPlayer,AmigaAMP,EaglePlayer 2

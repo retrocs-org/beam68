@@ -1,0 +1,73 @@
+# Beam68 CI: portable tests, a 68000 compile check against the real NDK,
+# a vbcc build of the Amiga binaries, and release archives.
+#
+# The vbcc job uses a public vbcc+NDK image; set BEAM68_VBCC_IMAGE to your
+# own image if you prefer (it must provide `vc +aos68k` with NDK 3.2).
+# Running the runtime tests needs Kickstart/OS files and belongs on a
+# self-hosted runner; it is not part of this pipeline.
+
+stages: [test, build, package]
+
+variables:
+  BEAM68_VBCC_IMAGE: "walkero/docker4amigavbcc:latest-m68k"
+  AMIGA_SDK_GCC: "https://github.com/sacredbanana/AmigaSDK-gcc.git"
+
+host-tests:
+  variables:
+    BEAM68_SOURCE_ONLY: "1"
+  stage: test
+  image: debian:bookworm-slim
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq gcc git make python3 php-cli >/dev/null
+  script:
+    - make host-test
+
+m68k-syntax:
+  stage: test
+  image: debian:bookworm-slim
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq gcc-m68k-linux-gnu git ca-certificates >/dev/null
+    - git clone --depth 1 "$AMIGA_SDK_GCC" /tmp/amigasdk
+  script:
+    - scripts/m68k-syntax-check.sh /tmp/amigasdk
+
+vbcc-build:
+  stage: build
+  image: $BEAM68_VBCC_IMAGE
+  script:
+    - make -f Makefile.cross clean
+    - make -B -f Makefile.cross
+    - python3 scripts/build-provenance.py record --compiler vc --flags "-O2 -cpu=68000"
+  artifacts:
+    expire_in: 1 month
+    paths:
+      - BUILD-PROVENANCE.json
+      - Beam68
+      - Beam68Prefs
+      - Beam68Ctl
+      - CreateIcons
+      - Plugins/*/*
+  # Image layouts differ; do not block tests on the toolchain image.
+  allow_failure: true
+
+release:
+  stage: package
+  image: debian:bookworm-slim
+  needs: [host-tests, vbcc-build]
+  before_script:
+    # Debian ships no LHA *packer*; without one the Aminet archive is a ZIP
+    # (re-pack it with LhA before uploading to Aminet).
+    - apt-get update -qq && apt-get install -y -qq python3 make >/dev/null
+  script:
+    - make plugin-packages
+    - make sdk-archive
+    - 'if [ -n "${BEAM68_UPLOADER:-}" ]; then python3 scripts/make-aminet-release.py; fi'
+    - python3 scripts/package-release.py && mv ../Beam68-*.zip dist/
+  artifacts:
+    expire_in: 3 months
+    paths:
+      - dist/
+  rules:
+    - if: $CI_COMMIT_TAG
+    - when: manual
+      allow_failure: true

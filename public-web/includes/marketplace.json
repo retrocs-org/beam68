@@ -1,0 +1,158 @@
+{
+  "plugins": [
+    {
+      "NAME": "ARexx Runner",
+      "DESCRIPTION": "Run configured ARexx macros by name; query text cannot supply arbitrary script paths.",
+      "PREFIX": "REXX:",
+      "TRIGGER": "%",
+      "EXAMPLE": "rexx:list",
+      "path": "Plugins/ARexxRunner"
+    },
+    {
+      "NAME": "Calculator",
+      "DESCRIPTION": "Type = 2*(5+3), then press Enter. Integer, no FPU needed.",
+      "PREFIX": "",
+      "TRIGGER": "=",
+      "EXAMPLE": "=12*(3+4)",
+      "path": "Plugins/Calc"
+    },
+    {
+      "NAME": "Clipboard Tools",
+      "DESCRIPTION": "show, set:text, clear, upper, lower, or save:path.",
+      "PREFIX": "CLIP:",
+      "TRIGGER": "&",
+      "EXAMPLE": "clip:show",
+      "path": "Plugins/ClipboardTools"
+    },
+    {
+      "NAME": "Clock",
+      "DESCRIPTION": "Press Enter for AmigaDOS local time.",
+      "PREFIX": "",
+      "TRIGGER": "@",
+      "EXAMPLE": "@",
+      "path": "Plugins/Clock"
+    },
+    {
+      "NAME": "Date Utilities",
+      "DESCRIPTION": "today, add:N, weekday:YYYY-MM-DD, or timestamp.",
+      "PREFIX": "DATE:",
+      "TRIGGER": ":",
+      "EXAMPLE": "date:today",
+      "path": "Plugins/DateUtilities"
+    },
+    {
+      "NAME": "Developer Tools",
+      "DESCRIPTION": "hex:N, dec:$FF, ascii:N, mask:0,3,7, or prot:RWED.",
+      "PREFIX": "DEV:",
+      "TRIGGER": "$",
+      "EXAMPLE": "dev:hex:255",
+      "path": "Plugins/DeveloperTools"
+    },
+    {
+      "NAME": "Assigns and Volumes",
+      "DESCRIPTION": "volumes, assigns, diskfree:path, or open:path.",
+      "PREFIX": "DOS:",
+      "TRIGGER": "#",
+      "EXAMPLE": "open:RAM:",
+      "path": "Plugins/DosTools"
+    },
+    {
+      "NAME": "File Finder",
+      "DESCRIPTION": "find:<name> searches configured drawers for files and folders.",
+      "PREFIX": "FIND:",
+      "TRIGGER": "/",
+      "EXAMPLE": "find:screenmode",
+      "path": "Plugins/FileFinder"
+    },
+    {
+      "NAME": "Memory",
+      "DESCRIPTION": "Press Enter to display free Chip and Fast RAM.",
+      "PREFIX": "",
+      "TRIGGER": "?",
+      "EXAMPLE": "?",
+      "path": "Plugins/Memory"
+    },
+    {
+      "NAME": "Music Controls",
+      "DESCRIPTION": "Control HippoPlayer, AmigaAMP or EaglePlayer 2 through their documented ARexx ports.",
+      "PREFIX": "MUSIC:",
+      "TRIGGER": "|",
+      "EXAMPLE": "music:status",
+      "path": "Plugins/MusicControls"
+    },
+    {
+      "NAME": "System Commands",
+      "DESCRIPTION": "avail, version, flush, reboot confirm, or shutdown confirm.",
+      "PREFIX": "SYSTEM:",
+      "TRIGGER": "!",
+      "EXAMPLE": "system:version",
+      "path": "Plugins/SystemCommands"
+    },
+    {
+      "NAME": "Task Manager",
+      "DESCRIPTION": "tasks lists processes; break:name:confirm sends Ctrl-C.",
+      "PREFIX": "TASK:",
+      "TRIGGER": "^",
+      "EXAMPLE": "task:tasks",
+      "path": "Plugins/TaskManager"
+    },
+    {
+      "NAME": "Workbench Windows",
+      "DESCRIPTION": "windows lists titles; window:name or screen:name brings one forward.",
+      "PREFIX": "WINDOW:",
+      "TRIGGER": "~",
+      "EXAMPLE": "window:windows",
+      "path": "Plugins/WindowSwitcher"
+    }
+  ],
+  "themes": [
+    {
+      "name": "Amber",
+      "description": "Warm amber on near-black, like an old terminal",
+      "colors": [
+        "FFB000",
+        "6B4A00",
+        "FFB000",
+        "1A1200",
+        "140E00"
+      ],
+      "path": "themes/Amber.theme"
+    },
+    {
+      "name": "GreenScreen",
+      "description": "Phosphor green on black",
+      "colors": [
+        "33FF66",
+        "1F6B33",
+        "33FF66",
+        "001A08",
+        "000F05"
+      ],
+      "path": "themes/GreenScreen.theme"
+    },
+    {
+      "name": "MagicGrey",
+      "description": "MagicWB-style greys with a blue selection",
+      "colors": [
+        "000000",
+        "7B7B7B",
+        "6B8CB5",
+        "FFFFFF",
+        "AAAAAA"
+      ],
+      "path": "themes/MagicGrey.theme"
+    },
+    {
+      "name": "Paper",
+      "description": "Dark ink on light paper",
+      "colors": [
+        "202020",
+        "8A8A8A",
+        "3A6EA5",
+        "FFFFFF",
+        "F2EFE6"
+      ],
+      "path": "themes/Paper.theme"
+    }
+  ]
+}

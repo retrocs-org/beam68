@@ -1,0 +1,15 @@
+VERSION=1
+ID=org.beam68.memory
+PLUGIN_VERSION=0.1
+MIN_BEAM68=0.1
+AUTHOR=Beam68 contributors
+LICENSE=MIT
+NAME=Memory
+TRIGGER=?
+COMMAND=PLUGINDIR:Memory
+DESCRIPTION=Press Enter to display free Chip and Fast RAM.
+CATEGORY=System
+CAPABILITIES=READONLY
+ICON=PROGDIR:Beam68
+EXAMPLE=?
+HELP=Reports currently available Chip and Fast memory.

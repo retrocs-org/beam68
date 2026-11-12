@@ -1,0 +1,565 @@
+## version $VER: Beam68.catalog 0.1 (27.10.2026)
+## language deutsch
+## codeset 0
+;
+MSG_HELP_APP_TITLE
+Programmsuche
+;Application search
+MSG_HELP_APP
+app:<Text> durchsucht Programme und ausführbare Dateien
+;app:<text> searches tools and executables
+MSG_HELP_FILE_TITLE
+Dateisuche
+;File search
+MSG_HELP_FILE
+file:<Text> durchsucht indizierte Dateien
+;file:<text> searches indexed files
+MSG_HELP_DRAWER_TITLE
+Schubladensuche
+;Drawer search
+MSG_HELP_DRAWER
+drawer:<Text> durchsucht indizierte Schubladen
+;drawer:<text> searches indexed drawers
+MSG_HELP_PLUGIN_TITLE
+Pluginsuche
+;Plugin search
+MSG_HELP_PLUGIN
+plugin:<Text> findet Plugin-Beispiele und Hilfe
+;plugin:<text> finds plugin examples and help
+MSG_HELP_RECENT_TITLE
+Zuletzt benutzt
+;Recent search
+MSG_HELP_RECENT
+recent:<Text> zeigt nur bereits gestartete Einträge
+;recent:<text> limits results to launched items
+MSG_HELP_VOLUME_TITLE
+Laufwerkssuche
+;Volume search
+MSG_HELP_VOLUME
+volume:<Text> durchsucht indizierte Laufwerke
+;volume:<text> searches indexed volume roots
+MSG_HELP_FAV_TITLE
+Favoritengruppe
+;Favorite group
+MSG_HELP_FAV
+fav:<Gruppe> [Text], zum Beispiel fav:games
+;fav:<group> [text], for example fav:games
+MSG_HELP_GAME_TITLE
+WHDLoad-Spiele
+;WHDLoad games
+MSG_HELP_GAME
+game:<Text> durchsucht installierte WHDLoad-Spiele
+;game:<text> searches installed WHDLoad games
+MSG_HELP_SHELL_TITLE
+AmigaDOS-Shell
+;AmigaDOS shell
+MSG_HELP_SHELL
+shell:<Befehl> öffnet eine verwaltete Konsole
+;shell:<command> opens a managed console
+MSG_HELP_RESTART_WB_TITLE
+Workbench neu starten
+;Restart Workbench
+MSG_HELP_SECOND_ENTER
+Erfordert ein zweites Enter
+;Requires a second Enter
+MSG_HELP_RESTART_AMIGA_TITLE
+Amiga neu starten
+;Restart Amiga
+MSG_HELP_COLD_REBOOT
+Kaltstart erfordert ein zweites Enter
+;Cold reboot requires a second Enter
+MSG_KEY_UPDOWN
+Ergebnis wählen, am Ende umlaufend
+;Select and wrap through results
+MSG_KEY_TAB
+Vorschlag übernehmen oder Aktion wählen
+;Complete a suggestion or choose a result action
+MSG_KEY_F2
+Index neu aufbauen
+;Rebuild the index
+MSG_KEY_F3
+Einstellungen / Plugins neu laden
+;Reload settings / reload plugins
+MSG_KEY_F4
+Beenden / Einstellungen / anheften
+;Quit / Preferences / pin or unpin
+MSG_KEY_F7
+Suchverlauf / letzter Shell-Befehl
+;Query history / last shell command
+MSG_LOWMEM_CAP
+ | Speichergrenze %ld
+; | low-memory cap %ld
+MSG_BADGE_COMPLETE
+ERGÄNZEN  
+;COMPLETE  
+MSG_BADGE_PLUGIN
+PLUGIN  
+;PLUGIN  
+MSG_BADGE_ALIAS
+ALIAS  
+;ALIAS  
+MSG_BADGE_KEY
+TASTE  
+;KEY  
+MSG_BADGE_COMMAND
+BEFEHL  
+;COMMAND  
+MSG_PLUGIN_LINE
+PLUGIN  %s%s%s
+;PLUGIN  %s%s%s
+MSG_CALC_HINT
+Ausdruck eingeben, z.B. =12*(3+4)
+;Type an expression, e.g. =12*(3+4)
+MSG_CALC_INVALID
+Unvollständiger oder ungültiger Ausdruck
+;Incomplete or invalid expression
+MSG_BADGE_SHELL
+SHELL  
+;SHELL  
+MSG_SHELL_COMMAND
+AmigaDOS-Befehl
+;AmigaDOS command
+MSG_SHELL_DISABLED_LABEL
+deaktiviert
+;disabled
+MSG_SHELL_HINT
+shell:dir SYS: oder kürzer >dir SYS: eingeben
+;Type shell:dir SYS: or the shorter >dir SYS:
+MSG_RESTART_ACTION
+AKTION  Neustart - Bestätigung erforderlich
+;ACTION  System restart - confirmation required
+MSG_RESTART_AMIGA_DESC
+Den ganzen Amiga neu starten (Kaltstart)
+;Restart the complete Amiga (cold reboot)
+MSG_RESTART_WB_DESC
+Workbench schließen und neu öffnen
+;Close and reopen the Workbench desktop
+MSG_EMPTY_LINE1
+Programme suchen | shell: Befehl | = Rechnen @ Uhr ? Speicher
+;Search programs | shell: command | = Calculate @ Clock ? Memory
+MSG_EMPTY_LINE2
+Erst Favoriten, dann zuletzt benutzte | F7: Suchverlauf
+;Favorites first, then recent apps | F7: query history
+MSG_BADGE_ACTION
+AKTION  
+;ACTION  
+MSG_BADGE_RECENT
+ZULETZT  
+;RECENT  
+MSG_BADGE_FAVORITE
+PROG * 
+;APP * 
+MSG_BADGE_GAME
+SPIEL  
+;GAME  
+MSG_BADGE_FILE
+DATEI  
+;FILE  
+MSG_BADGE_DRAWER
+SCHUBL.  
+;DRAWER  
+MSG_BADGE_VOLUME
+LAUFW.  
+;VOLUME  
+MSG_BADGE_APP
+PROG  
+;APP  
+MSG_FOOT_HELP
+Hoch/Runter: wählen | Enter: Beispiel | F1/Esc: Hilfe schließen
+;Up/Down: select | Enter: insert example | F1/Esc: close help
+MSG_FOOT_COMPLETE
+%u/%u | Hoch/Runter: Vorschlag | Tab: ergänzen
+;%u/%u | Up/Down: suggestion | Tab: complete
+MSG_FOOT_RESTART_CONFIRM
+Nochmals Enter: Neustart BESTÄTIGEN | Esc: abbrechen
+;Enter again: CONFIRM restart | Esc: cancel
+MSG_FOOT_RESTART_ARM
+Enter: Neustart vorbereiten | Esc: abbrechen
+;Enter: arm restart | Esc: cancel
+MSG_FOOT_SHELL
+Enter: ausführen | F7: Suchverlauf | F8: letzter Befehl
+;Enter: run | F7: query history | F8: shell recall
+MSG_FOOT_SHELL_OFF
+F5: Einstellungen | Esc: schließen
+;F5: Preferences | Esc: close
+MSG_FOOT_RESULTS
+%d/%d | Hoch/Runter: wählen | Enter: %s | Tab: Aktion | F6: anheften
+;%d/%d | Up/Down: select | Enter: %s | Tab: action | F6: pin
+MSG_FOOT_RESULT
+Ergebnis: 
+;Result: 
+MSG_FOOT_LAST
+Zuletzt: %s - %.80s (%lu.%lus)
+;Last: %s - %.80s (%lu.%lus)
+MSG_FOOT_DEFAULT
+F4 Ende | F5 Einst. | F6 anheften | F7 Verlauf
+;F4 quit | F5 Prefs | F6 pin | F7 query history
+MSG_WINDOW_TITLE
+Beam68 - Programmstarter
+;Beam68 - Application Launcher
+MSG_PLUGIN_RUNNING
+läuft - Esc bricht das Warten ab
+;running - Esc cancels waiting
+MSG_PLUGIN_QUARANTINED_NOW
+nach 3 Fehlern in Folge gesperrt
+;quarantined after 3 consecutive failures
+MSG_PLUGIN_CANCELED
+%s nach %lu.%lus abgebrochen; Prozess läuft evtl. weiter
+;%s canceled after %lu.%lus; child may still finish
+MSG_PLUGIN_INVALID_RESPONSE
+ungültige Antwort
+;invalid response
+MSG_PLUGIN_TIMEOUT_QUARANTINED
+Zeitüberschreitung, nach 3 Fehlern gesperrt
+;timed out and was quarantined after 3 failures
+MSG_PLUGIN_TIMEOUT
+Zeitüberschreitung; Prozess läuft evtl. noch
+;timed out; child may still be running
+MSG_PLUGIN_BUSY
+läuft bereits
+;is already running
+MSG_PLUGIN_IS_QUARANTINED
+ist gesperrt; in den Einstellungen wieder aktivieren
+;is quarantined; re-enable it in Preferences
+MSG_PLUGIN_SYSTEM_CONFIRM
+SYSTEM-Plugin: zur Bestätigung nochmals Enter
+;SYSTEM plugin: press Enter again to confirm
+MSG_PLUGIN_ERROR
+Fehler:
+;error:
+MSG_PLUGIN_ERR_QUERY
+Fehler: ungültige Plugin-Anfrage
+;error: invalid plugin query
+MSG_PLUGIN_ERR_LONG
+Fehler: Eingabe zu lang
+;error: input too long
+MSG_PLUGIN_ERR_PATH
+Fehler: ungültiger Programmpfad
+;error: invalid executable path
+MSG_PLUGIN_ERR_START
+Fehler: Start fehlgeschlagen
+;error: could not start
+MSG_WB_CLOSE_FIRST
+Workbench-Fenster schließen und erneut versuchen
+;Close Workbench drawers/windows, then try again
+MSG_WB_RESTARTED
+Workbench neu gestartet
+;Workbench restarted
+MSG_SHELL_DISABLED
+Shell-Befehle sind deaktiviert
+;Shell commands are disabled
+MSG_SHELL_EMPTY
+Befehl nach shell: oder > eingeben
+;Type a command after shell: or >
+MSG_SHELL_FAILED
+Shell-Befehl konnte nicht ausgeführt werden
+;Could not run shell command
+MSG_SHELL_STARTED
+Shell gestartet; Konsole wartet auf Schließen oder Ctrl-\\
+;Shell started; console waits for Close or Ctrl-\\
+MSG_DRAWER_OPEN_FAILED
+Workbench konnte die Schublade nicht öffnen
+;Workbench could not open containing drawer
+MSG_DRAWER_NEEDS_V44
+Schubladen öffnen erfordert Workbench 3.1.4/3.5 oder neuer
+;Opening drawers needs Workbench 3.1.4/3.5 or newer
+MSG_ACTION_INVALID
+Eigene Aktion ist ungültig oder zu lang
+;Custom action is invalid or too long
+MSG_ACTION_FAILED
+Programmaktion fehlgeschlagen
+;Application action failed
+MSG_WB_LAUNCH_FAILED
+Workbench konnte das Programm nicht starten
+;Workbench could not launch this tool
+MSG_OPEN_NEEDS_V44
+Dies erfordert Workbench 3.1.4/3.5 oder neuer
+;Opening this needs Workbench 3.1.4/3.5 or newer
+MSG_UNSAFE_PATH
+Unsicheres Zeichen im Programmpfad
+;Unsafe character in executable path
+MSG_SHELL_LAUNCH_FAILED
+Start über die Shell fehlgeschlagen
+;Shell launch failed
+MSG_FAV_FULL
+Favoriten voll oder ungültiger Pfad
+;Favorites full or invalid path
+MSG_FAV_SAVE_FAILED
+Favoriten konnten nicht in ENVARC: gespeichert werden
+;Could not save favorites to ENVARC:
+MSG_FAV_ENV_FAILED
+Favoriten dauerhaft gespeichert; ENV: fehlgeschlagen
+;Saved permanent favorites; ENV: write failed
+MSG_FAV_PINNED
+Angeheftet (F6 zum Lösen)
+;Pinned (F6 to unpin)
+MSG_FAV_UNPINNED
+Gelöst
+;Unpinned
+MSG_PLUGINS_CANCEL_FIRST
+Erst das laufende Plugin abbrechen
+;Cancel the active plugin before reloading
+MSG_SAFE_PLUGINS_OFF
+Sicherer Modus: Plugins bleiben aus
+;Safe mode: plugins remain disabled
+MSG_PLUGINS_RELOADED_ERRORS
+Plugins neu geladen; %ld nicht verfügbar oder im Konflikt
+;Plugins reloaded; %ld unavailable or conflicting
+MSG_PLUGINS_RELOADED
+%ld Plugins neu geladen
+;Reloaded %ld plugins
+MSG_PREFS_MISSING
+Beam68Prefs ist nicht installiert
+;Beam68Prefs not installed
+MSG_PREFS_PATH_LONG
+Pfad der Einstellungen zu lang
+;Preferences path too long
+MSG_PREFS_PATH_INVALID
+Ungültiger Pfad der Einstellungen
+;Invalid Preferences path
+MSG_PREFS_START_FAILED
+Einstellungen konnten nicht gestartet werden
+;Could not start Preferences
+MSG_RELOAD_NO_MEMORY
+Zu wenig Speicher zum Neuladen
+;Insufficient memory to reload settings
+MSG_CONFIG_INVALID
+Ungültige oder fehlende Konfiguration
+;Invalid or missing configuration
+MSG_HOTKEY_INVALID
+Ungültige Tastenkombination
+;Invalid hotkey descriptor
+MSG_INDEX_NO_MEMORY
+Zu wenig Speicher für den Index
+;Insufficient memory for index
+MSG_HOTKEY_FAILED
+Tastenkombination konnte nicht geändert werden
+;Could not change hotkey
+MSG_SETTINGS_PLUGIN_ERRORS
+Einstellungen geladen; %ld Plugin(s) nicht verfügbar oder im Konflikt
+;Settings loaded; %ld plugin(s) unavailable or conflicting
+MSG_SETTINGS_SCANNING
+Einstellungen geladen; Suche läuft im Hintergrund
+;Settings loaded; scanning in background
+MSG_SETTINGS_UPDATED
+Einstellungen und Index aktualisiert
+;Settings and index updated
+MSG_SCANNING
+Verzeichnisse werden im Hintergrund durchsucht...
+;Scanning directories in background...
+MSG_NO_COMPLETION
+Keine Ergänzung verfügbar
+;No completion available
+MSG_NO_HISTORY
+Kein weiterer Suchverlauf
+;No more query history
+MSG_NO_SHELL_RECALL
+Kein Shell-Befehl gespeichert
+;No shell command to recall
+MSG_CX_DESCRIPTION
+Sparsamer Programmstarter per Tastatur
+;Low-memory keyboard application launcher
+MSG_INDEX_UPDATING
+Index wird nach Dateiänderung aktualisiert
+;Updating index after filesystem change
+MSG_RECOVERY_SAFE
+Sicherer Modus: der letzte Start ist abgestürzt
+;Recovery safe mode: previous run did not exit cleanly
+MSG_SAFE_MODE
+Sicherer Modus: Plugins und eigene Farben aus
+;Safe mode: plugins and custom themes disabled
+MSG_PROGRESS_CACHED
+Index-Cache: %lu Programme
+;Index cache: %lu applications
+MSG_PROGRESS_SCANNING
+Indiziere %lu/%lu Schubladen | %lu Einträge | %lu Programme
+;Indexing %lu/%lu drawers | %lu entries | %lu apps
+MSG_PROGRESS_FULL
+Index voll bei %lu Programmen; MAX_ITEMS erhöhen
+;Index full at %lu apps; increase MAX_ITEMS
+MSG_PROGRESS_PROBLEMS
+Index fertig: %lu Programme | %lu unlesbar | %lu Fehler
+;Index complete: %lu apps | %lu unreadable | %lu errors
+MSG_PROGRESS_DONE
+%lu Programme aus %lu Schubladen indiziert
+;Indexed %lu apps from %lu drawers
+MSG_NORESULT_SCANNING1
+Indizierung läuft; Ergebnisse evtl. unvollständig
+;Indexing directories; results may be incomplete
+MSG_NORESULT_SCANNING2
+Weiter tippen oder F2 für neue Suche
+;Keep typing or press F2 to restart the scan
+MSG_NORESULT_EMPTY1
+Noch keine Programme indiziert
+;No indexed applications yet
+MSG_NORESULT_EMPTY2
+F2 zum Indizieren, F5 für Verzeichnisse
+;Press F2 to index or F5 to choose directories
+MSG_NORESULT_NONE1
+Keine passenden Programme
+;No matching indexed applications
+MSG_NORESULT_NONE2
+Weniger Wörter, F7 Verlauf oder Ctrl+L zum Leeren
+;Try fewer words, F7 history, or Ctrl+L to clear
+MSG_ACTION_OPEN_DRAWER
+Schublade öffnen
+;Open drawer
+MSG_ACTION_LAUNCH
+Starten
+;Launch
+MSG_KICK_MISSING
+Benötigt %s in DEVS:Kickstarts - nochmals Enter startet trotzdem
+;Needs %s in DEVS:Kickstarts - Enter again to start anyway
+MSG_HELP_RANDOM_TITLE
+Zufallsspiel
+;Random game
+MSG_HELP_RANDOM
+game:random wählt ein WHDLoad-Spiel für dich
+;game:random picks a WHDLoad game for you
+MSG_BADGE_RANDOM
+ZUFALL  
+;RANDOM  
+MSG_ACTION_INFO
+Information
+;Information
+MSG_ACTION_COPY
+Pfad kopieren
+;Copy path
+MSG_INFO_FAILED
+Workbench konnte keine Information anzeigen
+;Workbench could not show information
+MSG_COPIED
+Pfad in die Zwischenablage kopiert
+;Path copied to the clipboard
+MSG_COPY_FAILED
+Zwischenablage konnte nicht beschrieben werden
+;Could not write to the clipboard
+MSG_ACTION_ARGS
+Mit Argumenten starten
+;Run with arguments
+MSG_ARGS_PROMPT
+Argumente für %s - Enter startet, Esc bricht ab
+;Arguments for %s - Enter runs, Esc cancels
+MSG_BADGE_ARGS
+ARGUMENTE  
+;ARGS  
+MSG_ARGS_NEEDS_PROGRAM
+Nur Programme nehmen Argumente
+;Only programs take arguments
+MSG_QUICK_NONE
+Kein Favorit auf dieser Taste
+;No favorite on this key
+MSG_BROWSE_STATUS
+%s - %ld Einträge | tippen filtert | Links: zurück
+;%s - %ld entries | type to filter | Left: parent
+MSG_BROWSE_EMPTY
+Leere oder unlesbare Schublade
+;Empty or unreadable drawer
+MSG_ROWS_STATUS
+%s: %ld Ergebnisse | Enter: übernehmen | Esc: zurück
+;%s: %ld results | Enter: use | Esc: back
+MSG_BADGE_ROW
+ERGEBNIS  
+;RESULT  
+MSG_BADGE_ASSIGN
+ZUWEIS.  
+;ASSIGN  
+MSG_BADGE_DOC
+DOK  
+;DOC  
+MSG_BADGE_HIDDEN
+VERSTECKT  
+;HIDDEN  
+MSG_HIDDEN_ON
+Versteckt - hidden: zeigt versteckte Ergebnisse
+;Hidden - hidden: lists hidden results
+MSG_HIDDEN_OFF
+Wieder sichtbar
+;Shown again
+MSG_HIDDEN_FULL
+Liste der versteckten Ergebnisse ist voll
+;Hidden list is full
+MSG_HELP_DOC_TITLE
+Zuletzt geöffnete Dokumente
+;Recent documents
+MSG_HELP_DOC
+doc:<Text> durchsucht geöffnete Dokumente
+;doc:<text> searches documents you opened
+MSG_HELP_HIDDEN_TITLE
+Versteckte Ergebnisse
+;Hidden results
+MSG_HELP_HIDDEN
+hidden: zeigt mit Shift+Del versteckte Ergebnisse
+;hidden: lists results hidden with Shift+Del
+MSG_ACTION_DOPUS
+In Directory Opus zeigen
+;Show in Directory Opus
+MSG_DOPUS_FAILED
+Directory Opus antwortet nicht
+;Directory Opus did not answer
+MSG_CTL_USAGE
+Aufruf: Beam68Ctl RELOAD|RELOADPLUGINS|REINDEX|SHOW|HIDE|QUIT|QUITWAIT|STATUS\n
+;Usage: Beam68Ctl RELOAD|RELOADPLUGINS|REINDEX|SHOW|HIDE|QUIT|QUITWAIT|STATUS\n
+MSG_CTL_NOT_RUNNING
+Der Beam68-Starter läuft nicht.\n
+;Beam68 launcher is not running.\n
+MSG_REXX_NOT_RUNNING
+ARexx läuft nicht (RexxMast starten)
+;ARexx is not running (start RexxMast)
+MSG_BADGE_MODULE
+MOD  
+;MOD  
+MSG_BADGE_SCRIPT
+REXX  
+;REXX  
+MSG_BADGE_WEB
+WEB  
+;WEB  
+MSG_BADGE_SNIPPET
+TEXT  
+;SNIP  
+MSG_SNIPPET_COPIED
+Textbaustein in die Zwischenablage kopiert
+;Snippet copied to the clipboard
+MSG_SOURCE_LAUNCH_FAILED
+Start fehlgeschlagen - MODULE_COMMAND / URL_COMMAND prüfen
+;Could not start it - check MODULE_COMMAND / URL_COMMAND
+MSG_STATS_LAUNCHES
+%lu Starts
+;%lu launches
+MSG_HELP_MOD_TITLE
+Musikmodule
+;Music modules
+MSG_HELP_MOD
+mod:<Text> spielt ein Modul (INDEX_MODULES)
+;mod:<text> plays a module (INDEX_MODULES)
+MSG_HELP_WEB_TITLE
+Lesezeichen
+;Bookmarks
+MSG_HELP_WEB
+web:<Text> öffnet ein Lesezeichen (BOOKMARK_FILES)
+;web:<text> opens a bookmark (BOOKMARK_FILES)
+MSG_HELP_SNIP_TITLE
+Textbausteine
+;Snippets
+MSG_HELP_SNIP
+snip:<Text> kopiert einen Baustein aus Snippets.txt
+;snip:<text> copies a snippet from Snippets.txt
+MSG_HELP_SCRIPT_TITLE
+ARexx-Skripte
+;ARexx scripts
+MSG_HELP_SCRIPT
+script:<Text> startet ein Skript aus REXX:
+;script:<text> runs a script from REXX:
+MSG_HELP_PREFS_TITLE
+Voreinsteller
+;Preferences
+MSG_HELP_PREFS
+prefs:<Text> zeigt die Programme in SYS:Prefs
+;prefs:<text> lists the SYS:Prefs programs
+MSG_HELP_STATS_TITLE
+Nutzungsstatistik
+;Usage statistics
+MSG_HELP_STATS
+stats: zeigt die meistgestarteten Einträge
+;stats: lists your most-launched items

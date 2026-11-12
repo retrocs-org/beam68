@@ -1,0 +1,210 @@
+@database Beam68PluginSDK.guide
+@$VER: Beam68PluginSDK.guide 0.1 (27.10.2026)
+@author "Beam68 contributors"
+@(c) "MIT License"
+@wordwrap
+@node MAIN "Beam68 Plugin SDK"
+
+            @{b}Beam68 Plugin SDK - protocol 1@{ub}
+
+  @{" How a plugin works " link PROTOCOL}
+  @{" The SDK library    " link LIBRARY}
+  @{" Selectable rows    " link ROWS}
+  @{" ARexx plugins      " link REXX}
+  @{" Package layout     " link LAYOUT}
+  @{" The manifest       " link MANIFEST}
+  @{" Capabilities       " link CAPABILITIES}
+  @{" Build and package  " link BUILD}
+  @{" How users install  " link INSTALL}
+  @{" Rules              " link RULES}
+
+Contents of the SDK:
+
+  include/beam68plugin.h    the plugin API
+  src/beam68plugin.c        compile it into your plugin
+  Example/HelloWorld/       a complete plugin
+  Example/Makefile          vbcc and gcc builds, make package
+  tools/package-plugin.py   validates a drawer and builds the archive
+
+@endnode
+
+@node PROTOCOL "How a plugin works"
+@{b}How a plugin works@{ub}
+
+A plugin is an ordinary AmigaOS program.  When the user types its trigger
+or prefix and presses Enter, Beam68 runs:
+
+  "<plugin drawer>/MyPlugin" <INPUT-AS-HEX> "T:Beam68-<id>" BEAM68_REPLY <serial>
+
+argv[1] is the text after the trigger, hex-encoded so it can never inject
+Shell syntax ("-" when empty, at most 120 bytes). argv[2] is reserved for
+ARexx text replies. argv[3] is BEAM68_REPLY; argv[4] is a decimal request
+serial. Native plugins send up to eight selectable rows in one Exec message.
+The manifest and message version are both 1, the first public protocol.
+
+@endnode
+
+@node LIBRARY "The SDK library"
+@{b}beam68plugin.h@{ub}
+
+  beam68_plugin_input(argc, argv, input, size)
+      decodes argv[1]; returns 0 for a malformed call
+  beam68_plugin_text(argc,argv, text)
+  beam68_plugin_error(argc,argv, text)
+      send one text row and return the exit code for main()
+  beam68_trim, beam68_equal, beam68_prefix, beam68_contains, beam68_copy
+      small case-insensitive ASCII helpers
+  beam68_catalog_open("MyPlugin.catalog"), beam68_str(id, "English"),
+  beam68_catalog_close()
+      optional translations via locale.library; put catalogs in your
+      drawer as Catalogs/<language>/MyPlugin.catalog
+
+Example:
+
+  static char input[BEAM68_PLUGIN_MAX_INPUT+1];
+  if (!beam68_plugin_input(argc,argv,input,sizeof(input))) return 20;
+  return beam68_plugin_text(argc,argv,"Hello!");
+
+@endnode
+
+@node ROWS "Selectable rows"
+@{b}Protocol 1: selectable rows@{ub}
+
+All native plugins declare VERSION=1 and receive:
+
+  <plugin> <HEX> <reply-file> BEAM68_REPLY <serial>
+
+Answer with up to 8 rows:
+
+  beam68_rows_begin();
+  beam68_row(BEAM68_ROW_OPEN, "Work:ReadMe", "Work:ReadMe");
+  beam68_row(BEAM68_ROW_QUERY, "Search again", "find:readme");
+  beam68_row(BEAM68_ROW_TEXT, "42 matches", NULL);
+  return beam68_rows_send(argc, argv, 0);
+
+OPEN opens the value via Workbench, QUERY puts the value in the search
+field, TEXT copies the text to the clipboard.  The rows arrive as one
+message on the public port BEAM68_REPLY. The launcher owns and frees the
+public allocation. Delivery fails with exit code 20 if the port or memory is
+unavailable; there is no file fallback for native replies. Rebuild pre-release
+plugins with this SDK; experimental invocation formats are rejected.
+
+@endnode
+
+@node REXX "ARexx plugins"
+@{b}ARexx plugins and live previews@{ub}
+
+COMMAND=PLUGINDIR:MyPlugin.rexx makes the launcher run
+
+  RX MyPlugin.rexx <HEX> <reply-file>
+
+Decode with X2C(hex) ("-" means empty), write one TEXT= or ERROR= line to
+<reply-file>.part and rename it.  See Example/HelloRexx.  ARexx plugins
+use the Protocol 1 text transport and need RexxMast. Native plugins that
+control ARexx hosts use row messages.
+
+PREVIEW=YES runs the plugin ~400 ms after typing stops and shows the
+answer under the query.  Keep previews fast and side-effect free.
+
+@endnode
+
+@node LAYOUT "Package layout"
+@{b}Package layout@{ub}
+
+A package is one drawer:
+
+  HelloWorld/
+    HelloWorld.plugin    the manifest (exactly one)
+    HelloWorld           the program
+    HelloWorld.info      optional icon
+    HelloWorld.guide     optional help
+
+It is installed as Beam68/Plugins/HelloWorld/.  In the manifest,
+@{b}PLUGINDIR:@{ub} means this drawer.  When your program runs, its
+PROGDIR: is this drawer too.
+
+@endnode
+
+@node MANIFEST "The manifest"
+@{b}The manifest@{ub}
+
+  VERSION=1                     first public protocol
+  ID=org.example.helloworld     unique and permanent
+  PLUGIN_VERSION=1.0            your version
+  MIN_BEAM68=0.1                lowest Beam68 you support
+  NAME=Hello World
+  AUTHOR=Your Name
+  LICENSE=MIT
+  URL=https://example.org/
+  TRIGGER=+                     one printable character
+  PREFIX=HELLO:                 optional, one word
+  COMMAND=PLUGINDIR:HelloWorld  required form for packages
+  DESCRIPTION=Greets whoever you type.
+  CATEGORY=Examples
+  CAPABILITIES=READONLY
+  EXAMPLE=hello:Amiga
+  HELP=Type hello: and a name.
+  ICON=PLUGINDIR:HelloWorld     optional (or PROGDIR:Beam68)
+  GUIDE=PLUGINDIR:HelloWorld.guide  optional help, opened by the Help key
+  SETTINGS=ENVARC:Beam68/Plugins/HelloWorld.cfg   optional
+  SETTING=KEY|Label|TEXT|Default                  optional, max 6
+
+COMMAND and ICON must stay inside the drawer: no ":", no leading "/", no
+"//".  SETTINGS must be a flat file in ENVARC:Beam68/Plugins/ so it
+survives updates.  SETTING types: TEXT, NUMBER, BOOL, CHOICE (choices
+comma-separated after the default).
+
+@endnode
+
+@node CAPABILITIES "Capabilities"
+@{b}Capabilities@{ub}
+
+Declare what the plugin does; users see it before installing.
+
+  READONLY    only reads information
+  FILES       reads or writes files
+  SHELL       runs AmigaDOS commands
+  AREXX       sends ARexx messages
+  CLIPBOARD   reads or changes the clipboard
+  SYSTEM      may reboot, signal tasks or change the system;
+              Beam68 asks for a second Enter before each run
+
+@endnode
+
+@node BUILD "Build and package"
+@{b}Build and package@{ub}
+
+  cd Example
+  make vbcc          (or: make gcc)
+  make package
+
+package-plugin.py checks the manifest and that the program is an AmigaOS
+executable, then writes Beam68-Plugin-<Name>-<version>.lha (or .zip if no
+lha tool is installed) with exactly one top-level drawer.  Use --check to
+validate only.
+
+@endnode
+
+@node INSTALL "How users install"
+@{b}How users install@{ub}
+
+In Beam68Prefs, Plugins page: drop the archive or drawer on the window, or
+Browse to it and click Add.  Beam68Prefs refuses unsafe archive paths,
+validates the manifest and program, shows name, version, author, licence
+and capabilities, asks for confirmation and installs it.  The same ID
+with a newer version is an upgrade.
+
+@endnode
+
+@node RULES "Rules"
+@{b}Rules for a good plugin@{ub}
+
+  Run on a 68000 with AmigaOS 3.0: no FPU, no MUI, no 020-only code.
+  Expect a 4 KB stack: make buffers static.
+  Be quick: Beam68 stops waiting after the user's timeout (default 30 s);
+    three failures in a row quarantine a plugin.
+  One reply line; no console output, no prompts.
+  Treat the input as untrusted.
+  Close everything you open; leave nothing running.
+
+@endnode

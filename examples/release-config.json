@@ -1,0 +1,21 @@
+{
+  "github": "https://github.com/retrocs-org/beam68",
+  "github_git": "git@github.com:retrocs-org/beam68.git",
+  "gitlab": "",
+  "gitlab_git": "",
+  "author": "Beam68 contributors",
+  "uploader": "",
+  "aminet": false,
+  "env": {},
+  "source_branch": "main",
+  "credentials": {
+    "github": {
+      "provider": "env",
+      "variable": "GITHUB_TOKEN"
+    },
+    "gitlab": {
+      "provider": "env",
+      "variable": "GITLAB_TOKEN"
+    }
+  }
+}

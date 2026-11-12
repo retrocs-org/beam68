@@ -1,0 +1,82 @@
+FailAt 20
+Echo "Beam68 0.1 AmigaOS runtime test started" >Bin:Beam68/runtime-test.log
+Stack 65536
+Run >NIL: <NIL: Bin:Beam68/Beam68
+Wait 3
+Bin:Beam68/Beam68Ctl SHOW >>Bin:Beam68/runtime-test.log
+If WARN
+  Echo "Launcher control port: FAIL" >>Bin:Beam68/runtime-test.log
+  Quit 10
+EndIf
+Echo "Launcher control port: PASS" >>Bin:Beam68/runtime-test.log
+If NOT EXISTS ENVARC:Beam68/Unclean.marker
+  Echo "Crash marker while running: FAIL" >>Bin:Beam68/runtime-test.log
+  Quit 10
+EndIf
+Echo "Crash marker while running: PASS" >>Bin:Beam68/runtime-test.log
+Bin:Beam68/Beam68Ctl RELOADPLUGINS >>Bin:Beam68/runtime-test.log
+If WARN
+  Echo "Plugin reload control: FAIL" >>Bin:Beam68/runtime-test.log
+  Quit 10
+EndIf
+Echo "Plugin reload control: PASS" >>Bin:Beam68/runtime-test.log
+Bin:Beam68/Plugins/ARexxRunner/ARexxRunner 6C697374 T:Beam68-ARexx-Test
+If WARN
+  Echo "ARexx Runner list: FAIL" >>Bin:Beam68/runtime-test.log
+  Quit 10
+EndIf
+If NOT EXISTS T:Beam68-ARexx-Test
+  Echo "ARexx Runner reply: FAIL" >>Bin:Beam68/runtime-test.log
+  Quit 10
+EndIf
+Type T:Beam68-ARexx-Test >>Bin:Beam68/runtime-test.log
+Delete T:Beam68-ARexx-Test >NIL:
+Echo "ARexx Runner list: PASS" >>Bin:Beam68/runtime-test.log
+Wait 1
+Bin:Beam68/Beam68Ctl QUIT >>Bin:Beam68/runtime-test.log
+If WARN
+  Echo "Launcher clean quit: FAIL" >>Bin:Beam68/runtime-test.log
+  Quit 10
+EndIf
+Echo "Launcher clean quit: PASS" >>Bin:Beam68/runtime-test.log
+Wait 1
+If EXISTS ENVARC:Beam68/Unclean.marker
+  Echo "Crash marker clean removal: FAIL" >>Bin:Beam68/runtime-test.log
+  Quit 10
+EndIf
+Echo "Crash marker clean removal: PASS" >>Bin:Beam68/runtime-test.log
+Echo "simulated unclean exit" >ENVARC:Beam68/Unclean.marker
+Run >NIL: <NIL: Bin:Beam68/Beam68
+Wait 3
+Bin:Beam68/Beam68Ctl SHOW >>Bin:Beam68/runtime-test.log
+If WARN
+  Echo "Recovery safe-mode startup: FAIL" >>Bin:Beam68/runtime-test.log
+  Quit 10
+EndIf
+Echo "Recovery safe-mode startup: PASS" >>Bin:Beam68/runtime-test.log
+Bin:Beam68/Beam68Ctl QUIT >>Bin:Beam68/runtime-test.log
+If WARN
+  Echo "Recovery safe-mode clean quit: FAIL" >>Bin:Beam68/runtime-test.log
+  Quit 10
+EndIf
+Wait 1
+If EXISTS ENVARC:Beam68/Unclean.marker
+  Echo "Recovery marker cleanup: FAIL" >>Bin:Beam68/runtime-test.log
+  Quit 10
+EndIf
+Echo "Recovery safe-mode clean quit: PASS" >>Bin:Beam68/runtime-test.log
+Run >NIL: <NIL: Bin:Beam68/Beam68 SAFE
+Wait 3
+Bin:Beam68/Beam68Ctl SHOW >>Bin:Beam68/runtime-test.log
+If WARN
+  Echo "Safe-mode startup: FAIL" >>Bin:Beam68/runtime-test.log
+  Quit 10
+EndIf
+Echo "Safe-mode startup: PASS" >>Bin:Beam68/runtime-test.log
+Bin:Beam68/Beam68Ctl QUIT >>Bin:Beam68/runtime-test.log
+If WARN
+  Echo "Safe-mode clean quit: FAIL" >>Bin:Beam68/runtime-test.log
+  Quit 10
+EndIf
+Echo "Safe-mode clean quit: PASS" >>Bin:Beam68/runtime-test.log
+Echo "Beam68 0.1 AmigaOS runtime test: PASS" >>Bin:Beam68/runtime-test.log

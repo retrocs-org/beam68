@@ -1,0 +1,8 @@
+Beam68 0.1 build notes
+
+Set BEAM68_CC to m68k-amigaos-gcc or BEAM68_VBCC to a configured vbcc/NDK tree.
+Run scripts/build-amiga.sh all to rebuild all 17 runtime executables.
+Run make host-test for portable checks; see DEVELOPMENT.md for source-only mode.
+Run scripts/build-install-amiga.sh with an explicit staging destination.
+Release packaging checks BUILD-PROVENANCE.json before writing the archive.
+See BUILD_STATUS.md for validation coverage and remaining checks.

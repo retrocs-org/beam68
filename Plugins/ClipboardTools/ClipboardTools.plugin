@@ -1,0 +1,16 @@
+VERSION=1
+ID=org.beam68.clipboardtools
+PLUGIN_VERSION=0.1
+MIN_BEAM68=0.1
+AUTHOR=Beam68 contributors
+LICENSE=MIT
+NAME=Clipboard Tools
+TRIGGER=&
+PREFIX=CLIP:
+COMMAND=PLUGINDIR:ClipboardTools
+DESCRIPTION=show, set:text, clear, upper, lower, or save:path.
+CATEGORY=Utilities
+CAPABILITIES=CLIPBOARD,FILES
+ICON=PROGDIR:Beam68
+EXAMPLE=clip:show
+HELP=Reads, clears, transforms, saves, or replaces clipboard text.

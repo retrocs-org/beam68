@@ -1,0 +1,262 @@
+## version $VER: Beam68Plugins.catalog 0.1 (27.10.2026)
+## language deutsch
+## codeset 0
+;
+PLMSG_REXX_NONE
+Keine Makros eingerichtet; ARexxRunner.cfg bearbeiten
+;No configured macros; edit ARexxRunner.cfg
+PLMSG_REXX_LIST
+Makros: 
+;Macros: 
+PLMSG_REXX_NAME
+Nur eingerichtete Makronamen (Buchstaben, Ziffern, _ oder -)
+;Use a configured macro name only (letters, numbers, _ or -)
+PLMSG_REXX_UNKNOWN
+Unbekanntes Makro; rexx:list zeigt alle
+;Unknown macro; use rexx:list
+PLMSG_REXX_MISSING
+Eingerichtetes ARexx-Skript nicht gefunden
+;Configured ARexx script was not found
+PLMSG_REXX_FAILED
+ARexx-Makro fehlgeschlagen
+;ARexx macro failed
+PLMSG_REXX_DONE
+Makro %s ausgeführt
+;Macro %s completed
+PLMSG_CALC_ERROR
+ERROR=Ungültiger Ausdruck, Division durch Null oder Überlauf\n
+;ERROR=Invalid expression, divide by zero or overflow\n
+PLMSG_CLIP_EMPTY
+Zwischenablage leer oder kein FTXT-Text
+;Clipboard is empty or is not FTXT text
+PLMSG_CLIP_CLEARED
+Zwischenablage gelöscht
+;Clipboard cleared
+PLMSG_CLIP_CLEAR_FAILED
+Zwischenablage nicht gelöscht
+;Could not clear clipboard
+PLMSG_CLIP_SET
+Text in die Zwischenablage gelegt
+;Clipboard text set
+PLMSG_CLIP_UPDATE_FAILED
+Zwischenablage nicht geändert
+;Could not update clipboard
+PLMSG_CLIP_SAVE_USAGE
+save:Laufwerk:Pfad verwenden
+;Use save:volume:path
+PLMSG_CLIP_CREATE_FAILED
+Zieldatei nicht angelegt
+;Could not create destination file
+PLMSG_CLIP_WRITE_FAILED
+Datei nicht vollständig geschrieben
+;Could not write complete file
+PLMSG_CLIP_SAVED
+Text der Zwischenablage gespeichert
+;Clipboard text saved
+PLMSG_CLIP_USAGE
+show, set:Text, clear, upper, lower oder save:Pfad verwenden
+;Use show, set:text, clear, upper, lower, or save:path
+PLMSG_CLOCK_SECONDS
+TEXT=Ortszeit %02ld:%02ld:%02ld\n
+;TEXT=Local time %02ld:%02ld:%02ld\n
+PLMSG_CLOCK
+TEXT=Ortszeit %02ld:%02ld\n
+;TEXT=Local time %02ld:%02ld\n
+PLMSG_DATE_FORMAT_FAILED
+Systemdatum nicht lesbar
+;Could not format system date
+PLMSG_DATE_ADD_USAGE
+date:add:<Tage> verwenden
+;Use date:add:<days>
+PLMSG_DATE_RANGE
+Datum außerhalb des gültigen Bereichs
+;Date is outside the supported range
+PLMSG_DATE_WEEKDAY_USAGE
+weekday:JJJJ-MM-TT verwenden
+;Use weekday:YYYY-MM-DD
+PLMSG_DATE_EPOCH
+Amiga-Sekunden: %lu (seit 1978-01-01)
+;Amiga epoch seconds: %lu (since 1978-01-01)
+PLMSG_DATE_USAGE
+today, add:7, weekday:2026-10-24 oder timestamp versuchen
+;Try today, add:7, weekday:2026-10-24, or timestamp
+PLMSG_DEV_HEX_USAGE
+hex:<dezimal oder $hex> verwenden
+;Use hex:<decimal or $hex>
+PLMSG_DEV_DEC_USAGE
+dec:$FF oder dec:0xFF verwenden
+;Use dec:$FF or dec:0xFF
+PLMSG_DEV_ASCII_RANGE
+ASCII-Wert muss 0..255 sein
+;ASCII value must be 0..255
+PLMSG_DEV_ASCII_CONTROL
+ASCII %lu = Steuerzeichen = $%02lX
+;ASCII %lu = control/non-printing = $%02lX
+PLMSG_DEV_MASK_USAGE
+mask:0,3,7 verwenden (Bits 0..31)
+;Use mask:0,3,7 (bits 0..31)
+PLMSG_DEV_MASK_SEPARATE
+Bits mit Kommas trennen
+;Separate mask bits with commas
+PLMSG_DEV_MASK
+Bitmaske = $%08lX (%lu)
+;Bit mask = $%08lX (%lu)
+PLMSG_DEV_PROT
+Schutzbits $%02lX: R%c W%c E%c D%c
+;Protection $%02lX: R%c W%c E%c D%c
+PLMSG_DEV_PROT_USAGE
+prot:RWED oder prot:$0F verwenden
+;Use prot:RWED or prot:$0F
+PLMSG_DEV_PROT_MASK
+Erlaubtes RWED -> Amiga-Sperrmaske $%02lX
+;Allowed RWED -> Amiga deny mask $%02lX
+PLMSG_DEV_USAGE
+hex:255, ascii:65, mask:0,3,7 oder prot:RWED versuchen
+;Try hex:255, ascii:65, mask:0,3,7, or prot:RWED
+PLMSG_DOS_LOCK_FAILED
+DOS-Liste nicht verfügbar
+;Could not lock DOS list
+PLMSG_DOS_NO_VOLUMES
+Keine Laufwerke eingebunden
+;No mounted volumes
+PLMSG_DOS_NO_ASSIGNS
+Keine Zuweisungen
+;No assigns
+PLMSG_DOS_NOT_FOUND
+Pfad nicht gefunden
+;Path not found
+PLMSG_DOS_NO_MEMORY
+Nicht genug Speicher
+;Not enough memory
+PLMSG_DOS_INFO_FAILED
+Laufwerksinformation nicht lesbar
+;Could not read disk information
+PLMSG_DOS_FREE
+%s%s %lu KiB von %lu KiB frei
+;%s%s %lu KiB free of %lu KiB
+PLMSG_DOS_OPEN_USAGE
+open:RAM: oder einen anderen AmigaDOS-Pfad verwenden
+;Use open:RAM: or another AmigaDOS path
+PLMSG_DOS_OPENED
+Auf der Workbench geöffnet
+;Opened on Workbench
+PLMSG_DOS_OPEN_FAILED
+Workbench konnte das nicht öffnen
+;Workbench could not open that object
+PLMSG_DOS_USAGE
+volumes, assigns, diskfree:Pfad oder open:Pfad verwenden
+;Use volumes, assigns, diskfree:path, or open:path
+PLMSG_FIND_USAGE
+find:<Teil eines Datei- oder Schubladennamens> verwenden
+;Use find:<part of a file or drawer name>
+PLMSG_FIND_UNREADABLE
+Keine Treffer; %lu Schublade(n) nicht lesbar
+;No matches; %lu drawer(s) could not be read
+PLMSG_FIND_NONE
+Keine passenden Dateien oder Schubladen
+;No matching files or drawers in indexed roots
+PLMSG_MEMORY
+TEXT=Frei: Chip %lu KiB / Fast %lu KiB\n
+;TEXT=Free Chip %lu KiB / Fast %lu KiB\n
+PLMSG_MUSIC_NO_ANSWER
+Player antwortet nicht
+;player did not answer
+PLMSG_MUSIC_ACCEPTED
+%s: Befehl angenommen
+;%s: command accepted
+PLMSG_MUSIC_USAGE
+status, play, pause, stop, next, previous, volume up/down/0-100 oder players verwenden
+;Use status, play, pause, stop, next, previous, volume up/down/0-100, or players
+PLMSG_MUSIC_NOT_RUNNING
+%s läuft nicht
+;%s is not running
+PLMSG_MUSIC_NONE
+Kein unterstützter Player läuft (HippoPlayer, AmigaAMP oder EaglePlayer 2)
+;No supported player is running (HippoPlayer, AmigaAMP or EaglePlayer 2)
+PLMSG_MUSIC_REJECTED
+Der Player hat den ARexx-Befehl abgelehnt
+;The player rejected the ARexx command
+PLMSG_SYS_MEMORY
+Frei: Chip %lu KiB / Fast %lu KiB
+;Free Chip %lu KiB / Fast %lu KiB
+PLMSG_SYS_FLUSH_FAILED
+Avail FLUSH fehlgeschlagen
+;Avail FLUSH failed
+PLMSG_SYS_FLUSHED
+Bibliotheken entfernt; frei Chip %lu KiB / Fast %lu KiB
+;Libraries flushed; free Chip %lu KiB / Fast %lu KiB
+PLMSG_SYS_REBOOT_CONFIRM
+Achtung: reboot confirm eingeben
+;Destructive: type reboot confirm
+PLMSG_SYS_REBOOTING
+Amiga wird neu gestartet...
+;Rebooting the Amiga...
+PLMSG_SYS_SHUTDOWN_CONFIRM
+Achtung: shutdown confirm eingeben
+;Destructive: type shutdown confirm
+PLMSG_SYS_SHUTDOWN
+C:ShutDown wird gestartet...
+;Starting C:ShutDown...
+PLMSG_SYS_USAGE
+avail, version, flush, reboot confirm oder shutdown confirm verwenden
+;Use avail, version, flush, reboot confirm, or shutdown confirm
+PLMSG_TASK_NONE
+Keine Tasknamen verfügbar
+;No task names available
+PLMSG_TASK_USAGE
+tasks oder task:break:<Name>:confirm verwenden
+;Use tasks or task:break:<name>:confirm
+PLMSG_TASK_CONFIRM
+Signal erfordert :confirm
+;Signal action requires :confirm
+PLMSG_TASK_NAME
+Taskname fehlt oder ist zu lang
+;Task name is missing or too long
+PLMSG_TASK_NOT_FOUND
+Task nicht gefunden
+;Task was not found
+PLMSG_TASK_SELF
+Das Task-Manager-Plugin signalisiert sich nicht selbst
+;Refusing to signal the Task Manager plugin itself
+PLMSG_TASK_SENT
+Ctrl-C an %s gesendet
+;Sent Ctrl-C break signal to %s
+PLMSG_WIN_NONE
+Keine Workbench-Fenster mit Titel offen
+;No titled Workbench windows are open
+PLMSG_WIN_NOT_FOUND
+Kein passendes Fenster und kein Bildschirm gefunden
+;No matching window or screen was found
+PLMSG_WIN_FRONT
+%s nach vorne geholt
+;Brought %s to front
+PLMSG_DAY_SUNDAY
+Sonntag
+;Sunday
+PLMSG_DAY_MONDAY
+Montag
+;Monday
+PLMSG_DAY_TUESDAY
+Dienstag
+;Tuesday
+PLMSG_DAY_WEDNESDAY
+Mittwoch
+;Wednesday
+PLMSG_DAY_THURSDAY
+Donnerstag
+;Thursday
+PLMSG_DAY_FRIDAY
+Freitag
+;Friday
+PLMSG_DAY_SATURDAY
+Samstag
+;Saturday
+PLMSG_MUSIC_RUNNING
+Läuft: 
+;Running: 
+PLMSG_MUSIC_PREFERRED
+ | Bevorzugt: 
+; | Preferred: 
+PLMSG_DATE_WEEKDAY
+%04d-%02d-%02d ist ein %s
+;%04d-%02d-%02d is %s

@@ -1,0 +1,16 @@
+VERSION=1
+ID=org.beam68.systemcommands
+PLUGIN_VERSION=0.1
+MIN_BEAM68=0.1
+AUTHOR=Beam68 contributors
+LICENSE=MIT
+NAME=System Commands
+TRIGGER=!
+PREFIX=SYSTEM:
+COMMAND=PLUGINDIR:SystemCommands
+DESCRIPTION=avail, version, flush, reboot confirm, or shutdown confirm.
+CATEGORY=System
+CAPABILITIES=SYSTEM
+ICON=PROGDIR:Beam68
+EXAMPLE=system:version
+HELP=Destructive commands require an explicit confirm suffix.

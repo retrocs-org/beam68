@@ -1,0 +1,757 @@
+## version $VER: Beam68Prefs.catalog 0.1 (27.10.2026)
+## language deutsch
+## codeset 0
+;
+PMSG_STOPPED
+Gestoppt
+;Stopped
+PMSG_PAGE_GENERAL
+Allgemein
+;General
+PMSG_PAGE_INDEXING
+Indizierung
+;Indexing
+PMSG_PAGE_PLUGINS
+Plugins
+;Plugins
+PMSG_PAGE_APPEARANCE
+Aussehen
+;Appearance
+PMSG_PAGE_FAVORITES
+Favoriten
+;Favorites
+PMSG_PAGE_APPLICATIONS
+Programme
+;Applications
+PMSG_PAGE_ACCESSIBILITY
+Bedienungshilfen
+;Accessibility
+PMSG_COMPACT_AUTO
+Auto
+;Auto
+PMSG_COMPACT_ALWAYS
+Immer
+;Always
+PMSG_COMPACT_NEVER
+Nie
+;Never
+PMSG_STATE_ON
+AN
+;ON
+PMSG_STATE_OFF
+AUS
+;OFF
+PMSG_STATE_QUAR
+GESP
+;QUAR
+PMSG_STATE_ERR
+FEHL
+;ERR
+PMSG_ACTION_ONLY
+(nur Aktion)
+;(action only)
+PMSG_HOTKEY
+Kürzel
+;Hotkey
+PMSG_CAPTURE
+Aufnehmen...
+;Capture...
+PMSG_MAX_ITEMS
+Einträge
+;Max items
+PMSG_RESULTS
+Treffer
+;Results
+PMSG_RANK_FREQUENT
+Häufige Programme bevorzugen
+;Rank frequent apps
+PMSG_INDEX_CACHE
+Index-Cache
+;Index cache
+PMSG_DEPTH
+Tiefe
+;Depth
+PMSG_ICONS
+Symbole
+;Icons
+PMSG_EXECUTABLES
+Programme
+;Executables
+PMSG_FILES
+Dateien
+;Files
+PMSG_DRAWERS
+Schubladen
+;Drawers
+PMSG_WHDLOAD_GAMES
+WHDLoad-Spiele
+;WHDLoad games
+PMSG_FILE_PATTERNS
+Dateimuster
+;File patterns
+PMSG_EXCLUDED
+Ausnahmen
+;Excluded
+PMSG_DIRECTORIES
+Verzeichnisse (Schubladen ablegen)
+;Directories (drop drawers)
+PMSG_BROWSE
+Wählen
+;Browse
+PMSG_ADD
+Hinzu
+;Add
+PMSG_REMOVE
+Entfernen
+;Remove
+PMSG_PLUGIN_SETTINGS
+Plugin-Einstellungen
+;Plugin settings
+PMSG_SETTINGS
+Einstellungen
+;Settings
+PMSG_VALUE
+Wert
+;Value
+PMSG_APPLY_VALUE
+Wert setzen
+;Apply value
+PMSG_NEXT_CHOICE
+Weiter
+;Next choice
+PMSG_SAVE_PLUGIN
+Speichern
+;Save plugin
+PMSG_BACK
+Zurück
+;Back
+PMSG_SHELL_SERVICE
+Eingebaute Shell-Befehle (shell: und >)
+;Built-in Shell Commands (shell: and >)
+PMSG_PLUGIN_LIST
+Plugins (.plugin, Paket-Schublade oder .lha/.zip ablegen)
+;Plugins (drop .plugin, package drawer or .lha/.zip)
+PMSG_DETAILS
+Details
+;Details
+PMSG_TOGGLE
+Ein/Aus
+;Enable/Disable
+PMSG_UP
+Hoch
+;Up
+PMSG_DOWN
+Runter
+;Down
+PMSG_RELOAD_PLUGINS
+Neu laden
+;Reload plugins
+PMSG_EXPORT_REPORT
+Diagnose
+;Export report
+PMSG_TIMEOUT
+Zeitlimit
+;Timeout
+PMSG_GROUP
+Gruppe
+;Group
+PMSG_FAVORITE_LIST
+Favoriten nach Gruppe (Programme ablegen)
+;Grouped favorites (drop tools)
+PMSG_PATH
+Pfad
+;Path
+PMSG_KEYWORDS
+Suchwörter
+;Keywords
+PMSG_ACTION
+Aktion
+;Action
+PMSG_COMMAND
+Befehl
+;Command
+PMSG_APPLY
+Übernehmen
+;Apply
+PMSG_EDIT_APPLICATIONS
+Programme bearbeiten...
+;Edit Applications...
+PMSG_THEME
+Farbschema
+;Theme
+PMSG_WINDOW_WIDTH
+Breite
+;Window width
+PMSG_WINDOW_HEIGHT
+Höhe (0=auto)
+;Height (0=auto)
+PMSG_ICON_PREVIEW
+Vorschau des Piktogramms
+;Selected icon preview
+PMSG_CUSTOM_PALETTE
+Eigene Palette (5 x RRGGBB)
+;Custom palette (5 x RRGGBB)
+PMSG_THEME_DETAILS
+Schema-Details
+;Theme details
+PMSG_THEME_FILE
+Schema-Datei
+;Theme file
+PMSG_IMPORT
+Laden
+;Import
+PMSG_EXPORT
+Sichern
+;Export
+PMSG_LAUNCHER_FONT
+Schrift
+;Launcher font
+PMSG_CHOOSE
+Wählen...
+;Choose...
+PMSG_FONT_SIZE
+Schriftgröße
+;Font size
+PMSG_ROW_SPACING
+Zeilenabstand
+;Row spacing
+PMSG_HIGH_CONTRAST
+Kontrastreiche Auswahl
+;High-contrast selection
+PMSG_LARGE_GADGETS
+Größere Bedienelemente
+;Larger Preferences gadgets
+PMSG_REDUCED_COLORS
+Weniger Farben
+;Reduced-color display
+PMSG_COMPACT
+Kompakt
+;Compact
+PMSG_RUNNING
+Läuft
+;Running
+PMSG_LAUNCHER
+Starter
+;Launcher
+PMSG_START
+Start
+;Start
+PMSG_RESTART
+Neustart
+;Restart
+PMSG_STOP
+Stopp
+;Stop
+PMSG_USE
+Benutzen
+;Use
+PMSG_SAVE
+Speichern
+;Save
+PMSG_CANCEL
+Abbrechen
+;Cancel
+PMSG_TITLE
+Beam68-Einstellungen
+;Beam68 Preferences
+PMSG_SELECT_DIRECTORY
+Verzeichnis wählen
+;Select directory
+PMSG_SELECT_PLUGIN
+Manifest, Paket-Schublade oder .lha/.zip wählen
+;Select manifest, package drawer or .lha/.zip
+PMSG_SELECT_APPLICATION
+Programm wählen
+;Select application
+PMSG_SELECT_FONT
+Schrift wählen
+;Select launcher font
+PMSG_REMOVE_TITLE
+Beam68-Plugin entfernen
+;Remove Beam68 plugin
+PMSG_REMOVE_BODY
+%s nur aus der Liste entfernen\noder auch die installierten Dateien löschen?\n\n%s
+;Remove %s from the list only,\nor also delete its installed files?\n\n%s
+PMSG_REMOVE_BUTTONS
+Dateien löschen|Nur Liste|Abbrechen
+;Delete files|List only|Cancel
+PMSG_FILES_DELETED
+Plugin-Dateien gelöscht - Benutzen oder Speichern wählen
+;Plugin files deleted - choose Use or Save
+PMSG_FILES_NOT_DELETED
+Einige Plugin-Dateien konnten nicht gelöscht werden
+;Some plugin files could not be deleted
+PMSG_APPLICATIONS_TITLE
+Beam68-Programme - %ld von %ld
+;Beam68 Applications - %ld of %ld
+PMSG_APPEARANCE_TITLE
+Beam68-Aussehen - %s
+;Beam68 Appearance - %s
+PMSG_APPEARANCE_WAITS
+Beam68-Aussehen - Vorschau nach dem Neustart
+;Beam68 Appearance - preview waits for recovery restart
+PMSG_THEME_IMPORTED
+Beam68-Aussehen - geladenes Schema (Vorschau)
+;Beam68 Appearance - imported theme preview
+PMSG_THEME_INVALID
+Beam68-Aussehen - ungültige Schema-Datei
+;Beam68 Appearance - invalid or unreadable theme file
+PMSG_THEME_EXPORT_FAILED
+Beam68-Aussehen - Sichern fehlgeschlagen
+;Beam68 Appearance - theme export failed
+PMSG_THEME_EXPORTED
+Beam68-Aussehen - Schema gesichert
+;Beam68 Appearance - theme exported
+PMSG_LAUNCHER_EXAMPLE
+Beispiel
+;Launcher example
+PMSG_APPLICATIONS_HINT
+Beam68-Programme - Stichwörter und/oder vollständige Aktion eingeben
+;Beam68 Applications - enter keywords and/or a complete action
+PMSG_THEME_DROPPED
+Beam68-Aussehen - abgelegtes Schema (Vorschau)
+;Beam68 Appearance - dropped theme preview
+PMSG_QUARANTINE_CLEARED
+Beam68-Einstellungen - Plugin-Sperre aufgehoben
+;Beam68 Preferences - plugin quarantine cleared
+PMSG_HEALTH_UNAVAILABLE
+Zustand unbekannt
+;Health unavailable
+PMSG_DETAILS1
+Name: %.64s\nKategorie: %.30s\nAuslöser: %c  Präfix: %.20s\nStatus: %s\nPriorität: %ld von %ld\n
+;Name: %.64s\nCategory: %.30s\nTrigger: %c  Prefix: %.20s\nStatus: %s\nPriority: %ld of %ld\n
+PMSG_DETAILS2
+Zustand: %.150s\nRechte: %.60s\nBeschreibung: %.90s\nBeispiel: %.80s\nHilfe: %.110s\n
+;Health: %.150s\nCapabilities: %.60s\nDescription: %.90s\nExample: %.80s\nHelp: %.110s\n
+PMSG_DETAILS3
+Piktogramm: %.80s\nProgramm: %.80s\nEinstellungen: %.80s\nManifest: %.80s
+;Icon: %.80s\nExecutable: %.80s\nSettings: %.80s\nManifest: %.80s
+PMSG_UNKNOWN
+(unbekannt)
+;(unknown)
+PMSG_NONE
+(keine)
+;(none)
+PMSG_NOT_AVAILABLE
+(nicht verfügbar)
+;(not available)
+PMSG_NO_SETTINGS
+(keine Einstellungen)
+;(no settings declared)
+PMSG_DETAILS_TITLE
+Beam68-Plugin-Details
+;Beam68 Plugin Details
+PMSG_OK
+OK
+;OK
+PMSG_REPORT_FAILED
+Beam68-Einstellungen - Bericht nicht gesichert
+;Beam68 Preferences - report export failed
+PMSG_REPORT_CLOSE_FAILED
+Beam68-Einstellungen - Bericht nicht geschlossen
+;Beam68 Preferences - report close failed
+PMSG_REPORT_EXPORTED
+Beam68-Einstellungen - RAM:Beam68-Diagnostics.txt gesichert
+;Beam68 Preferences - exported RAM:Beam68-Diagnostics.txt
+PMSG_TYPE_BOOL
+Ja/Nein
+;Yes/No
+PMSG_TYPE_NUMBER
+Zahl
+;Number
+PMSG_TYPE_TEXT
+Text
+;Text
+PMSG_CAPTURE_PRESS
+Beam68-Einstellungen - Tastenkombination drücken (Esc bricht ab)
+;Beam68 Preferences - press shortcut (Esc cancels)
+PMSG_CAPTURE_CANCELLED
+Beam68-Einstellungen - Aufnahme abgebrochen
+;Beam68 Preferences - capture cancelled
+PMSG_CAPTURE_UNSUPPORTED
+Beam68-Einstellungen - Taste nicht möglich, andere wählen
+;Beam68 Preferences - unsupported key, try another
+PMSG_CAPTURED
+Beam68-Einstellungen - aufgenommen; Benutzen oder Speichern
+;Beam68 Preferences - captured; Use or Save to apply
+PMSG_ALREADY_RUNNING
+Beam68-Einstellungen - Starter läuft bereits
+;Beam68 Preferences - launcher is already running
+PMSG_STARTING
+Startet...
+;Starting...
+PMSG_EXE_NOT_FOUND
+Beam68-Einstellungen - Programm Beam68 nicht gefunden
+;Beam68 Preferences - Beam68 executable not found
+PMSG_INVALID_LAUNCHER_PATH
+Beam68-Einstellungen - ungültiger Starterpfad
+;Beam68 Preferences - invalid launcher path
+PMSG_START_FAILED
+Beam68-Einstellungen - Starter konnte nicht gestartet werden
+;Beam68 Preferences - could not start launcher
+PMSG_STARTED
+Beam68-Einstellungen - Starter gestartet
+;Beam68 Preferences - launcher started
+PMSG_START_TIMEOUT
+Beam68-Einstellungen - Starter reagiert nicht
+;Beam68 Preferences - launcher start timed out
+PMSG_NOT_RUNNING
+Beam68-Einstellungen - Starter läuft nicht
+;Beam68 Preferences - launcher is not running
+PMSG_RESTARTING
+Neustart...
+;Restarting...
+PMSG_STOPPING
+Stoppt...
+;Stopping...
+PMSG_NO_CONTACT
+Beam68-Einstellungen - Starter nicht erreichbar
+;Beam68 Preferences - could not contact launcher
+PMSG_DID_NOT_STOP
+Beam68-Einstellungen - Starter hat nicht beendet
+;Beam68 Preferences - launcher did not stop
+PMSG_RESTARTING_LAUNCHER
+Beam68-Einstellungen - Starter wird neu gestartet
+;Beam68 Preferences - restarting launcher
+PMSG_LAUNCHER_STOPPED
+Beam68-Einstellungen - Starter gestoppt
+;Beam68 Preferences - launcher stopped
+PMSG_APPS_SAVE_FAILED
+Beam68-Programme - Änderungen nicht gespeichert
+;Beam68 Applications - could not save changes
+PMSG_ALIASES_CREATE_FAILED
+Beam68-Einstellungen - Aliases.txt nicht angelegt
+;Beam68 Preferences - could not create Aliases.txt
+PMSG_ED_FAILED
+Beam68-Einstellungen - Ed nicht gestartet
+;Beam68 Preferences - could not start Ed
+PMSG_EDIT_HINT
+Beam68-Programme - Datei bearbeiten, dann F3 im Starter
+;Beam68 Applications - edit file, then press F3 in launcher
+PMSG_GUIDE_MISSING
+Beam68-Einst. - Beam68.guide nicht gefunden
+;Beam68 Prefs - Beam68.guide not found
+PMSG_AMIGAGUIDE_MISSING
+Beam68-Einst. - amigaguide.library fehlt
+;Beam68 Prefs - amigaguide.library missing
+PMSG_F1_HINT
+Beam68-Einst. - Help: Anleitung | F7/F8 Seiten | F9 Start | F10 Stopp
+;Beam68 Prefs - Help: manual | F7/F8 sections | F9 start | F10 stop
+PMSG_BAD_COLORS
+Beam68-Einstellungen - eigene Farben brauchen fünf RRGGBB-Werte
+;Beam68 Preferences - custom colors need five RRGGBB values
+PMSG_BAD_HOTKEY
+Beam68-Einstellungen - doppelte oder mehrdeutige Tasten
+;Beam68 Preferences - duplicate/ambiguous hotkey tokens
+PMSG_INVALID_VALUES
+Beam68-Einstellungen - ungültige Werte
+;Beam68 Preferences - invalid values
+PMSG_ENVARC_FAILED
+Beam68-Einstellungen - Speichern in ENVARC fehlgeschlagen
+;Beam68 Preferences - ENVARC save failed
+PMSG_SESSION_FAILED
+Beam68-Einstellungen - Sitzung nicht geschrieben
+;Beam68 Preferences - session write failed
+PMSG_FAV_ENVARC_FAILED
+Beam68-Einstellungen - Favoriten nicht in ENVARC gespeichert
+;Beam68 Preferences - favorites ENVARC save failed
+PMSG_FAV_SESSION_FAILED
+Beam68-Einstellungen - Favoriten-Sitzung nicht geschrieben
+;Beam68 Preferences - favorites session write failed
+PMSG_APPS_ENVARC_FAILED
+Beam68-Einstellungen - Programme nicht in ENVARC gespeichert
+;Beam68 Preferences - applications ENVARC save failed
+PMSG_APPS_SESSION_FAILED
+Beam68-Einstellungen - Programm-Sitzung nicht geschrieben
+;Beam68 Preferences - applications session write failed
+PMSG_THEME_RESTART
+Beam68-Einstellungen - Starter wird für das Schema neu gestartet
+;Beam68 Preferences - restarting launcher to apply theme
+PMSG_RESTART_FAILED
+Beam68-Einstellungen - Neustart fehlgeschlagen
+;Beam68 Preferences - launcher restart failed
+PMSG_SETTING_INVALID
+Beam68-Plugin-Einstellungen - ungültiger Wert
+;Beam68 Plugin Settings - invalid value
+PMSG_SETTING_SAVE_FAILED
+Beam68-Plugin-Einstellungen - Speichern fehlgeschlagen
+;Beam68 Plugin Settings - save failed
+PMSG_SETTING_SAVED
+Beam68-Plugin-Einstellungen - gespeichert; gilt beim nächsten Aufruf
+;Beam68 Plugin Settings - saved; used on next run
+PMSG_RELOAD_REQUESTED
+Beam68-Einstellungen - Plugins werden neu geladen
+;Beam68 Preferences - plugin reload requested
+PMSG_INST_UNSAFE
+Archiv enthält unsichere Pfade; nicht installiert
+;Archive contains unsafe paths; not installed
+PMSG_INST_CHECK_DIR
+INSTALL_DIR auf der Seite Allgemein prüfen
+;Check INSTALL_DIR on the General page
+PMSG_INST_CHOOSE
+Plugin-Schublade, .lha, .lzh oder .zip wählen
+;Choose a plugin drawer, .lha, .lzh or .zip
+PMSG_INST_COPY_FAILED
+Kopieren des Plugins fehlgeschlagen
+;Copying the plugin failed
+PMSG_INST_CREATE_FAILED
+Plugin-Schublade nicht angelegt
+;Could not create the plugin drawer
+PMSG_INST_MOVE_FAILED
+Plugin konnte nicht eingesetzt werden
+;Could not move the plugin into place
+PMSG_INST_OPEN_FAILED
+Archiv nicht lesbar
+;Could not open the archive
+PMSG_INST_LIST_FAILED
+Archivinhalt nicht lesbar
+;Could not read the archive listing
+PMSG_INST_READ_FAILED
+Archiv nicht lesbar
+;Could not read the archive
+PMSG_INST_CANCELLED
+Installation abgebrochen
+;Installation cancelled
+PMSG_INST_NO_PACKAGE
+Keine einzelne Plugin-Schublade mit einem .plugin-Manifest gefunden
+;No single plugin drawer with one .plugin manifest found
+PMSG_INST_NOT_LHA
+Kein gültiges LHA-Archiv
+;Not a valid LHA archive
+PMSG_INST_NOTHING
+Nichts zu installieren
+;Nothing to install
+PMSG_INST_PATH_LONG
+Pfad zu lang
+;Path too long
+PMSG_INST_DRAWER_LONG
+Pfad der Plugin-Schublade zu lang
+;Plugin drawer path is too long
+PMSG_INST_FULL
+Plugin-Liste voll (16); erst eines entfernen
+;Plugin list is full (16); remove one first
+PMSG_INST_IN_USE
+Die installierte Plugin-Schublade ist in Benutzung
+;The installed plugin drawer is in use
+PMSG_INST_BAD_EXE
+Plugin-Programm fehlt oder ist kein Amiga-Programm
+;The plugin executable is missing or not an Amiga program
+PMSG_INST_BAD_MANIFEST
+Plugin-Manifest ungültig oder benötigt ein neueres Beam68
+;The plugin manifest is invalid or needs a newer Beam68
+PMSG_INST_UNPACK_FAILED
+Entpacken fehlgeschlagen
+;Unpacking the archive failed
+PMSG_INST_BAD_ARCHIVE_PATH
+Archivpfad nicht unterstützt
+;Unsupported archive path
+PMSG_INST_BAD_DRAWER
+Name der Plugin-Schublade nicht unterstützt
+;Unsupported plugin drawer name
+PMSG_INST_NO_LHA
+C:LhA fehlt (Aminet util/arc). Archiv entpacken und Schublade installieren
+;C:LhA not found (Aminet util/arc). Unpack it and install the drawer
+PMSG_INST_NO_UNZIP
+C:UnZip fehlt (Aminet util/arc). Archiv entpacken und Schublade installieren
+;C:UnZip not found (Aminet util/arc). Unpack it and install the drawer
+PMSG_INST_EMPTY
+Das Archiv ist leer
+;The archive is empty
+PMSG_INST_DRAWER_TAKEN
+Plugins/%.40s gehört einem anderen Plugin
+;Plugins/%.40s is used by a different plugin
+PMSG_INST_TITLE
+Beam68-Plugin installieren
+;Install Beam68 plugin
+PMSG_INST_BUTTONS
+Installieren|Abbrechen
+;Install|Cancel
+PMSG_INST_DONE
+%.40s %.15s%s installiert - Benutzen oder Speichern wählen
+;Installed %.40s %.15s%s - choose Use or Save
+PMSG_INST_DISABLED_NOTE
+ (aus: Eingabekonflikt)
+; (disabled: input conflict)
+PMSG_INST_CONSENT
+%.60s %.15s\nvon %.60s\n\nID: %.63s\nLizenz: %.31s\nZugriff: %.63s\n%s%s%.60s%s\n%s%.15s%s\n\nInstallieren nach %.120s?
+;%.60s %.15s\nby %.60s\n\nID: %.63s\nLicense: %.31s\nAccess: %.63s\n%s%s%.60s%s\n%s%.15s%s\n\nInstall into %.120s?
+PMSG_INST_UNKNOWN_AUTHOR
+unbekanntem Autor
+;unknown author
+PMSG_INST_NOT_STATED
+nicht angegeben
+;not stated
+PMSG_INST_NONE_DECLARED
+keine angegeben
+;none declared
+PMSG_INST_SYSTEM_WARNING
+\nSYSTEM: darf neu starten, Tasks signalisieren oder das System ändern.
+;\nSYSTEM: may reboot, signal tasks or change the system.
+PMSG_INST_CONFLICT
+\nAuslöser/Präfix bereits belegt durch 
+;\nTrigger/prefix already used by 
+PMSG_INST_CONFLICT_END
+; es wird ausgeschaltet installiert.
+;; it will be installed disabled.
+PMSG_INST_UPGRADE
+Aktualisiert die installierte Version 
+;Upgrades installed version 
+PMSG_INST_REINSTALL
+Installiert dieselbe Version erneut 
+;Reinstalls the same version 
+PMSG_INST_DOWNGRADE
+ERSETZT NEUERE Version 
+;DOWNGRADES installed version 
+PMSG_PKG_NO_MANIFEST
+Kein Manifest
+;No manifest
+PMSG_PKG_BAD_ID
+Manifest braucht eine gültige ID= (Buchstaben, Ziffern, . _ -)
+;Manifest needs a valid ID= (letters, digits, . _ -)
+PMSG_PKG_NO_VERSION
+Manifest braucht PLUGIN_VERSION=
+;Manifest needs PLUGIN_VERSION=
+PMSG_PKG_TOO_NEW
+Plugin benötigt ein neueres Beam68
+;Plugin needs a newer Beam68
+PMSG_PKG_BAD_COMMAND
+COMMAND muss PLUGINDIR:<Datei> im Paket sein
+;COMMAND must be PLUGINDIR:<file> inside the package
+PMSG_PKG_BAD_ICON
+ICON muss PLUGINDIR:<Datei> im Paket sein
+;ICON must be PLUGINDIR:<file> inside the package
+PMSG_PKG_BAD_GUIDE
+GUIDE muss PLUGINDIR:<Datei> im Paket sein
+;GUIDE must be PLUGINDIR:<file> inside the package
+PMSG_PKG_BAD_SETTINGS
+SETTINGS muss ENVARC:Beam68/Plugins/<Datei> sein
+;SETTINGS must be ENVARC:Beam68/Plugins/<file>
+PMSG_DETAILS4
+\nProtokoll: %ld  Anleitung: %.80s
+;\nProtocol: %ld  Guide: %.80s
+PMSG_PAGE_EXTRAS
+Extras
+;Extras
+PMSG_QUICK_LAUNCH
+Favoritentasten
+;Favorite keys
+PMSG_WHDLOAD_CMD
+WHDLoad-Befehl
+;WHDLoad command
+PMSG_DOPUS_PORT
+Opus-ARexx-Port
+;Opus ARexx port
+PMSG_DOPUS_DRAWERS
+Schubladen in Directory Opus öffnen
+;Open drawers in Directory Opus
+PMSG_PLUGIN_CACHE
+Plugins aus RAM-Kopie starten
+;Run plugins from a RAM copy
+PMSG_RESULTS_MAX
+Ergebnisse
+;Results kept
+PMSG_BROWSE_MAX
+Listeneinträge
+;Browse entries
+PMSG_HIDDEN_MAX
+Versteckt max.
+;Hidden max
+PMSG_RECENT_DOCS
+Letzte Dok.
+;Recent docs
+PMSG_PRESET_EXPORT
+Preset sichern...
+;Export preset...
+PMSG_PRESET_IMPORT
+Preset laden...
+;Import preset...
+PMSG_PRESET_CONFIRM
+Beam68-Einstellungen ersetzen durch\n%s?\n\nFavoriten, Aliase, versteckte Ergebnisse und\nPlugin-Einstellungen im Preset werden mit ersetzt.
+;Replace your Beam68 settings with\n%s?\n\nFavorites, aliases, hidden results and\nplugin settings in the preset are replaced too.
+PMSG_PRESET_BUTTONS
+Laden|Abbrechen
+;Import|Cancel
+PMSG_PRESET_EXPORTED
+Beam68-Einstellungen - Preset gesichert (gespeicherte Einstellungen)
+;Beam68 Preferences - preset exported (saved settings)
+PMSG_PRESET_IMPORTED
+Beam68-Einstellungen - Preset geladen
+;Beam68 Preferences - preset imported
+PMSG_PRESET_FAILED
+Beam68-Einstellungen - Preset fehlerhaft
+;Beam68 Preferences - preset failed or invalid
+PMSG_EDIT_COLOURS
+Farben bearbeiten...
+;Edit colours...
+PMSG_COLOUR_ROLE
+Farbe
+;Colour
+PMSG_ROLE_TEXT
+Text
+;Text
+PMSG_ROLE_SHADOW
+Schatten
+;Shadow
+PMSG_ROLE_FILL
+Auswahl
+;Selection
+PMSG_ROLE_FILL_TEXT
+Auswahltext
+;Selected text
+PMSG_ROLE_BACKGROUND
+Hintergrund
+;Background
+PMSG_CAT_BUTTON
+Plugin-Katalog...
+;Plugin catalogue...
+PMSG_CAT_TITLE
+Beam68-Katalog für Plugins und Farbschemas
+;Beam68 plugin and theme catalogue
+PMSG_CAT_SOURCE
+Quelle
+;Source
+PMSG_CAT_LOAD
+Laden
+;Load
+PMSG_CAT_INSTALL
+Installieren
+;Install
+PMSG_CAT_CLOSE
+Schließen
+;Close
+PMSG_CAT_LOAD_FAILED
+Katalog nicht ladbar (URL, Pfad oder DOWNLOAD_COMMAND)
+;Could not load the catalogue (URL, path or DOWNLOAD_COMMAND)
+PMSG_CAT_EMPTY
+Der Katalog enthält keine Einträge
+;The catalogue has no usable entries
+PMSG_CAT_DOWNLOAD_FAILED
+Download fehlgeschlagen - ist wget (bzw. DOWNLOAD_COMMAND) installiert?
+;Download failed - is wget (or your DOWNLOAD_COMMAND) installed?
+PMSG_CAT_THEME_OK
+Farbschema geladen - Benutzen oder Speichern wählen
+;Theme imported - choose Use or Save
+PMSG_PAGE_SOURCES
+Quellen
+;Sources
+PMSG_SRC_MODULES
+Musikmodule indizieren (mod:)
+;Index music modules (mod:)
+PMSG_SRC_PLAYER_PORT
+Player-Port
+;Player port
+PMSG_SRC_PLAYER_AREXX
+Player-ARexx
+;Player ARexx
+PMSG_SRC_PLAYER_COMMAND
+Player starten
+;Start player
+PMSG_SRC_REXX
+ARexx-Skripte in REXX: indizieren (script:)
+;Index ARexx scripts in REXX: (script:)
+PMSG_SRC_BOOKMARKS
+Lesezeichen-Dateien
+;Bookmark files
+PMSG_SRC_URL_COMMAND
+URL öffnen mit
+;Open URL with

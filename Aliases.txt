@@ -1,0 +1,6 @@
+# Beam68 0.1 applications
+# path<TAB>aliases and keywords<TAB>optional action label<TAB>optional command
+# Use {path} or {drawer} in commands; Beam68 inserts a quoted AmigaDOS path.
+# Examples (replace paths with applications indexed on your Amiga):
+# SYS:System/Shell	terminal cli console	Open CLI	{path}
+# SYS:Utilities/MultiView	viewer documents images	Edit file	C:Ed {path}

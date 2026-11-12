@@ -1,0 +1,757 @@
+## version $VER: Beam68Prefs.catalog 0.1 (27.10.2026)
+## language svenska
+## codeset 0
+;
+PMSG_STOPPED
+Stoppad
+;Stopped
+PMSG_PAGE_GENERAL
+Allmänt
+;General
+PMSG_PAGE_INDEXING
+Indexering
+;Indexing
+PMSG_PAGE_PLUGINS
+Tillägg
+;Plugins
+PMSG_PAGE_APPEARANCE
+Utseende
+;Appearance
+PMSG_PAGE_FAVORITES
+Favoriter
+;Favorites
+PMSG_PAGE_APPLICATIONS
+Program
+;Applications
+PMSG_PAGE_ACCESSIBILITY
+Tillgänglighet
+;Accessibility
+PMSG_COMPACT_AUTO
+Auto
+;Auto
+PMSG_COMPACT_ALWAYS
+Alltid
+;Always
+PMSG_COMPACT_NEVER
+Aldrig
+;Never
+PMSG_STATE_ON
+PÅ
+;ON
+PMSG_STATE_OFF
+AV
+;OFF
+PMSG_STATE_QUAR
+SPÄRR
+;QUAR
+PMSG_STATE_ERR
+FEL
+;ERR
+PMSG_ACTION_ONLY
+(endast åtgärd)
+;(action only)
+PMSG_HOTKEY
+Tangent
+;Hotkey
+PMSG_CAPTURE
+Spela in...
+;Capture...
+PMSG_MAX_ITEMS
+Antal
+;Max items
+PMSG_RESULTS
+Resultat
+;Results
+PMSG_RANK_FREQUENT
+Prioritera vanliga program
+;Rank frequent apps
+PMSG_INDEX_CACHE
+Indexcache
+;Index cache
+PMSG_DEPTH
+Djup
+;Depth
+PMSG_ICONS
+Ikoner
+;Icons
+PMSG_EXECUTABLES
+Körbara filer
+;Executables
+PMSG_FILES
+Filer
+;Files
+PMSG_DRAWERS
+Lådor
+;Drawers
+PMSG_WHDLOAD_GAMES
+WHDLoad-spel
+;WHDLoad games
+PMSG_FILE_PATTERNS
+Filmönster
+;File patterns
+PMSG_EXCLUDED
+Undantag
+;Excluded
+PMSG_DIRECTORIES
+Lådor (släpp lådor här)
+;Directories (drop drawers)
+PMSG_BROWSE
+Bläddra
+;Browse
+PMSG_ADD
+Lägg in
+;Add
+PMSG_REMOVE
+Ta bort
+;Remove
+PMSG_PLUGIN_SETTINGS
+Tilläggsinställningar
+;Plugin settings
+PMSG_SETTINGS
+Inställningar
+;Settings
+PMSG_VALUE
+Värde
+;Value
+PMSG_APPLY_VALUE
+Sätt värde
+;Apply value
+PMSG_NEXT_CHOICE
+Nästa val
+;Next choice
+PMSG_SAVE_PLUGIN
+Spara
+;Save plugin
+PMSG_BACK
+Tillbaka
+;Back
+PMSG_SHELL_SERVICE
+Inbyggda skalkommandon (shell: och >)
+;Built-in Shell Commands (shell: and >)
+PMSG_PLUGIN_LIST
+Tillägg (släpp .plugin, paketlåda eller .lha/.zip)
+;Plugins (drop .plugin, package drawer or .lha/.zip)
+PMSG_DETAILS
+Detaljer
+;Details
+PMSG_TOGGLE
+På/Av
+;Enable/Disable
+PMSG_UP
+Upp
+;Up
+PMSG_DOWN
+Ned
+;Down
+PMSG_RELOAD_PLUGINS
+Läs om tillägg
+;Reload plugins
+PMSG_EXPORT_REPORT
+Spara rapport
+;Export report
+PMSG_TIMEOUT
+Tidsgräns
+;Timeout
+PMSG_GROUP
+Grupp
+;Group
+PMSG_FAVORITE_LIST
+Favoriter per grupp (släpp program)
+;Grouped favorites (drop tools)
+PMSG_PATH
+Sökväg
+;Path
+PMSG_KEYWORDS
+Nyckelord
+;Keywords
+PMSG_ACTION
+Åtgärd
+;Action
+PMSG_COMMAND
+Kommando
+;Command
+PMSG_APPLY
+Verkställ
+;Apply
+PMSG_EDIT_APPLICATIONS
+Redigera program...
+;Edit Applications...
+PMSG_THEME
+Tema
+;Theme
+PMSG_WINDOW_WIDTH
+Bredd
+;Window width
+PMSG_WINDOW_HEIGHT
+Höjd (0=auto)
+;Height (0=auto)
+PMSG_ICON_PREVIEW
+Förhandsvisa ikon
+;Selected icon preview
+PMSG_CUSTOM_PALETTE
+Egen palett (5 x RRGGBB)
+;Custom palette (5 x RRGGBB)
+PMSG_THEME_DETAILS
+Temadetaljer
+;Theme details
+PMSG_THEME_FILE
+Temafil
+;Theme file
+PMSG_IMPORT
+Importera
+;Import
+PMSG_EXPORT
+Exportera
+;Export
+PMSG_LAUNCHER_FONT
+Typsnitt
+;Launcher font
+PMSG_CHOOSE
+Välj...
+;Choose...
+PMSG_FONT_SIZE
+Storlek
+;Font size
+PMSG_ROW_SPACING
+Radavstånd
+;Row spacing
+PMSG_HIGH_CONTRAST
+Högkontrastmarkering
+;High-contrast selection
+PMSG_LARGE_GADGETS
+Större kontroller
+;Larger Preferences gadgets
+PMSG_REDUCED_COLORS
+Färre färger
+;Reduced-color display
+PMSG_COMPACT
+Kompakt
+;Compact
+PMSG_RUNNING
+Körs
+;Running
+PMSG_LAUNCHER
+Startare
+;Launcher
+PMSG_START
+Starta
+;Start
+PMSG_RESTART
+Starta om
+;Restart
+PMSG_STOP
+Stoppa
+;Stop
+PMSG_USE
+Använd
+;Use
+PMSG_SAVE
+Spara
+;Save
+PMSG_CANCEL
+Avbryt
+;Cancel
+PMSG_TITLE
+Beam68-inställningar
+;Beam68 Preferences
+PMSG_SELECT_DIRECTORY
+Välj låda
+;Select directory
+PMSG_SELECT_PLUGIN
+Välj manifest, paketlåda eller .lha/.zip
+;Select manifest, package drawer or .lha/.zip
+PMSG_SELECT_APPLICATION
+Välj program
+;Select application
+PMSG_SELECT_FONT
+Välj typsnitt
+;Select launcher font
+PMSG_REMOVE_TITLE
+Ta bort Beam68-tillägg
+;Remove Beam68 plugin
+PMSG_REMOVE_BODY
+Ta bara bort %s ur listan,\neller radera även de installerade filerna?\n\n%s
+;Remove %s from the list only,\nor also delete its installed files?\n\n%s
+PMSG_REMOVE_BUTTONS
+Radera filer|Bara listan|Avbryt
+;Delete files|List only|Cancel
+PMSG_FILES_DELETED
+Tilläggets filer raderade - välj Använd eller Spara
+;Plugin files deleted - choose Use or Save
+PMSG_FILES_NOT_DELETED
+Vissa filer kunde inte raderas
+;Some plugin files could not be deleted
+PMSG_APPLICATIONS_TITLE
+Beam68-program - %ld av %ld
+;Beam68 Applications - %ld of %ld
+PMSG_APPEARANCE_TITLE
+Beam68-utseende - %s
+;Beam68 Appearance - %s
+PMSG_APPEARANCE_WAITS
+Beam68-utseende - förhandsvisning efter omstart
+;Beam68 Appearance - preview waits for recovery restart
+PMSG_THEME_IMPORTED
+Beam68-utseende - importerat tema visas
+;Beam68 Appearance - imported theme preview
+PMSG_THEME_INVALID
+Beam68-utseende - ogiltig temafil
+;Beam68 Appearance - invalid or unreadable theme file
+PMSG_THEME_EXPORT_FAILED
+Beam68-utseende - export misslyckades
+;Beam68 Appearance - theme export failed
+PMSG_THEME_EXPORTED
+Beam68-utseende - tema exporterat
+;Beam68 Appearance - theme exported
+PMSG_LAUNCHER_EXAMPLE
+Exempel
+;Launcher example
+PMSG_APPLICATIONS_HINT
+Beam68-program - ange nyckelord och/eller en hel åtgärd
+;Beam68 Applications - enter keywords and/or a complete action
+PMSG_THEME_DROPPED
+Beam68-utseende - släppt tema visas
+;Beam68 Appearance - dropped theme preview
+PMSG_QUARANTINE_CLEARED
+Beam68-inställningar - tilläggets spärr hävd
+;Beam68 Preferences - plugin quarantine cleared
+PMSG_HEALTH_UNAVAILABLE
+Status okänd
+;Health unavailable
+PMSG_DETAILS1
+Namn: %.64s\nKategori: %.30s\nUtlösare: %c  Prefix: %.20s\nStatus: %s\nPrioritet: %ld av %ld\n
+;Name: %.64s\nCategory: %.30s\nTrigger: %c  Prefix: %.20s\nStatus: %s\nPriority: %ld of %ld\n
+PMSG_DETAILS2
+Hälsa: %.150s\nBehörigheter: %.60s\nBeskrivning: %.90s\nExempel: %.80s\nHjälp: %.110s\n
+;Health: %.150s\nCapabilities: %.60s\nDescription: %.90s\nExample: %.80s\nHelp: %.110s\n
+PMSG_DETAILS3
+Ikon: %.80s\nProgram: %.80s\nInställningar: %.80s\nManifest: %.80s
+;Icon: %.80s\nExecutable: %.80s\nSettings: %.80s\nManifest: %.80s
+PMSG_UNKNOWN
+(okänd)
+;(unknown)
+PMSG_NONE
+(inget)
+;(none)
+PMSG_NOT_AVAILABLE
+(inte tillgänglig)
+;(not available)
+PMSG_NO_SETTINGS
+(inga inställningar)
+;(no settings declared)
+PMSG_DETAILS_TITLE
+Beam68-tilläggsdetaljer
+;Beam68 Plugin Details
+PMSG_OK
+OK
+;OK
+PMSG_REPORT_FAILED
+Beam68-inställningar - rapporten kunde inte sparas
+;Beam68 Preferences - report export failed
+PMSG_REPORT_CLOSE_FAILED
+Beam68-inställningar - rapporten kunde inte stängas
+;Beam68 Preferences - report close failed
+PMSG_REPORT_EXPORTED
+Beam68-inställningar - RAM:Beam68-Diagnostics.txt sparad
+;Beam68 Preferences - exported RAM:Beam68-Diagnostics.txt
+PMSG_TYPE_BOOL
+Ja/Nej
+;Yes/No
+PMSG_TYPE_NUMBER
+Tal
+;Number
+PMSG_TYPE_TEXT
+Text
+;Text
+PMSG_CAPTURE_PRESS
+Beam68-inställningar - tryck snabbtangenten (Esc avbryter)
+;Beam68 Preferences - press shortcut (Esc cancels)
+PMSG_CAPTURE_CANCELLED
+Beam68-inställningar - inspelning avbruten
+;Beam68 Preferences - capture cancelled
+PMSG_CAPTURE_UNSUPPORTED
+Beam68-inställningar - tangenten stöds inte, prova en annan
+;Beam68 Preferences - unsupported key, try another
+PMSG_CAPTURED
+Beam68-inställningar - inspelad; välj Använd eller Spara
+;Beam68 Preferences - captured; Use or Save to apply
+PMSG_ALREADY_RUNNING
+Beam68-inställningar - startaren körs redan
+;Beam68 Preferences - launcher is already running
+PMSG_STARTING
+Startar...
+;Starting...
+PMSG_EXE_NOT_FOUND
+Beam68-inställningar - programmet Beam68 hittades inte
+;Beam68 Preferences - Beam68 executable not found
+PMSG_INVALID_LAUNCHER_PATH
+Beam68-inställningar - ogiltig sökväg till startaren
+;Beam68 Preferences - invalid launcher path
+PMSG_START_FAILED
+Beam68-inställningar - kunde inte starta startaren
+;Beam68 Preferences - could not start launcher
+PMSG_STARTED
+Beam68-inställningar - startaren startad
+;Beam68 Preferences - launcher started
+PMSG_START_TIMEOUT
+Beam68-inställningar - startaren svarar inte
+;Beam68 Preferences - launcher start timed out
+PMSG_NOT_RUNNING
+Beam68-inställningar - startaren körs inte
+;Beam68 Preferences - launcher is not running
+PMSG_RESTARTING
+Startar om...
+;Restarting...
+PMSG_STOPPING
+Stoppar...
+;Stopping...
+PMSG_NO_CONTACT
+Beam68-inställningar - kunde inte nå startaren
+;Beam68 Preferences - could not contact launcher
+PMSG_DID_NOT_STOP
+Beam68-inställningar - startaren stoppade inte
+;Beam68 Preferences - launcher did not stop
+PMSG_RESTARTING_LAUNCHER
+Beam68-inställningar - startaren startas om
+;Beam68 Preferences - restarting launcher
+PMSG_LAUNCHER_STOPPED
+Beam68-inställningar - startaren stoppad
+;Beam68 Preferences - launcher stopped
+PMSG_APPS_SAVE_FAILED
+Beam68-program - kunde inte spara ändringarna
+;Beam68 Applications - could not save changes
+PMSG_ALIASES_CREATE_FAILED
+Beam68-inställningar - kunde inte skapa Aliases.txt
+;Beam68 Preferences - could not create Aliases.txt
+PMSG_ED_FAILED
+Beam68-inställningar - kunde inte starta Ed
+;Beam68 Preferences - could not start Ed
+PMSG_EDIT_HINT
+Beam68-program - redigera filen, tryck sedan F3 i startaren
+;Beam68 Applications - edit file, then press F3 in launcher
+PMSG_GUIDE_MISSING
+Beam68-inst. - Beam68.guide hittades inte
+;Beam68 Prefs - Beam68.guide not found
+PMSG_AMIGAGUIDE_MISSING
+Beam68-inst. - amigaguide.library saknas
+;Beam68 Prefs - amigaguide.library missing
+PMSG_F1_HINT
+Beam68-inst. - Help: manual | F7/F8 sidor | F9 starta | F10 stoppa
+;Beam68 Prefs - Help: manual | F7/F8 sections | F9 start | F10 stop
+PMSG_BAD_COLORS
+Beam68-inställningar - egna färger kräver fem RRGGBB-värden
+;Beam68 Preferences - custom colors need five RRGGBB values
+PMSG_BAD_HOTKEY
+Beam68-inställningar - dubbla eller tvetydiga tangenter
+;Beam68 Preferences - duplicate/ambiguous hotkey tokens
+PMSG_INVALID_VALUES
+Beam68-inställningar - ogiltiga värden
+;Beam68 Preferences - invalid values
+PMSG_ENVARC_FAILED
+Beam68-inställningar - kunde inte spara i ENVARC
+;Beam68 Preferences - ENVARC save failed
+PMSG_SESSION_FAILED
+Beam68-inställningar - kunde inte skriva sessionen
+;Beam68 Preferences - session write failed
+PMSG_FAV_ENVARC_FAILED
+Beam68-inställningar - favoriterna kunde inte sparas i ENVARC
+;Beam68 Preferences - favorites ENVARC save failed
+PMSG_FAV_SESSION_FAILED
+Beam68-inställningar - favoritsessionen kunde inte skrivas
+;Beam68 Preferences - favorites session write failed
+PMSG_APPS_ENVARC_FAILED
+Beam68-inställningar - programmen kunde inte sparas i ENVARC
+;Beam68 Preferences - applications ENVARC save failed
+PMSG_APPS_SESSION_FAILED
+Beam68-inställningar - programsessionen kunde inte skrivas
+;Beam68 Preferences - applications session write failed
+PMSG_THEME_RESTART
+Beam68-inställningar - startaren startas om för temat
+;Beam68 Preferences - restarting launcher to apply theme
+PMSG_RESTART_FAILED
+Beam68-inställningar - omstarten misslyckades
+;Beam68 Preferences - launcher restart failed
+PMSG_SETTING_INVALID
+Beam68-tilläggsinställningar - ogiltigt värde
+;Beam68 Plugin Settings - invalid value
+PMSG_SETTING_SAVE_FAILED
+Beam68-tilläggsinställningar - kunde inte spara
+;Beam68 Plugin Settings - save failed
+PMSG_SETTING_SAVED
+Beam68-tilläggsinställningar - sparat; används nästa gång
+;Beam68 Plugin Settings - saved; used on next run
+PMSG_RELOAD_REQUESTED
+Beam68-inställningar - tilläggen läses om
+;Beam68 Preferences - plugin reload requested
+PMSG_INST_UNSAFE
+Arkivet har osäkra sökvägar; inte installerat
+;Archive contains unsafe paths; not installed
+PMSG_INST_CHECK_DIR
+Kontrollera INSTALL_DIR på sidan Allmänt
+;Check INSTALL_DIR on the General page
+PMSG_INST_CHOOSE
+Välj en tilläggslåda, .lha, .lzh eller .zip
+;Choose a plugin drawer, .lha, .lzh or .zip
+PMSG_INST_COPY_FAILED
+Kopieringen av tillägget misslyckades
+;Copying the plugin failed
+PMSG_INST_CREATE_FAILED
+Kunde inte skapa tilläggslådan
+;Could not create the plugin drawer
+PMSG_INST_MOVE_FAILED
+Kunde inte flytta tillägget på plats
+;Could not move the plugin into place
+PMSG_INST_OPEN_FAILED
+Kunde inte öppna arkivet
+;Could not open the archive
+PMSG_INST_LIST_FAILED
+Kunde inte läsa arkivets innehåll
+;Could not read the archive listing
+PMSG_INST_READ_FAILED
+Kunde inte läsa arkivet
+;Could not read the archive
+PMSG_INST_CANCELLED
+Installationen avbruten
+;Installation cancelled
+PMSG_INST_NO_PACKAGE
+Ingen enskild tilläggslåda med ett .plugin-manifest hittades
+;No single plugin drawer with one .plugin manifest found
+PMSG_INST_NOT_LHA
+Inte ett giltigt LHA-arkiv
+;Not a valid LHA archive
+PMSG_INST_NOTHING
+Inget att installera
+;Nothing to install
+PMSG_INST_PATH_LONG
+Sökvägen är för lång
+;Path too long
+PMSG_INST_DRAWER_LONG
+Sökvägen till tilläggslådan är för lång
+;Plugin drawer path is too long
+PMSG_INST_FULL
+Tilläggslistan är full (16); ta bort ett först
+;Plugin list is full (16); remove one first
+PMSG_INST_IN_USE
+Den installerade tilläggslådan används
+;The installed plugin drawer is in use
+PMSG_INST_BAD_EXE
+Tilläggets program saknas eller är inget Amiga-program
+;The plugin executable is missing or not an Amiga program
+PMSG_INST_BAD_MANIFEST
+Tilläggets manifest är ogiltigt eller kräver nyare Beam68
+;The plugin manifest is invalid or needs a newer Beam68
+PMSG_INST_UNPACK_FAILED
+Uppackningen misslyckades
+;Unpacking the archive failed
+PMSG_INST_BAD_ARCHIVE_PATH
+Sökvägen till arkivet stöds inte
+;Unsupported archive path
+PMSG_INST_BAD_DRAWER
+Tilläggslådans namn stöds inte
+;Unsupported plugin drawer name
+PMSG_INST_NO_LHA
+C:LhA saknas (Aminet util/arc). Packa upp och installera lådan
+;C:LhA not found (Aminet util/arc). Unpack it and install the drawer
+PMSG_INST_NO_UNZIP
+C:UnZip saknas (Aminet util/arc). Packa upp och installera lådan
+;C:UnZip not found (Aminet util/arc). Unpack it and install the drawer
+PMSG_INST_EMPTY
+Arkivet är tomt
+;The archive is empty
+PMSG_INST_DRAWER_TAKEN
+Plugins/%.40s används av ett annat tillägg
+;Plugins/%.40s is used by a different plugin
+PMSG_INST_TITLE
+Installera Beam68-tillägg
+;Install Beam68 plugin
+PMSG_INST_BUTTONS
+Installera|Avbryt
+;Install|Cancel
+PMSG_INST_DONE
+%.40s %.15s%s installerat - välj Använd eller Spara
+;Installed %.40s %.15s%s - choose Use or Save
+PMSG_INST_DISABLED_NOTE
+ (avstängt: krock med annat tillägg)
+; (disabled: input conflict)
+PMSG_INST_CONSENT
+%.60s %.15s\nav %.60s\n\nID: %.63s\nLicens: %.31s\nÅtkomst: %.63s\n%s%s%.60s%s\n%s%.15s%s\n\nInstallera i %.120s?
+;%.60s %.15s\nby %.60s\n\nID: %.63s\nLicense: %.31s\nAccess: %.63s\n%s%s%.60s%s\n%s%.15s%s\n\nInstall into %.120s?
+PMSG_INST_UNKNOWN_AUTHOR
+okänd upphovsman
+;unknown author
+PMSG_INST_NOT_STATED
+inte angiven
+;not stated
+PMSG_INST_NONE_DECLARED
+inga angivna
+;none declared
+PMSG_INST_SYSTEM_WARNING
+\nSYSTEM: kan starta om, signalera processer eller ändra systemet.
+;\nSYSTEM: may reboot, signal tasks or change the system.
+PMSG_INST_CONFLICT
+\nUtlösare/prefix används redan av 
+;\nTrigger/prefix already used by 
+PMSG_INST_CONFLICT_END
+; det installeras avstängt.
+;; it will be installed disabled.
+PMSG_INST_UPGRADE
+Uppgraderar installerad version 
+;Upgrades installed version 
+PMSG_INST_REINSTALL
+Installerar samma version igen 
+;Reinstalls the same version 
+PMSG_INST_DOWNGRADE
+NEDGRADERAR installerad version 
+;DOWNGRADES installed version 
+PMSG_PKG_NO_MANIFEST
+Inget manifest
+;No manifest
+PMSG_PKG_BAD_ID
+Manifestet behöver ett giltigt ID= (bokstäver, siffror, . _ -)
+;Manifest needs a valid ID= (letters, digits, . _ -)
+PMSG_PKG_NO_VERSION
+Manifestet behöver PLUGIN_VERSION=
+;Manifest needs PLUGIN_VERSION=
+PMSG_PKG_TOO_NEW
+Tillägget kräver nyare Beam68
+;Plugin needs a newer Beam68
+PMSG_PKG_BAD_COMMAND
+COMMAND måste vara PLUGINDIR:<fil> i paketet
+;COMMAND must be PLUGINDIR:<file> inside the package
+PMSG_PKG_BAD_ICON
+ICON måste vara PLUGINDIR:<fil> i paketet
+;ICON must be PLUGINDIR:<file> inside the package
+PMSG_PKG_BAD_GUIDE
+GUIDE måste vara PLUGINDIR:<fil> i paketet
+;GUIDE must be PLUGINDIR:<file> inside the package
+PMSG_PKG_BAD_SETTINGS
+SETTINGS måste vara ENVARC:Beam68/Plugins/<fil>
+;SETTINGS must be ENVARC:Beam68/Plugins/<file>
+PMSG_DETAILS4
+\nProtokoll: %ld  Guide: %.80s
+;\nProtocol: %ld  Guide: %.80s
+PMSG_PAGE_EXTRAS
+Extra
+;Extras
+PMSG_QUICK_LAUNCH
+Favorittangenter
+;Favorite keys
+PMSG_WHDLOAD_CMD
+WHDLoad-kommando
+;WHDLoad command
+PMSG_DOPUS_PORT
+Opus ARexx-port
+;Opus ARexx port
+PMSG_DOPUS_DRAWERS
+Öppna lådor i Directory Opus
+;Open drawers in Directory Opus
+PMSG_PLUGIN_CACHE
+Kör tillägg från RAM-kopia
+;Run plugins from a RAM copy
+PMSG_RESULTS_MAX
+Resultat
+;Results kept
+PMSG_BROWSE_MAX
+Listposter
+;Browse entries
+PMSG_HIDDEN_MAX
+Dolda max
+;Hidden max
+PMSG_RECENT_DOCS
+Senaste dok.
+;Recent docs
+PMSG_PRESET_EXPORT
+Exportera förval...
+;Export preset...
+PMSG_PRESET_IMPORT
+Importera förval...
+;Import preset...
+PMSG_PRESET_CONFIRM
+Ersätta dina Beam68-inställningar med\n%s?\n\nFavoriter, alias, dolda resultat och\ntilläggsinställningar i förvalet ersätts också.
+;Replace your Beam68 settings with\n%s?\n\nFavorites, aliases, hidden results and\nplugin settings in the preset are replaced too.
+PMSG_PRESET_BUTTONS
+Importera|Avbryt
+;Import|Cancel
+PMSG_PRESET_EXPORTED
+Beam68-inställningar - förval exporterat (sparade inställningar)
+;Beam68 Preferences - preset exported (saved settings)
+PMSG_PRESET_IMPORTED
+Beam68-inställningar - förval importerat
+;Beam68 Preferences - preset imported
+PMSG_PRESET_FAILED
+Beam68-inställningar - förvalet misslyckades eller är ogiltigt
+;Beam68 Preferences - preset failed or invalid
+PMSG_EDIT_COLOURS
+Redigera färger...
+;Edit colours...
+PMSG_COLOUR_ROLE
+Färg
+;Colour
+PMSG_ROLE_TEXT
+Text
+;Text
+PMSG_ROLE_SHADOW
+Skugga
+;Shadow
+PMSG_ROLE_FILL
+Markering
+;Selection
+PMSG_ROLE_FILL_TEXT
+Markerad text
+;Selected text
+PMSG_ROLE_BACKGROUND
+Bakgrund
+;Background
+PMSG_CAT_BUTTON
+Tilläggskatalog...
+;Plugin catalogue...
+PMSG_CAT_TITLE
+Beam68-katalog för tillägg och teman
+;Beam68 plugin and theme catalogue
+PMSG_CAT_SOURCE
+Källa
+;Source
+PMSG_CAT_LOAD
+Hämta
+;Load
+PMSG_CAT_INSTALL
+Installera
+;Install
+PMSG_CAT_CLOSE
+Stäng
+;Close
+PMSG_CAT_LOAD_FAILED
+Kunde inte hämta katalogen (URL, sökväg eller DOWNLOAD_COMMAND)
+;Could not load the catalogue (URL, path or DOWNLOAD_COMMAND)
+PMSG_CAT_EMPTY
+Katalogen har inga användbara poster
+;The catalogue has no usable entries
+PMSG_CAT_DOWNLOAD_FAILED
+Nedladdningen misslyckades - finns wget (eller ditt DOWNLOAD_COMMAND)?
+;Download failed - is wget (or your DOWNLOAD_COMMAND) installed?
+PMSG_CAT_THEME_OK
+Temat importerat - välj Använd eller Spara
+;Theme imported - choose Use or Save
+PMSG_PAGE_SOURCES
+Källor
+;Sources
+PMSG_SRC_MODULES
+Indexera musikmoduler (mod:)
+;Index music modules (mod:)
+PMSG_SRC_PLAYER_PORT
+Spelarport
+;Player port
+PMSG_SRC_PLAYER_AREXX
+Spelarens ARexx
+;Player ARexx
+PMSG_SRC_PLAYER_COMMAND
+Starta spelare
+;Start player
+PMSG_SRC_REXX
+Indexera ARexx-skript i REXX: (script:)
+;Index ARexx scripts in REXX: (script:)
+PMSG_SRC_BOOKMARKS
+Bokmärkesfiler
+;Bookmark files
+PMSG_SRC_URL_COMMAND
+Öppna URL med
+;Open URL with

@@ -1,0 +1,17 @@
+# Beam68 plugin manifest, protocol 1.  See the SDK README for every key.
+VERSION=1
+ID=org.example.helloworld
+PLUGIN_VERSION=1.0
+MIN_BEAM68=0.1
+NAME=Hello World
+AUTHOR=Your Name
+LICENSE=MIT
+URL=https://example.org/helloworld
+TRIGGER=+
+PREFIX=HELLO:
+COMMAND=PLUGINDIR:HelloWorld
+DESCRIPTION=Greets whoever you type.
+CATEGORY=Examples
+CAPABILITIES=READONLY
+EXAMPLE=hello:Amiga
+HELP=Type hello: followed by a name and press Enter.

@@ -1,0 +1,378 @@
+; Beam68 catalog description (CatComp/FlexCat format).
+; Launcher user interface.  IDs are permanent: append new strings only.
+; Regenerate with scripts/make-catalog.py.
+;
+MSG_HELP_APP_TITLE (1//)
+Application search
+MSG_HELP_APP (2//)
+app:<text> searches tools and executables
+MSG_HELP_FILE_TITLE (3//)
+File search
+MSG_HELP_FILE (4//)
+file:<text> searches indexed files
+MSG_HELP_DRAWER_TITLE (5//)
+Drawer search
+MSG_HELP_DRAWER (6//)
+drawer:<text> searches indexed drawers
+MSG_HELP_PLUGIN_TITLE (7//)
+Plugin search
+MSG_HELP_PLUGIN (8//)
+plugin:<text> finds plugin examples and help
+MSG_HELP_RECENT_TITLE (9//)
+Recent search
+MSG_HELP_RECENT (10//)
+recent:<text> limits results to launched items
+MSG_HELP_VOLUME_TITLE (11//)
+Volume search
+MSG_HELP_VOLUME (12//)
+volume:<text> searches indexed volume roots
+MSG_HELP_FAV_TITLE (13//)
+Favorite group
+MSG_HELP_FAV (14//)
+fav:<group> [text], for example fav:games
+MSG_HELP_GAME_TITLE (15//)
+WHDLoad games
+MSG_HELP_GAME (16//)
+game:<text> searches installed WHDLoad games
+MSG_HELP_SHELL_TITLE (17//)
+AmigaDOS shell
+MSG_HELP_SHELL (18//)
+shell:<command> opens a managed console
+MSG_HELP_RESTART_WB_TITLE (19//)
+Restart Workbench
+MSG_HELP_SECOND_ENTER (20//)
+Requires a second Enter
+MSG_HELP_RESTART_AMIGA_TITLE (21//)
+Restart Amiga
+MSG_HELP_COLD_REBOOT (22//)
+Cold reboot requires a second Enter
+MSG_KEY_UPDOWN (23//)
+Select and wrap through results
+MSG_KEY_TAB (24//)
+Complete a suggestion or choose a result action
+MSG_KEY_F2 (25//)
+Rebuild the index
+MSG_KEY_F3 (26//)
+Reload settings / reload plugins
+MSG_KEY_F4 (27//)
+Quit / Preferences / pin or unpin
+MSG_KEY_F7 (28//)
+Query history / last shell command
+MSG_LOWMEM_CAP (29//)
+ | low-memory cap %ld
+MSG_BADGE_COMPLETE (30//)
+COMPLETE  
+MSG_BADGE_PLUGIN (31//)
+PLUGIN  
+MSG_BADGE_ALIAS (32//)
+ALIAS  
+MSG_BADGE_KEY (33//)
+KEY  
+MSG_BADGE_COMMAND (34//)
+COMMAND  
+MSG_PLUGIN_LINE (35//)
+PLUGIN  %s%s%s
+MSG_CALC_HINT (36//)
+Type an expression, e.g. =12*(3+4)
+MSG_CALC_INVALID (37//)
+Incomplete or invalid expression
+MSG_BADGE_SHELL (38//)
+SHELL  
+MSG_SHELL_COMMAND (39//)
+AmigaDOS command
+MSG_SHELL_DISABLED_LABEL (40//)
+disabled
+MSG_SHELL_HINT (41//)
+Type shell:dir SYS: or the shorter >dir SYS:
+MSG_RESTART_ACTION (42//)
+ACTION  System restart - confirmation required
+MSG_RESTART_AMIGA_DESC (43//)
+Restart the complete Amiga (cold reboot)
+MSG_RESTART_WB_DESC (44//)
+Close and reopen the Workbench desktop
+MSG_EMPTY_LINE1 (45//)
+Search programs | shell: command | = Calculate @ Clock ? Memory
+MSG_EMPTY_LINE2 (46//)
+Favorites first, then recent apps | F7: query history
+MSG_BADGE_ACTION (47//)
+ACTION  
+MSG_BADGE_RECENT (48//)
+RECENT  
+MSG_BADGE_FAVORITE (49//)
+APP * 
+MSG_BADGE_GAME (50//)
+GAME  
+MSG_BADGE_FILE (51//)
+FILE  
+MSG_BADGE_DRAWER (52//)
+DRAWER  
+MSG_BADGE_VOLUME (53//)
+VOLUME  
+MSG_BADGE_APP (54//)
+APP  
+MSG_FOOT_HELP (55//)
+Up/Down: select | Enter: insert example | F1/Esc: close help
+MSG_FOOT_COMPLETE (56//)
+%u/%u | Up/Down: suggestion | Tab: complete
+MSG_FOOT_RESTART_CONFIRM (57//)
+Enter again: CONFIRM restart | Esc: cancel
+MSG_FOOT_RESTART_ARM (58//)
+Enter: arm restart | Esc: cancel
+MSG_FOOT_SHELL (59//)
+Enter: run | F7: query history | F8: shell recall
+MSG_FOOT_SHELL_OFF (60//)
+F5: Preferences | Esc: close
+MSG_FOOT_RESULTS (61//)
+%d/%d | Up/Down: select | Enter: %s | Tab: action | F6: pin
+MSG_FOOT_RESULT (62//)
+Result: 
+MSG_FOOT_LAST (63//)
+Last: %s - %.80s (%lu.%lus)
+MSG_FOOT_DEFAULT (64//)
+F4 quit | F5 Prefs | F6 pin | F7 query history
+MSG_WINDOW_TITLE (65//)
+Beam68 - Application Launcher
+MSG_PLUGIN_RUNNING (66//)
+running - Esc cancels waiting
+MSG_PLUGIN_QUARANTINED_NOW (67//)
+quarantined after 3 consecutive failures
+MSG_PLUGIN_CANCELED (68//)
+%s canceled after %lu.%lus; child may still finish
+MSG_PLUGIN_INVALID_RESPONSE (69//)
+invalid response
+MSG_PLUGIN_TIMEOUT_QUARANTINED (70//)
+timed out and was quarantined after 3 failures
+MSG_PLUGIN_TIMEOUT (71//)
+timed out; child may still be running
+MSG_PLUGIN_BUSY (72//)
+is already running
+MSG_PLUGIN_IS_QUARANTINED (73//)
+is quarantined; re-enable it in Preferences
+MSG_PLUGIN_SYSTEM_CONFIRM (74//)
+SYSTEM plugin: press Enter again to confirm
+MSG_PLUGIN_ERROR (75//)
+error:
+MSG_PLUGIN_ERR_QUERY (76//)
+error: invalid plugin query
+MSG_PLUGIN_ERR_LONG (77//)
+error: input too long
+MSG_PLUGIN_ERR_PATH (78//)
+error: invalid executable path
+MSG_PLUGIN_ERR_START (79//)
+error: could not start
+MSG_WB_CLOSE_FIRST (80//)
+Close Workbench drawers/windows, then try again
+MSG_WB_RESTARTED (81//)
+Workbench restarted
+MSG_SHELL_DISABLED (82//)
+Shell commands are disabled
+MSG_SHELL_EMPTY (83//)
+Type a command after shell: or >
+MSG_SHELL_FAILED (84//)
+Could not run shell command
+MSG_SHELL_STARTED (85//)
+Shell started; console waits for Close or Ctrl-\\
+MSG_DRAWER_OPEN_FAILED (86//)
+Workbench could not open containing drawer
+MSG_DRAWER_NEEDS_V44 (87//)
+Opening drawers needs Workbench 3.1.4/3.5 or newer
+MSG_ACTION_INVALID (88//)
+Custom action is invalid or too long
+MSG_ACTION_FAILED (89//)
+Application action failed
+MSG_WB_LAUNCH_FAILED (90//)
+Workbench could not launch this tool
+MSG_OPEN_NEEDS_V44 (91//)
+Opening this needs Workbench 3.1.4/3.5 or newer
+MSG_UNSAFE_PATH (92//)
+Unsafe character in executable path
+MSG_SHELL_LAUNCH_FAILED (93//)
+Shell launch failed
+MSG_FAV_FULL (94//)
+Favorites full or invalid path
+MSG_FAV_SAVE_FAILED (95//)
+Could not save favorites to ENVARC:
+MSG_FAV_ENV_FAILED (96//)
+Saved permanent favorites; ENV: write failed
+MSG_FAV_PINNED (97//)
+Pinned (F6 to unpin)
+MSG_FAV_UNPINNED (98//)
+Unpinned
+MSG_PLUGINS_CANCEL_FIRST (99//)
+Cancel the active plugin before reloading
+MSG_SAFE_PLUGINS_OFF (100//)
+Safe mode: plugins remain disabled
+MSG_PLUGINS_RELOADED_ERRORS (101//)
+Plugins reloaded; %ld unavailable or conflicting
+MSG_PLUGINS_RELOADED (102//)
+Reloaded %ld plugins
+MSG_PREFS_MISSING (103//)
+Beam68Prefs not installed
+MSG_PREFS_PATH_LONG (104//)
+Preferences path too long
+MSG_PREFS_PATH_INVALID (105//)
+Invalid Preferences path
+MSG_PREFS_START_FAILED (106//)
+Could not start Preferences
+MSG_RELOAD_NO_MEMORY (107//)
+Insufficient memory to reload settings
+MSG_CONFIG_INVALID (108//)
+Invalid or missing configuration
+MSG_HOTKEY_INVALID (109//)
+Invalid hotkey descriptor
+MSG_INDEX_NO_MEMORY (110//)
+Insufficient memory for index
+MSG_HOTKEY_FAILED (111//)
+Could not change hotkey
+MSG_SETTINGS_PLUGIN_ERRORS (112//)
+Settings loaded; %ld plugin(s) unavailable or conflicting
+MSG_SETTINGS_SCANNING (113//)
+Settings loaded; scanning in background
+MSG_SETTINGS_UPDATED (114//)
+Settings and index updated
+MSG_SCANNING (115//)
+Scanning directories in background...
+MSG_NO_COMPLETION (116//)
+No completion available
+MSG_NO_HISTORY (117//)
+No more query history
+MSG_NO_SHELL_RECALL (118//)
+No shell command to recall
+MSG_CX_DESCRIPTION (119//)
+Low-memory keyboard application launcher
+MSG_INDEX_UPDATING (120//)
+Updating index after filesystem change
+MSG_RECOVERY_SAFE (121//)
+Recovery safe mode: previous run did not exit cleanly
+MSG_SAFE_MODE (122//)
+Safe mode: plugins and custom themes disabled
+MSG_PROGRESS_CACHED (123//)
+Index cache: %lu applications
+MSG_PROGRESS_SCANNING (124//)
+Indexing %lu/%lu drawers | %lu entries | %lu apps
+MSG_PROGRESS_FULL (125//)
+Index full at %lu apps; increase MAX_ITEMS
+MSG_PROGRESS_PROBLEMS (126//)
+Index complete: %lu apps | %lu unreadable | %lu errors
+MSG_PROGRESS_DONE (127//)
+Indexed %lu apps from %lu drawers
+MSG_NORESULT_SCANNING1 (128//)
+Indexing directories; results may be incomplete
+MSG_NORESULT_SCANNING2 (129//)
+Keep typing or press F2 to restart the scan
+MSG_NORESULT_EMPTY1 (130//)
+No indexed applications yet
+MSG_NORESULT_EMPTY2 (131//)
+Press F2 to index or F5 to choose directories
+MSG_NORESULT_NONE1 (132//)
+No matching indexed applications
+MSG_NORESULT_NONE2 (133//)
+Try fewer words, F7 history, or Ctrl+L to clear
+MSG_ACTION_OPEN_DRAWER (134//)
+Open drawer
+MSG_ACTION_LAUNCH (135//)
+Launch
+MSG_KICK_MISSING (136//)
+Needs %s in DEVS:Kickstarts - Enter again to start anyway
+MSG_HELP_RANDOM_TITLE (137//)
+Random game
+MSG_HELP_RANDOM (138//)
+game:random picks a WHDLoad game for you
+MSG_BADGE_RANDOM (139//)
+RANDOM  
+MSG_ACTION_INFO (140//)
+Information
+MSG_ACTION_COPY (141//)
+Copy path
+MSG_INFO_FAILED (142//)
+Workbench could not show information
+MSG_COPIED (143//)
+Path copied to the clipboard
+MSG_COPY_FAILED (144//)
+Could not write to the clipboard
+MSG_ACTION_ARGS (145//)
+Run with arguments
+MSG_ARGS_PROMPT (146//)
+Arguments for %s - Enter runs, Esc cancels
+MSG_BADGE_ARGS (147//)
+ARGS  
+MSG_ARGS_NEEDS_PROGRAM (148//)
+Only programs take arguments
+MSG_QUICK_NONE (149//)
+No favorite on this key
+MSG_BROWSE_STATUS (150//)
+%s - %ld entries | type to filter | Left: parent
+MSG_BROWSE_EMPTY (151//)
+Empty or unreadable drawer
+MSG_ROWS_STATUS (152//)
+%s: %ld results | Enter: use | Esc: back
+MSG_BADGE_ROW (153//)
+RESULT  
+MSG_BADGE_ASSIGN (154//)
+ASSIGN  
+MSG_BADGE_DOC (155//)
+DOC  
+MSG_BADGE_HIDDEN (156//)
+HIDDEN  
+MSG_HIDDEN_ON (157//)
+Hidden - hidden: lists hidden results
+MSG_HIDDEN_OFF (158//)
+Shown again
+MSG_HIDDEN_FULL (159//)
+Hidden list is full
+MSG_HELP_DOC_TITLE (160//)
+Recent documents
+MSG_HELP_DOC (161//)
+doc:<text> searches documents you opened
+MSG_HELP_HIDDEN_TITLE (162//)
+Hidden results
+MSG_HELP_HIDDEN (163//)
+hidden: lists results hidden with Shift+Del
+MSG_ACTION_DOPUS (164//)
+Show in Directory Opus
+MSG_DOPUS_FAILED (165//)
+Directory Opus did not answer
+MSG_CTL_USAGE (166//)
+Usage: Beam68Ctl RELOAD|RELOADPLUGINS|REINDEX|SHOW|HIDE|QUIT|QUITWAIT|STATUS\n
+MSG_CTL_NOT_RUNNING (167//)
+Beam68 launcher is not running.\n
+MSG_REXX_NOT_RUNNING (168//)
+ARexx is not running (start RexxMast)
+MSG_BADGE_MODULE (169//)
+MOD  
+MSG_BADGE_SCRIPT (170//)
+REXX  
+MSG_BADGE_WEB (171//)
+WEB  
+MSG_BADGE_SNIPPET (172//)
+SNIP  
+MSG_SNIPPET_COPIED (173//)
+Snippet copied to the clipboard
+MSG_SOURCE_LAUNCH_FAILED (174//)
+Could not start it - check MODULE_COMMAND / URL_COMMAND
+MSG_STATS_LAUNCHES (175//)
+%lu launches
+MSG_HELP_MOD_TITLE (176//)
+Music modules
+MSG_HELP_MOD (177//)
+mod:<text> plays a module (INDEX_MODULES)
+MSG_HELP_WEB_TITLE (178//)
+Bookmarks
+MSG_HELP_WEB (179//)
+web:<text> opens a bookmark (BOOKMARK_FILES)
+MSG_HELP_SNIP_TITLE (180//)
+Snippets
+MSG_HELP_SNIP (181//)
+snip:<text> copies a snippet from Snippets.txt
+MSG_HELP_SCRIPT_TITLE (182//)
+ARexx scripts
+MSG_HELP_SCRIPT (183//)
+script:<text> runs a script from REXX:
+MSG_HELP_PREFS_TITLE (184//)
+Preferences
+MSG_HELP_PREFS (185//)
+prefs:<text> lists the SYS:Prefs programs
+MSG_HELP_STATS_TITLE (186//)
+Usage statistics
+MSG_HELP_STATS (187//)
+stats: lists your most-launched items

@@ -1,0 +1,9 @@
+<?php
+declare(strict_types=1);
+define('BEAM68_PAGE', true);
+require __DIR__ . '/includes/site.php';
+page_start('Beam68 — Download.', 'Tagged Beam68 releases, Amiga binary packages and source archives.', 'download');
+?>
+<section class="page-intro wrap"><p class="eyebrow">GET BEAM68</p><h1>One release.<br><span>Everything you need.</span></h1><p>Choose the Amiga package to run Beam68, or the source archive to explore the code.</p></section>
+<section class="wrap release-list"><article class="release-card"><div class="release-heading"><div><p class="eyebrow">PLANNED FIRST RELEASE</p><h2>Beam68 0.1</h2></div><a class="text-link" href="https://github.com/retrocs-org/beam68/releases/tag/v0.1">Tag v0.1 ↗</a></div><p class="release-note">Awaiting publication. These links will become available when the tag and release files are uploaded to GitHub.</p><div class="package-grid"><a class="package-link" href="https://github.com/retrocs-org/beam68/releases/download/v0.1/Beam68-0.1.lha"><strong>Amiga binary package <span aria-hidden="true">↗</span></strong><span>Beam68-0.1.lha</span><small>Launcher, Preferences, bundled plugins and themes.</small></a><a class="package-link" href="https://github.com/retrocs-org/beam68/releases/download/v0.1/Beam68-0.1-source.zip"><strong>Source code package <span aria-hidden="true">↗</span></strong><span>Beam68-0.1-source.zip</span><small>Release source for building and development.</small></a></div></article><p class="release-note">AmigaOS 3.0+ · 68000+ · No FPU required. AmigaOS 3.2 and a 68020 are recommended. Optional integrations require their host applications.</p><div class="small-cta"><p>Looking for another version?</p><a class="text-link" href="https://github.com/retrocs-org/beam68/releases">All GitHub releases ↗</a></div><p class="release-note">Building from scratch? Visit <a href="source.php">Source</a>. Writing a plugin or theme? Visit <a href="developers.php">Developers</a>.</p></section>
+<?php page_end(); ?>

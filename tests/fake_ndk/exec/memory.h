@@ -1,0 +1,5 @@
+#ifndef BEAM_FAKE_EXEC_MEMORY_H
+#define BEAM_FAKE_EXEC_MEMORY_H
+#define MEMF_PUBLIC 1
+#define MEMF_CLEAR 65536
+#endif

@@ -1,0 +1,190 @@
+[
+  {
+    "file": "fresh-search.png",
+    "title": "Scoped Preferences search",
+    "description": "The prefs: scope lists matching Preferences applications.",
+    "width": 549,
+    "height": 231,
+    "app": "Beam68",
+    "build_sha256": "438da80359bbf6a019a2370c26cc7550f8b4dae8093430ff4484b123cde541e8",
+    "provenance": "Captured 11 November 2026; Beam68 0.1.",
+    "thumbnail": "fresh-search-thumb.png",
+    "processing": "Cropped to the app window; palette-compressed PNG with a 320-pixel preview."
+  },
+  {
+    "file": "fresh-calculator.png",
+    "title": "Calculator result",
+    "description": "The calculator evaluates 12*(3+4) as 84, $54 and %1010100.",
+    "width": 549,
+    "height": 231,
+    "app": "Beam68",
+    "build_sha256": "438da80359bbf6a019a2370c26cc7550f8b4dae8093430ff4484b123cde541e8",
+    "provenance": "Captured 11 November 2026; Beam68 0.1.",
+    "thumbnail": "fresh-calculator-thumb.png",
+    "processing": "Cropped to the app window; palette-compressed PNG with a 320-pixel preview."
+  },
+  {
+    "file": "fresh-commands.png",
+    "title": "Command browser",
+    "description": "F1 opens the searchable command browser.",
+    "width": 549,
+    "height": 231,
+    "app": "Beam68",
+    "build_sha256": "438da80359bbf6a019a2370c26cc7550f8b4dae8093430ff4484b123cde541e8",
+    "provenance": "Captured 11 November 2026; Beam68 0.1.",
+    "thumbnail": "fresh-commands-thumb.png",
+    "processing": "Cropped to the app window; palette-compressed PNG with a 320-pixel preview."
+  },
+  {
+    "file": "fresh-general.png",
+    "title": "General preferences",
+    "description": "Launcher hotkey, result limits, ranking and index cache settings.",
+    "width": 760,
+    "height": 462,
+    "app": "Beam68Prefs",
+    "build_sha256": "7ae0e4babf3d10f38bf8fcf35e8957331490ea38086a2508c658e82361a0a90a",
+    "provenance": "Captured 11 November 2026; Beam68 0.1.",
+    "thumbnail": "fresh-general-thumb.png",
+    "processing": "Cropped to the app window; palette-compressed PNG with a 320-pixel preview."
+  },
+  {
+    "file": "fresh-appearance.png",
+    "title": "Appearance preferences",
+    "description": "Workbench theme, window dimensions and launcher preview.",
+    "width": 760,
+    "height": 462,
+    "app": "Beam68Prefs",
+    "build_sha256": "7ae0e4babf3d10f38bf8fcf35e8957331490ea38086a2508c658e82361a0a90a",
+    "provenance": "Captured 11 November 2026; Beam68 0.1.",
+    "thumbnail": "fresh-appearance-thumb.png",
+    "processing": "Cropped to the app window; palette-compressed PNG with a 320-pixel preview."
+  },
+  {
+    "file": "fresh-accessibility.png",
+    "title": "Accessibility preferences",
+    "description": "Font, row spacing, contrast and reduced-color display controls.",
+    "width": 760,
+    "height": 462,
+    "app": "Beam68Prefs",
+    "build_sha256": "7ae0e4babf3d10f38bf8fcf35e8957331490ea38086a2508c658e82361a0a90a",
+    "provenance": "Captured 11 November 2026; Beam68 0.1.",
+    "thumbnail": "fresh-accessibility-thumb.png",
+    "processing": "Cropped to the app window; palette-compressed PNG with a 320-pixel preview."
+  },
+  {
+    "file": "fresh-sources.png",
+    "title": "Additional index sources",
+    "description": "Music modules, ARexx scripts and bookmark integration settings.",
+    "width": 760,
+    "height": 462,
+    "app": "Beam68Prefs",
+    "build_sha256": "7ae0e4babf3d10f38bf8fcf35e8957331490ea38086a2508c658e82361a0a90a",
+    "provenance": "Captured 11 November 2026; Beam68 0.1.",
+    "thumbnail": "fresh-sources-thumb.png",
+    "processing": "Cropped to the app window; palette-compressed PNG with a 320-pixel preview."
+  },
+  {
+    "file": "fresh-details.png",
+    "title": "Compact plugin details",
+    "description": "Plugin metadata is split into wrapped pages for classic screens.",
+    "width": 572,
+    "height": 184,
+    "app": "Beam68Prefs",
+    "build_sha256": "7ae0e4babf3d10f38bf8fcf35e8957331490ea38086a2508c658e82361a0a90a",
+    "provenance": "Captured 11 November 2026; Beam68 0.1.",
+    "thumbnail": "fresh-details-thumb.png",
+    "processing": "Cropped to the app window; palette-compressed PNG with a 320-pixel preview."
+  },
+  {
+    "file": "fresh-plugins.png",
+    "title": "Bundled plugin management",
+    "description": "All thirteen bundled plugins load successfully, including ARexx Runner.",
+    "width": 760,
+    "height": 462,
+    "app": "Beam68Prefs",
+    "build_sha256": "7ae0e4babf3d10f38bf8fcf35e8957331490ea38086a2508c658e82361a0a90a",
+    "provenance": "Captured 11 November 2026; Beam68 0.1.",
+    "thumbnail": "fresh-plugins-thumb.png",
+    "processing": "Cropped to the app window; palette-compressed PNG with a 320-pixel preview."
+  },
+  {
+    "file": "desktop.png",
+    "title": "Application launch",
+    "description": "Application search in an alternative dark theme.",
+    "width": 345,
+    "height": 114,
+    "provenance": "Reference view from the supplied project images; capture date not recorded.",
+    "thumbnail": "desktop-thumb.png",
+    "processing": "Cropped to the app window; palette-compressed PNG with a 320-pixel preview."
+  },
+  {
+    "file": "launcher-search.png",
+    "title": "Application search",
+    "description": "Scoped app: search with matching letters highlighted.",
+    "width": 632,
+    "height": 207,
+    "provenance": "Reference view from the supplied project images; capture date not recorded.",
+    "thumbnail": "launcher-search-thumb.png",
+    "processing": "Cropped to the app window; palette-compressed PNG with a 320-pixel preview."
+  },
+  {
+    "file": "launcher-calculator.png",
+    "title": "Calculator",
+    "description": "A live calculation with decimal, hexadecimal and binary results.",
+    "width": 632,
+    "height": 207,
+    "provenance": "Reference view from the supplied project images; capture date not recorded.",
+    "thumbnail": "launcher-calculator-thumb.png",
+    "processing": "Cropped to the app window; palette-compressed PNG with a 320-pixel preview."
+  },
+  {
+    "file": "prefs-appearance.png",
+    "title": "Appearance",
+    "description": "Theme, font and layout controls with a launcher preview.",
+    "width": 633,
+    "height": 300,
+    "provenance": "Reference view from the supplied project images; capture date not recorded.",
+    "thumbnail": "prefs-appearance-thumb.png",
+    "processing": "Cropped to the app window; palette-compressed PNG with a 320-pixel preview."
+  },
+  {
+    "file": "prefs-plugins.png",
+    "title": "Plugins",
+    "description": "Plugin management in Beam68Prefs.",
+    "width": 633,
+    "height": 300,
+    "provenance": "Reference view from the supplied project images; capture date not recorded.",
+    "thumbnail": "prefs-plugins-thumb.png",
+    "processing": "Cropped to the app window; palette-compressed PNG with a 320-pixel preview."
+  },
+  {
+    "file": "prefs-indexing.png",
+    "title": "Indexing",
+    "description": "Select which drawers Beam68 indexes.",
+    "width": 633,
+    "height": 300,
+    "provenance": "Reference view from the supplied project images; capture date not recorded.",
+    "thumbnail": "prefs-indexing-thumb.png",
+    "processing": "Cropped to the app window; palette-compressed PNG with a 320-pixel preview."
+  },
+  {
+    "file": "launcher-prefs-scope.png",
+    "title": "Preferences search in a dark theme",
+    "description": "Use prefs: to find Preferences applications.",
+    "width": 632,
+    "height": 207,
+    "thumbnail": "launcher-prefs-scope-thumb.png",
+    "provenance": "Reference view from the supplied project images; capture date not recorded.",
+    "processing": "Cropped to the app window; palette-compressed PNG with a 320-pixel preview."
+  },
+  {
+    "file": "launcher-restart.png",
+    "title": "Restart confirmation",
+    "description": "System restart actions require explicit confirmation; Escape cancels.",
+    "width": 632,
+    "height": 207,
+    "thumbnail": "launcher-restart-thumb.png",
+    "provenance": "Reference view from the supplied project images; capture date not recorded.",
+    "processing": "Cropped to the app window; palette-compressed PNG with a 320-pixel preview."
+  }
+]

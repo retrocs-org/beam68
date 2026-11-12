@@ -1,0 +1,6 @@
+# Beam68 snippets: one per line, name<TAB>text.  In the launcher type
+# snip:<name> (or just the name) and press Enter: the text goes to the
+# clipboard, ready for Amiga+V.  Edit ENVARC:Beam68/Snippets.txt, then F2
+# (Shift+F2 when you changed the text of an existing snippet).
+sig	Best regards from my Amiga
+aminet	http://aminet.net/
