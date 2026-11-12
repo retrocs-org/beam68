@@ -543,6 +543,21 @@ class ReleaseTests(unittest.TestCase):
         with patch.object(api,'json',side_effect=response):
             with self.assertRaisesRegex(ReleaseError,'does not include'):
                 rel.GitHub(m,self.tool.out,api).preflight()
+    def test_gitlab_developer_token_is_sufficient_but_reporter_is_refused(self):
+        m=self.build();m['gitlab']='https://gitlab.example.net/team/beam68'
+        api=GitlabAPI(m['gitlab']);adapter=rel.GitLab(m,self.tool.out,api)
+        project={'web_url':m['gitlab'],'permissions':{'project_access':{'access_level':30},'group_access':None},'packages_enabled':True}
+        original=api.json
+        def response(url,*args,**kwargs):
+            return project if url==adapter.base else original(url,*args,**kwargs)
+        with patch.object(api,'json',side_effect=response):
+            adapter.preflight()
+            self.assertIsNone(api.r);self.assertFalse(api.files)
+            project['permissions']['project_access']['access_level']=20
+            with self.assertRaisesRegex(ReleaseError,'Developer access'): adapter.preflight()
+            project['permissions']['project_access']['access_level']=30
+            project['web_url']='https://gitlab.example.net/other/project'
+            with self.assertRaisesRegex(ReleaseError,'identity mismatch'): adapter.preflight()
     def test_lha_crc_and_independent_reader_when_available(self):
         self.build()
         self.assertEqual(crc16(b'123456789'),0xbb3d)

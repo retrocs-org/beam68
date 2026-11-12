@@ -130,7 +130,8 @@ source/history. Use project-specific repository token fields, not another
 project's scoped credentials.
 
 Git source/tag pushes use your normal SSH key/credential helper separately.
-GitHub needs Contents write permission; GitLab requires API and Maintainer access.
+GitHub needs Contents write permission; GitLab requires the api scope and Developer access (30) or higher for releases
+and generic packages. Protected-tag rules may require additional authorization.
 
 Review the manifest and notes, then choose destinations explicitly:
 

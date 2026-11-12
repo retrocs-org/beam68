@@ -487,8 +487,10 @@ class GitLab:
         permissions = project.get('permissions', {})
         level = max((v or {}).get('access_level', 0) for v in
                     (permissions.get('project_access'), permissions.get('group_access')))
-        need(project.get('web_url') == self.m['gitlab'] and level >= 40,
-             'GitLab repository mismatch or Maintainer access missing')
+        need(project.get('web_url') == self.m['gitlab'], 'GitLab repository identity mismatch; check the configured repository URL')
+        need(not project.get('archived'), 'GitLab project is archived')
+        need(project.get('packages_enabled') is not False, 'GitLab package registry is disabled')
+        need(level >= 30, 'GitLab requires Developer access (30) or higher for releases and generic packages; configured credential has access level '+str(level))
         self.packages()
         release = self.release()
         if release:
