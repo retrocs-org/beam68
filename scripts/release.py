@@ -137,15 +137,16 @@ def redact(text):
         text=text.replace(token,'[redacted]')
     return text
 
-def run(root, args, env=None):
+def run(root, args, env=None, *, log_dir=None):
     clean = dict(os.environ)
     for key in list(clean):
         if key in SECRET_ENV or key.upper().endswith(('_TOKEN','_PASSWORD','_SECRET')):
             clean.pop(key, None)
     clean.update(env or {})
     verbose=clean.pop('BEAM68_RELEASE_VERBOSE','0')=='1'
-    is_build=args[0]!='git' and (root/'outputs/release').is_dir()
-    log=root/'outputs/release/build.log'
+    log_dir=Path(log_dir) if log_dir is not None else root/'outputs/release'
+    is_build=args[0]!='git' and log_dir.is_dir()
+    log=log_dir/'build.log'
     if is_build:
         need(not log.is_symlink(), 'Linked build log')
         with log.open('a') as stream:
@@ -171,11 +172,11 @@ def run(root, args, env=None):
                 stream.write(redact(text+result.stderr.decode(errors='replace')))
     # Git helper output is never logged: it may contain transport credentials.
     if code and is_build:
-        failure=root/'outputs/release/failed-build.log'
+        failure=log_dir/'failed-build.log'
         need(not failure.is_symlink(), 'Linked build failure log')
         failure.write_text(redact(text if verbose else text+result.stderr.decode(errors='replace')))
     need(code==0, 'Command failed: '+Path(args[0]).name+
-         (' (see outputs/release/build.log)' if is_build else ' (Git diagnostics withheld)'))
+         (' (see '+str(log)+')' if is_build else ' (Git diagnostics withheld)'))
     return text.strip()
 
 def git(root, *args):
@@ -572,9 +573,19 @@ class Aminet:
         atomic_json(self.state, receipt)
 
 class Release:
-    def __init__(self, root, config, tag=None, tag_message=None):
+    def __init__(self, root, config, tag=None, tag_message=None, output=None):
         self.root, self.config = root, config
-        self.out = root / 'outputs'
+        base = root / 'outputs'
+        selected = Path(output) if output is not None else base
+        if not selected.is_absolute(): selected = root / selected
+        self.out = Path(os.path.abspath(selected))
+        need(self.out == base or base in self.out.parents, '--output must be inside the repository outputs directory')
+        reserved = base / 'release'
+        need(self.out != reserved and reserved not in self.out.parents, 'outputs/release is reserved for existing release state; choose outputs/release-<version>')
+        parent = self.out
+        while parent != root:
+            need(not parent.is_symlink(), 'Linked release directory')
+            parent = parent.parent
         self.state = self.out / 'release'
         version = (root / 'VERSION').read_text().strip()
         need(re.fullmatch(r'[0-9]+(?:\.[0-9]+)+(?:-[A-Za-z0-9][A-Za-z0-9.-]*)?', version), 'Invalid VERSION')
@@ -624,7 +635,7 @@ class Release:
                 path=folder/name
                 need(path.is_file() and not path.is_symlink(),'Linked or non-file obsolete artifact')
                 os.replace(path,backup/name)
-            print('Retained previous artifacts under outputs/release/superseded/.',flush=True)
+            print('Retained previous artifacts under '+str(self.state/'superseded')+'/.',flush=True)
 
     def aminet_files(self):
         if not self.config['aminet']:
@@ -641,17 +652,17 @@ class Release:
         return {name:sha(folder/name) for name in names}
 
     def build(self):
-        self.out.mkdir(exist_ok=True)
+        self.out.mkdir(parents=True,exist_ok=True)
         self.state.mkdir(exist_ok=True)
         need(not self.out.is_symlink() and not self.state.is_symlink(), 'Linked release directory')
         if (self.state / 'receipt.json').exists() or (self.state / 'aminet-receipt.json').exists():
-            raise ReleaseError('Keep existing publication receipts; use another checkout for a new build')
+            raise ReleaseError('Keep existing publication receipts; choose --output outputs/release-<version> for a new build')
         started=time.monotonic()
         log=self.state/'build.log'
         need(not log.is_symlink(), 'Linked build log')
         log.write_text('Beam68 '+self.version+' build\n')
         print('Building Beam68 '+self.version,flush=True)
-        print('Detailed log: outputs/release/build.log',flush=True)
+        print('Detailed log: '+str(log),flush=True)
         print('[1/7] Checking sensitive files and source inputs...',flush=True)
         step_started=time.monotonic()
         module(self.root,'check-sensitive').scan(self.root)
@@ -672,7 +683,7 @@ class Release:
             step_env['BEAM68_RELEASE_VERBOSE']='1' if self.verbose else '0'
             if args[:2] == ['make', 'host-test']:
                 step_env['BEAM68_SOURCE_ONLY'] = '1'
-            run(self.root, args, step_env)
+            run(self.root, args, step_env, log_dir=self.state)
             print('      OK (%.1fs)'%(time.monotonic()-step_started),flush=True)
         need(self.inputs() == before, 'Release inputs changed during build; rebuild')
         native = self.native()
@@ -871,7 +882,7 @@ class Release:
             shutil.copyfile(stage/archive, folder/archive)
             (folder/(archive[:-4]+'.readme')).write_bytes(readme)
             atomic_json(metadata, prepared)
-        print('Verified published runtime; Aminet files: outputs/release/aminet-existing/', flush=True)
+        print('Verified published runtime; Aminet files: '+str(folder)+'/', flush=True)
         return prepared, folder, sha(metadata)
 
     def publish(self, destinations, confirmed):
@@ -934,6 +945,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', choices=('source','plan', 'build', 'check', 'prepare', 'prepare-aminet', 'publish','release'))
     parser.add_argument('--config', type=Path, default=Path(os.environ.get('BEAM68_RELEASE_CONFIG',str(Path.home()/'Development/tools/git-release/projects/beam68.json'))))
+    parser.add_argument('--output', type=Path, help='Artifact directory under outputs/; use the same path for build/check/prepare/publish')
     parser.add_argument('--notes', type=Path, default=ROOT / 'docs/RELEASE-NOTES.md')
     parser.add_argument('--to', default='gitlab,github')
     parser.add_argument('--confirm-publish', action='store_true')
@@ -946,7 +958,8 @@ def main(argv=None):
     parser.add_argument('--verbose',action='store_true',help='Stream redacted build/test output as it runs')
     args = parser.parse_args(argv)
     need(args.config.is_file(), 'Create external release settings or pass --config; see docs/RELEASING.md')
-    tool = Release(ROOT, config_read(ROOT, args.config),args.tag,args.tag_message)
+    need(args.output is None or args.command!='source', '--output does not apply to source')
+    tool = Release(ROOT, config_read(ROOT, args.config),args.tag,args.tag_message,output=args.output)
     tool.verbose=args.verbose
     need(not args.verbose or args.command=='build', '--verbose applies only to build')
     if args.command=='source':
@@ -957,7 +970,7 @@ def main(argv=None):
     if args.command == 'plan':
         for command in tool.plan():
             print(shlex.join(command))
-        print('Package only the Amiga LHA, plugin SDK ZIP and their .sha256 files into outputs/.')
+        print('Package only the Amiga LHA, plugin SDK ZIP and their .sha256 files into '+str(tool.out)+'/.')
         print('Target: Amiga m68000 — Available; runtime certification is separate.')
         return
     if args.command == 'build':
@@ -978,9 +991,9 @@ def main(argv=None):
     if args.command in ('publish', 'release'):
         receipts = []
         if any(target in ('github', 'gitlab') for target in args.to.split(',')):
-            receipts.append('outputs/release/receipt.json')
+            receipts.append(str(tool.state/'receipt.json'))
         if 'aminet' in args.to.split(','):
-            receipts.append('outputs/release/aminet-receipt.json')
+            receipts.append(str(tool.state/'aminet-receipt.json'))
         print(args.command.capitalize() + ' completed. See ' + ' and '.join(receipts) + '.')
     else:
         print(args.command.capitalize() + ' completed. No publication performed.')

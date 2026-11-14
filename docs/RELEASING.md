@@ -59,6 +59,22 @@ python3 scripts/release.py check
 python3 scripts/release.py prepare --notes docs/RELEASE-NOTES.md
 ```
 
+To keep a new version separate from earlier artifacts and publication receipts,
+choose an output directory under `outputs/`:
+
+```sh
+python3 scripts/release.py build --output outputs/release-0.2 --verbose
+python3 scripts/release.py check --output outputs/release-0.2
+python3 scripts/release.py prepare --output outputs/release-0.2 --tag 0.2
+```
+
+Pass the same `--output outputs/release-0.2` when publishing those artifacts.
+The four release assets go directly into that directory. Logs, manifests and
+receipts go into its `release/` subdirectory, including
+`outputs/release-0.2/release/build.log`. Without `--output`, the existing layout
+is unchanged. `outputs/release/` itself remains reserved for the original
+release state and cannot be selected as an artifact destination.
+
 `plan` only prints steps. `build` runs the catalogue check and portable tests,
 then builds all 17 native executables and verifies native provenance. It rejects common token/private-key formats and private credential files before
 building, source pushes and package checks. Matched values are never printed. It checks

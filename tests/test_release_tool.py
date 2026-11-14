@@ -129,9 +129,9 @@ class ReleaseTests(unittest.TestCase):
         self.commands = []
     def tearDown(self):
         self.tmp.cleanup()
-    def command(self, root, args, env=None):
+    def command(self, root, args, env=None, **kwargs):
         if args[0] == 'git':
-            return ORIGINAL_RUN(root, args, env)
+            return ORIGINAL_RUN(root, args, env, **kwargs)
         self.commands.append(args)
         if args[0] == './scripts/build-amiga.sh':
             (self.root / 'Beam68').write_bytes(b'\0\0\3\xf3native')
@@ -219,8 +219,8 @@ class ReleaseTests(unittest.TestCase):
         (self.root / 'src/main.c').write_text('changed')
         with self.assertRaisesRegex(ReleaseError, 'fingerprint'): self.tool.check()
     def test_input_change_during_build_refused(self):
-        def changed(root, args, env=None):
-            result = self.command(root, args, env)
+        def changed(root, args, env=None, **kwargs):
+            result = self.command(root, args, env, **kwargs)
             if args[0] == './scripts/build-amiga.sh':
                 (root / 'README.md').write_text('changed during build')
             return result
@@ -510,6 +510,49 @@ class ReleaseTests(unittest.TestCase):
         with patch.dict(os.environ,{'BEAM68_UPLOADER':''}),contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(tool.main([]),1)
         self.assertFalse((self.root/'dist').exists())
+    def test_cli_routes_custom_output_to_build(self):
+        config=Path(self.tmp.name)/'external.json';config.write_text('{}')
+        with patch.object(rel,'ROOT',self.root),patch.object(rel,'config_read',return_value=self.config),patch.object(rel,'Release') as factory:
+            rel.main(['build','--config',str(config),'--output','outputs/release-0.2'])
+            factory.assert_called_once_with(self.root,self.config,None,None,output=Path('outputs/release-0.2'))
+            factory.return_value.build.assert_called_once_with()
+
+    def test_custom_output_build_check_and_prepare_preserve_existing_release(self):
+        old = self.root/'outputs/release/receipt.json'
+        old.parent.mkdir(parents=True)
+        old.write_text('previous publication receipt')
+        self.tool = FixtureRelease(self.root,self.config,output=Path('outputs/release-0.2'))
+        with patch.object(rel,'run',side_effect=self.command): self.tool.build()
+        self.tool.check()
+        self.tool.prepare(self.root/'docs/RELEASE-NOTES.md')
+        self.assertEqual(old.read_text(),'previous publication receipt')
+        self.assertEqual(self.tool.out,self.root/'outputs/release-0.2')
+        self.assertTrue(self.tool.record.is_file())
+        self.assertTrue(self.tool.manifest.is_file())
+        self.assertTrue((self.tool.out/'Beam68-0.1.lha').is_file())
+        self.assertFalse((self.root/'outputs/Beam68-0.1.lha').exists())
+        # Real subprocess output must be written only into the selected state.
+        ORIGINAL_RUN(self.root,[sys.executable,'-c','print("custom output log")'],log_dir=self.tool.state)
+        self.assertIn('custom output log',(self.tool.state/'build.log').read_text())
+        self.assertFalse((old.parent/'build.log').exists())
+
+    def test_custom_output_refuses_links_outside_paths_and_reserved_state(self):
+        for name in ('../elsewhere','src','outputs/../../outside','outputs/release','outputs/release/nested'):
+            with self.subTest(name=name),self.assertRaises(ReleaseError):
+                FixtureRelease(self.root,self.config,output=Path(name))
+        (self.root/'outputs').mkdir()
+        (self.root/'outputs/linked').symlink_to(Path(self.tmp.name),target_is_directory=True)
+        with self.assertRaisesRegex(ReleaseError,'Linked release directory'):
+            FixtureRelease(self.root,self.config,output=Path('outputs/linked/new'))
+
+    def test_custom_output_keeps_publication_receipt_guard(self):
+        tool=FixtureRelease(self.root,self.config,output=Path('outputs/releases/test'))
+        tool.state.mkdir(parents=True)
+        receipt=tool.state/'receipt.json';receipt.write_text('keep')
+        with self.assertRaisesRegex(ReleaseError,'Keep existing publication receipts'):
+            tool.build()
+        self.assertEqual(receipt.read_text(),'keep')
+
     def test_build_logs_redact_success_failure_and_verbose_output(self):
         self.tool.state.mkdir(parents=True)
         secret='private-'+'logging-test-value'

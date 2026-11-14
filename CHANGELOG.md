@@ -1,47 +1,62 @@
 # Changelog
 
-## 0.2 — In development
+## 0.2
 
-- Safe return from the private application stack when closing Preferences.
-- Find Beam68Prefs with ordinary preferences/settings searches.
-- Automatic Novice installation and opt-in Aminet Browser defaults.
+### Features
 
-- Preferences About window reports its build and the actual running launcher version.
+- Aminet Browser plugin with search, package details, paged readmes, confirmed
+  downloads and archive-opening installation preparation.
+- Preferences About window showing the Preferences build and the actual version
+  of the running Beam68 launcher.
+- Per-plugin preview controls, including enable/disable and direct numeric delay
+  entry with validation and Cancel support.
+- Outstanding-request diagnostics showing the plugin, request age and timeout state.
+- Resettable responsiveness measurements and a report script for repeatable
+  startup, typing and result-display checks.
+- Installer QA package for separate installation, update and uninstall tests,
+  with file checks, settings-preservation checks and a readable report.
+- Release-script `--output` option for separate artifact directories, logs,
+  manifests and publication receipts for each release.
 
-- Independent Aminet Browser plugin: inline search and details, paged readmes,
-  confirmed downloads and archive-opening installation preparation.
+### Enhancements
 
-- Direct numeric preview-delay entry with validation and Cancel support.
-
-- Outstanding-request diagnostics identify holding plugins, request age and timeout state.
-
-- Recover validated index backups after interrupted cache replacement.
-
-- Bound outstanding plugin requests, reserve manual-run capacity and coalesce queued previews.
-
-- Per-plugin preview enable/disable and delay controls in Preferences Details.
-
-- Upgrades preserve portable settings, aliases and edited bundled themes.
-- Missing ENV/ENVARC settings inherit existing user settings and plugin-local configuration.
-
-- Obsolete plugin requests detach on query edits, close and reload.
-- Elapsed-time plugin deadlines, stricter reply validation and preview failure recovery.
-- Native requests avoid reply-file polling; routine health saves wait for idle time.
-
-- Low-memory failures preserve existing entries and titles.
-- Transactional cache reloads and rollback on failed cache replacement.
-- Incomplete rescans retain unverified entries; completed scans remap selections.
-- Changed game and bookmark titles refresh during rescans.
-
-- Resettable responsiveness diagnostics and an Amiga report script for repeatable typing tests.
-
-- On-demand index string storage reduces startup memory reservations.
+- Earlier display of search results during indexing, with more frequent input checks.
+- More responsive typing through coalesced input, immediate query feedback and
+  less repeated matching work.
+- Lower startup memory use through on-demand index string storage.
 - Earlier duplicate-launch detection and deferred font-library loading.
+- Deferred optional icon previews; native plugin requests avoid reply-file polling.
+- Background plugin requests are bounded, manual requests retain capacity and
+  queued previews are coalesced. Routine plugin-health saves wait for idle time.
 - Startup timing includes library, configuration and metadata loading.
+- Beam68Prefs can be found with ordinary preferences and settings searches.
+- Novice installation uses automatic defaults and reuses the existing installation
+  location. Novice uninstall removes programs while retaining saved settings.
+- The Shell installer stops the resident before copying, starts the installed
+  launcher and checks its reported version before showing the search window.
+- System Commands is enabled by default. Aminet Browser is installed but disabled
+  until enabled in Preferences; updates retain saved plugin choices.
 
-- More responsive typing with coalesced input and immediate query feedback.
-- Earlier display of first matches during indexing and more frequent input checks.
-- Deferred optional icon previews and reduced matcher work.
+### Bugs
+
+- Fixed stack corruption when Preferences returns from its private application stack.
+- Fixed Novice mode being unavailable in the installer and QA uninstaller.
+- Fixed the Installer QA menu's Quit action.
+- Preserved portable settings, aliases, snippets, additional plugins and edited
+  bundled themes during updates. Missing settings inherit existing user settings
+  and plugin-local configuration.
+- Corrected legacy installation-location handling and known startup links when
+  updating older layouts.
+- Detached obsolete plugin requests after query changes, window closure or plugin
+  reloads, preventing replies for older queries from replacing current results.
+- Improved recovery after plugin timeouts, crashes, malformed replies and preview
+  failures, with elapsed-time deadlines and stricter reply validation.
+- Preserved existing index entries and titles after low-memory failures.
+- Made cache reloads transactional, with rollback after failed replacement and
+  recovery from validated backups after interrupted saves.
+- Retained unverified entries after incomplete rescans and remapped selections
+  after completed scans.
+- Refreshed changed game and bookmark titles during rescans.
 
 ## 0.1 — First public release
 
