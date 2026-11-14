@@ -1,4 +1,18 @@
-# Beam68 0.1 validation status
+# Beam68 validation status
+
+## 0.2 development checks — 14 November 2026
+
+- Aminet Browser is the fourteenth bundled plugin. It builds for 68000 with
+  warnings treated as errors and passes the SDK package validator.
+- Full portable tests, Aminet parser/header/signature sanitizers and source
+  hygiene checks pass. The published 0.1 website still describes its 13 plugins.
+- Native network QA passes live search, readme parsing, complete archive
+  transfer, response-size rejection and cancellation cleanup. Downloaded code
+  was not executed. See docs/NATIVE_TEST_RESULTS.txt for the recorded results.
+- Interactive Aminet download-window, destination-conflict, disk-full and archive
+  handler checks remain open. Download completion does not certify installation.
+
+## 0.1 validation record
 
 Updated 11 November 2026.
 

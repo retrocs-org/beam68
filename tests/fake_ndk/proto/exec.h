@@ -9,4 +9,11 @@ void Forbid(void);
 void Permit(void);
 struct MsgPort *FindPort(STRPTR name);
 void PutMsg(struct MsgPort *port,struct Message *message);
+struct MsgPort *CreateMsgPort(void);
+void DeleteMsgPort(struct MsgPort *port);
+void AddPort(struct MsgPort *port);
+void RemPort(struct MsgPort *port);
+struct Message *GetMsg(struct MsgPort *port);
+void ReplyMsg(struct Message *message);
+void *FindTask(STRPTR name);
 #endif

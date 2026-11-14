@@ -1,4 +1,4 @@
-; $VER: Install-Beam68 0.1 (27.10.2026)
+; $VER: Install-Beam68 0.2 (14.11.2026)
 ;
 ; Beam68 GUI installer for the AmigaOS "Installer" utility (Installer 42.x
 ; ships with AmigaOS 3.1+; Installer 43.3 for older systems is on Aminet).
@@ -11,12 +11,12 @@
 ; scripted installs.
 
 (set @app-name "Beam68")
-(set #version "0.1")
+(set #version "0.2")
 (set #default-parent "SYS:Utilities")
 (set #default-dest "SYS:Utilities/Beam68")
 (set #startup "SYS:WBStartup/Beam68Start")
-(set #plugin-count 13)
-(set #plugin-mask 8191)
+(set #plugin-count 14)
+(set #plugin-mask 16383)
 (set #pluginlines "")
 (set #ctl "Beam68Ctl")
 
@@ -178,7 +178,7 @@
     (select #i "Calc" "Clock" "Memory" "FileFinder" "SystemCommands"
                "DosTools" "TaskManager" "ClipboardTools" "DateUtilities"
                "WindowSwitcher" "DeveloperTools" "ARexxRunner"
-               "MusicControls"))
+               "MusicControls" "AminetBrowser"))
 )
 
 ; Ask a running launcher to quit and wait until it has gone: QUITWAIT
@@ -213,6 +213,13 @@
   )
 )
 
+ ; Settings and edited themes belong to the user during an upgrade.
+(procedure P_COPY_MISSING
+  (if (= (exists (tackon #to (fileonly #src)) (noreq)) 0)
+    (P_COPY)
+  )
+)
+
 ; Copy the icon of #src, but keep an existing one (position, tool types).
 (procedure P_COPY_ICON
   (if (= (exists (tackon #to (cat (fileonly #src) ".info")) (noreq)) 0)
@@ -241,7 +248,12 @@
     (P_PLUGIN_NAME)
     (if (IN #plugins #i)
       (if (= (run (cat "C:Search FROM \"" #cfg "\" SEARCH \"" #plugin ".plugin\" QUIET")) 5)
+        (
         (run (cat "Echo >>\"" #cfg "\" \"PLUGIN=PROGDIR:Plugins/" #plugin "/" #plugin ".plugin\""))
+          (if (= #plugin "AminetBrowser")
+            (run (cat "Echo >>\"" #cfg "\" \"PLUGIN_DISABLED=PROGDIR:Plugins/AminetBrowser/AminetBrowser.plugin\""))
+          )
+        )
       )
     )
     (set #i (+ #i 1))
@@ -265,17 +277,22 @@
 
   (set #parent (if (= #existing "") #default-parent (pathonly #existing)))
   (set #parent
+    (if #novice #parent
     (askdir
       (prompt #t_ask_dir)
       (help #t_help_dir @askdir-help)
       (default #parent)
-    )
+    ))
   )
-  (set #dest (tackon #parent "Beam68"))
+  (set #dest (if #novice
+    (if (= #existing "") #default-dest #existing)
+    (tackon #parent "Beam68")))
   (set @default-dest #dest)
   (set #update (= (exists (tackon #dest "Beam68") (noreq)) 1))
+  (set #portable-settings (= (exists (tackon #dest "Beam68.cfg") (noreq)) 1))
 
   (set #plugins
+    (if #novice #plugin-mask
     (askoptions
       (prompt (if #update
         #t_ask_plugins_update
@@ -294,18 +311,20 @@
         "Workbench Windows      ~  window:"
         "Developer Tools        $  dev:"
         "ARexx Runner           %  rexx:"
-        "Music Controls         |  music:")
+        "Music Controls         |  music:"
+        "Aminet Browser         ]  aminet:")
       (default #plugin-mask)
-    )
+    ))
   )
 
   (set #autostart
+    (if #novice (if #update (exists #startup (noreq)) 1)
     (askbool
       (prompt #t_ask_autostart)
       (help #t_help_autostart @askbool-help)
       (default (if #update (exists #startup (noreq)) 1))
       (choices #t_yes #t_no)
-    )
+    ))
   )
 
   (P_STOP_LAUNCHER)
@@ -318,18 +337,24 @@
   (set #to #dest)
   (set #src "Beam68") (P_COPY) (P_COPY_ICON)
   (set #src "Beam68Ctl") (P_COPY)
-  (set #src "Aliases.txt") (P_COPY)
-  (set #src "Beam68.cfg") (P_COPY)
+  (set #src "Aliases.txt") (P_COPY_MISSING)
+  (set #src "Beam68.cfg") (P_COPY_MISSING)
   (set #src "Beam68.guide") (P_COPY) (P_COPY_ICON)
   (set #dir (tackon #dest "scripts")) (P_MAKEDIR)
   (set #to #dir)
   (set #src "scripts/Beam68Status.rexx") (P_COPY)
+  (set #src "scripts/Beam68Responsiveness.rexx") (P_COPY)
   (set #to "SYS:Prefs")
   (set #src "Beam68Prefs") (P_COPY) (P_COPY_ICON)
   ; Theme gallery: Appearance -> Theme file -> Import
   (set #dir (tackon #dest "Themes")) (P_MAKEDIR)
-  (copyfiles (prompt "Copying themes") (help @copyfiles-help)
-             (source "themes") (dest #dir) (pattern "#?.theme") (nogauge))
+  (set #to #dir)
+  (set #theme-index 0)
+  (while (< #theme-index 4)
+    (set #theme-name (select #theme-index "Amber.theme" "GreenScreen.theme" "MagicGrey.theme" "Paper.theme"))
+    (set #src (cat "themes/" #theme-name)) (P_COPY_MISSING)
+    (set #theme-index (+ #theme-index 1))
+  )
   ; Translations: PROGDIR:Catalogs/<language>/Beam68.catalog
   (set #dir (tackon #dest "Catalogs")) (P_MAKEDIR)
   (set #lang 0)
@@ -358,6 +383,8 @@
   (while (< #i #plugin-count)
     (P_PLUGIN_NAME)
     (set #pdir (tackon #dest (cat "Plugins/" #plugin)))
+    (if (IN #plugins #i)
+      (
     ; The 0.1 flat layout kept Plugins/<Name> as the program file itself;
     ; the package drawer of the same name replaces it.
     (if (= (exists (cat #pdir ".plugin") (noreq)) 1)
@@ -366,19 +393,29 @@
         (set #file #pdir) (P_DELETE_FILE)
       )
     )
-    (if (IN #plugins #i)
-      (
         (working (cat #t_installing_plugin #plugin))
         (set #dir #pdir) (P_MAKEDIR)
         (set #to #pdir)
         (set #src (cat "Plugins/" #plugin "/" #plugin)) (P_COPY)
         (set #src (cat "Plugins/" #plugin "/" #plugin ".plugin")) (P_COPY)
+        (if (= (exists (cat "Plugins/" #plugin "/" #plugin ".guide") (noreq)) 1)
+          (
+            (set #src (cat "Plugins/" #plugin "/" #plugin ".guide")) (P_COPY)
+          )
+        )
         ; Default settings only when the user has none yet.
         (if (= (exists (cat "Plugins/" #plugin "/" #plugin ".cfg") (noreq)) 1)
           (if (= (exists (cat "ENVARC:Beam68/Plugins/" #plugin ".cfg") (noreq)) 0)
             (
               (set #to "ENVARC:Beam68/Plugins")
-              (set #src (cat "Plugins/" #plugin "/" #plugin ".cfg")) (P_COPY)
+              (set #src (tackon #pdir (cat #plugin ".cfg")))
+              (if (= (exists #src (noreq)) 0)
+                (set #src (cat #pdir ".cfg"))
+              )
+              (if (= (exists #src (noreq)) 0)
+                (set #src (cat "Plugins/" #plugin "/" #plugin ".cfg"))
+              )
+              (P_COPY)
             )
           )
         )
@@ -397,13 +434,20 @@
       (if (<> #dest #default-dest)
         (set #cfgextra (cat "INSTALL_DIR=" #dest "\n"))
       )
-      (textfile
+      (if #portable-settings
+        (
+          (set #to "ENVARC:Beam68")
+          (set #src (tackon #dest "Beam68.cfg")) (P_COPY)
+          (set #cfg "ENVARC:Beam68/Beam68.cfg") (P_UPDATE_CONFIG)
+        )
+        (textfile
         (prompt #t_writing_settings)
         (help @textfile-help)
         (dest "ENVARC:Beam68/Beam68.cfg")
         (include "installer/Beam68-base.cfg")
         (append #cfgextra)
         (append #pluginlines)
+        )
       )
     )
     (
@@ -427,10 +471,10 @@
     ((set #to "ENVARC:Beam68") (set #src "Snippets.txt") (P_COPY))
   )
   (if (= (exists "ENVARC:Beam68/Aliases.txt" (noreq)) 0)
-    ((set #to "ENVARC:Beam68") (set #src "Aliases.txt") (P_COPY))
+    ((set #to "ENVARC:Beam68") (set #src (tackon #dest "Aliases.txt")) (P_COPY))
   )
   (if (= (exists "ENV:Beam68/Aliases.txt" (noreq)) 0)
-    ((set #to "ENV:Beam68") (set #src "Aliases.txt") (P_COPY))
+    ((set #to "ENV:Beam68") (set #src "ENVARC:Beam68/Aliases.txt") (P_COPY))
   )
   (complete 85)
 
@@ -464,11 +508,12 @@
             (dest "ENV:Beam68/InstallDir") (append #dest))
   (complete 100)
 
-  (if (askbool
+  (if (if #novice 1
+    (askbool
         (prompt (cat (if #update #t_done_updated #t_done_installed) #dest #t_start_now))
         (help @askbool-help)
         (default 1)
-        (choices #t_start #t_not_now))
+        (choices #t_start #t_not_now)))
     (run (cat "Run >NIL: \"" (tackon #dest "Beam68") "\""))
   )
   (exit #t_ready)
@@ -479,20 +524,20 @@
 (procedure P_UNINSTALL
   (set #dest (if (= #existing "") #default-dest #existing))
   (set #dest
-    (askdir
+    (if #novice #dest (askdir
       (prompt #t_which_remove)
       (help @askdir-help)
       (default #dest)
-    )
+    ))
   )
   (if (<> (exists (tackon #dest "Beam68") (noreq)) 1)
     (abort (cat #dest #t_not_contain))
   )
-  (if (= 0 (askbool
+  (if (= 0 (if #novice 1 (askbool
         (prompt (cat #t_remove_q #dest #t_remove_list))
         (help @askbool-help)
         (default 0)
-        (choices #t_remove #t_cancel)))
+        (choices #t_remove #t_cancel))))
     (exit #t_nothing_removed (quiet))
   )
 
@@ -517,11 +562,11 @@
   (set #file (cat #startup ".info")) (P_DELETE_FILE)
   (complete 70)
 
-  (if (askbool
+  (if (if #novice 1 (askbool
         (prompt #t_keep_q)
         (help @askbool-help)
         (default 1)
-        (choices #t_keep #t_delete))
+        (choices #t_keep #t_delete)))
     (
       (set #file "ENVARC:Beam68/InstallDir") (P_DELETE_FILE)
       (set #file "ENV:Beam68/InstallDir") (P_DELETE_FILE)
@@ -550,16 +595,18 @@
 )
 
 (welcome #t_welcome)
+(set #novice (= @user-level 0))
 
 (set #action
-  (askchoice
+  (if #novice 0
+    (askchoice
     (prompt (if (= #existing "")
       #t_not_installed
       (cat #t_installed_in #existing #t_what_do)))
     (help #t_help_main @askchoice-help)
     (choices #t_choice_install #t_choice_uninstall)
     (default 0)
-  )
+  ))
 )
 
 (if (= #action 0)

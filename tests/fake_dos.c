@@ -29,6 +29,12 @@ char *FGets(BPTR f,char *line,LONG n) { return fgets(line,(int)n,f); }
 LONG FRead(BPTR f,void *buf,LONG size,LONG count)
 { return (LONG)fread(buf,(size_t)size,(size_t)count,f); }
 LONG FPuts(BPTR f,STRPTR s) { if (fail_writes==0) {fail_writes=-1;return -1;} if (fail_writes>0)--fail_writes;return fputs(s,f)==EOF?-1:0; }
+LONG Seek(BPTR f,LONG offset,LONG mode)
+{
+    long previous=ftell(f);
+    if (previous<0 || mode!=OFFSET_BEGINNING || fseek(f,offset,SEEK_SET)) return -1;
+    return (LONG)previous;
+}
 LONG Close(BPTR f) { return fclose(f)==0?-1:0; }
 BPTR CreateDir(STRPTR name)
 { return mkdir(pathmap(name),0777)==0?(BPTR)1:NULL; }

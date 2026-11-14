@@ -1,3 +1,4 @@
+#include <stddef.h>
 /* Beam68 - lightweight app launcher for AmigaOS 3.x / Motorola 68000.
  * Uses Intuition, Commodities, DOS, Workbench and icon.library only.
  * No MUI, Reaction, AHI, FPU or TCP stack required.
@@ -86,7 +87,7 @@
 
 /* Version string for the AmigaDOS Version command and the GUI installer
  * (getversion).  Non-static so the compiler keeps it. */
-const char beam68_version_tag[]="$VER: Beam68 0.1 (27.10.2026)";
+const char beam68_version_tag[]="$VER: Beam68 " BEAM68_VERSION " (" BEAM68_VERSION_DATE ")";
 
 #define HOTKEY_ID 1001L
 #define BEAM_SCAN_MAX_CHUNK 256      /* upper bound per tick, any CPU */
@@ -207,6 +208,8 @@ static struct DiskObject *selected_icon;
 static struct Rectangle selected_icon_rect;
 static char selected_icon_path[BEAM_MAX_PATH];
 static int selected_icon_usable;
+static char pending_icon_path[BEAM_MAX_PATH];
+static int icon_preview_ticks;
 static char query[BEAM_QUERY_LEN+1];
 static int query_cursor, query_view_start;
 static int restart_confirm;
@@ -229,6 +232,22 @@ static struct {
 } outgoing_rexx;
 static unsigned long timing_search,timing_cache,timing_scan,timing_startup,timing_narrowed;
 static struct timeval timing_scan_start;
+static struct timeval timing_input_start,timing_first_start;
+static struct BeamLatency timing_input,timing_results,timing_first;
+static int timing_input_pending,timing_header_done,timing_first_pending;
+static unsigned long timing_window;
+
+static void plugin_abandon(void);
+static void timing_edit_begin(const struct timeval *when)
+{
+    plugin_abandon();
+    if (!timing_input_pending) {
+        timing_input_start=*when;
+        timing_input_pending=1;timing_header_done=0;
+    }
+    /* First-match timing belongs to the latest edited query. */
+    timing_first_start=*when;timing_first_pending=1;
+}
 static int recovery_grace_ticks;
 static int scan_redraw_ticks;
 static char index_cache_path[BEAM_MAX_PATH];
@@ -286,20 +305,32 @@ static struct MsgPort *timer_port;
 static struct timerequest *timer_io;
 static int timer_open, timer_pending;
 static struct BeamPluginJob plugin_job;
+static struct BeamPluginRequests plugin_requests;
+static unsigned char plugin_request_file[BEAM_PLUGIN_REQUEST_LIMIT];
+static char plugin_request_path[BEAM_PLUGIN_REQUEST_LIMIT][BEAM_MAX_PATH];
+static int preview_waiting,plugin_retired_poll_ticks;
+/* Snapshots survive manifest reloads; never retain plugin-table pointers. */
+static char plugin_request_name[BEAM_PLUGIN_REQUEST_LIMIT][BEAM_REQUEST_NAME_MAX];
+static struct timeval plugin_request_started[BEAM_PLUGIN_REQUEST_LIMIT];
+static unsigned short plugin_request_timeout[BEAM_PLUGIN_REQUEST_LIMIT];
+static unsigned char plugin_request_preview[BEAM_PLUGIN_REQUEST_LIMIT];
 static char plugin_result_path[BEAM_MAX_PATH];
 static char plugin_original_query[BEAM_QUERY_LEN+1];
-/* Live previews (PREVIEW=YES): after a short typing pause the plugin runs
- * and its answer is shown under the query.  Previews never count towards
- * quarantine and are dropped as soon as the user presses Enter. */
-#define BEAM_PREVIEW_TICKS 8   /* ~400 ms */
+/* PREVIEW=YES opts in; user overrides can disable or delay automatic work.
+ * Preview errors follow plugin health policy; Enter wins over a preview. */
 static int preview_ticks,preview_job,executing_preview;
+static struct timeval preview_scheduled;
+static int preview_requested_ms;
 static char preview_text[BEAM_PLUGIN_MAX_RESULT+1];
 static char preview_for[BEAM_QUERY_LEN+1];
 static char plugin_active_name[BEAM_MAX_NAME];
 static char plugin_active_manifest[BEAM_MAX_PATH];
 static char last_shell_command[BEAM_QUERY_LEN+1];
 static char shell_notice[96];
-static unsigned int plugin_serial;
+static unsigned long plugin_serial;
+static int plugin_file_reply;
+static int plugin_health_flush_ticks;
+static struct timeval plugin_started;
 static int safe_mode;
 static int recovery_safe_mode,recovery_marker_owned;
 static char plugin_last_result[BEAM_PLUGIN_MAX_RESULT+1];
@@ -493,7 +524,7 @@ static void safe_mode_active_set(int active)
     dir=CreateDir((STRPTR)"T:Beam68");if (dir) UnLock(dir);
     f=Open((STRPTR)BEAM_SAFE_MODE_ACTIVE,MODE_NEWFILE);
     if (!f) return;
-    FPuts(f,(STRPTR)"Beam68 0.1 safe mode active\n");
+    FPuts(f,(STRPTR)"Beam68 " BEAM68_VERSION " safe mode active\n");
     Close(f);
 }
 
@@ -523,7 +554,7 @@ static void scan_snapshot(struct BeamScanStatus *s)
     s->io_errors=scan_io_errors;
     s->overlong=(unsigned long)paths_truncated;
     s->scanning=scan_active;
-    s->capped=index_full;
+    s->capped=index_full || beam_index.full;
     s->cached=scan_cached;
 }
 
@@ -547,12 +578,19 @@ static int beam_runtime_path(const char *spec,char *out,unsigned int cap)
     return AddPart(out,(STRPTR)(spec+8),(LONG)cap)!=0;
 }
 
+static int plugin_files_pending(void)
+{
+    int i;
+    for (i=0;i<BEAM_PLUGIN_REQUEST_LIMIT;i++)
+        if (plugin_requests.serial[i] && plugin_request_file[i]) return 1;
+    return 0;
+}
 static void arm_timer(void)
 {
     if (!timer_io || timer_pending ||
         (!scan_active && !plugin_job.active &&
          !(outgoing_rexx.message && !outgoing_rexx.timed_out) && !notify_refresh_ticks &&
-         !recovery_grace_ticks && !preview_ticks)) return;
+         !recovery_grace_ticks && !preview_ticks && !icon_preview_ticks && !plugin_health_flush_ticks && !plugin_files_pending())) return;
     timer_io->tr_node.io_Command=TR_ADDREQUEST;
     timer_io->tr_time.tv_secs=0;
     timer_io->tr_time.tv_micro=BEAM_TICK_MICROS;
@@ -642,9 +680,11 @@ static void preview_clear(void)
     selected_icon=NULL;
     selected_icon_path[0]=0;
     selected_icon_usable=0;
+    pending_icon_path[0]=0;
+    icon_preview_ticks=0;
 }
 
-static void preview_prepare_path(const char *path)
+static void preview_load_path(const char *path)
 {
     struct TagItem tags[3];
     int width,height;
@@ -668,6 +708,19 @@ static void preview_prepare_path(const char *path)
     height=(int)selected_icon_rect.MaxY-(int)selected_icon_rect.MinY+1;
     selected_icon_usable=beam_preview_fits(width,height);
 }
+/* Keep disk icon loading out of the keystroke/result paint path. */
+static void preview_prepare_path(const char *path)
+{
+    if (!path || !*path || !cfg.icon_preview || !window || IconBase->lib_Version<44) {
+        preview_clear(); return;
+    }
+    if (!strcmp(selected_icon_path,path) || !strcmp(pending_icon_path,path)) return;
+    preview_clear();
+    beam_copy(pending_icon_path,path,sizeof(pending_icon_path));
+    icon_preview_ticks=3; /* 100-150ms with the shared 50ms timer */
+    arm_timer();
+}
+
 static void preview_prepare(const struct BeamItem *item)
 {
     if (!item || item->kind!=BEAM_ITEM_WORKBENCH) { preview_clear();return; }
@@ -705,6 +758,13 @@ static int has_suffix_ci(const char *s, const char *suffix)
  * reload) so the per-keystroke search performs no favorites/history/alias
  * string comparisons at all. */
 static unsigned long index_generation;
+static const char *item_search_words(const struct BeamItem *it)
+{
+    const char *words=beam_aliases_words(&aliases,(int)it->alias_index);
+    if (!words) words=beam_search_builtin_alias(it->name);
+    return words?words:it->title;
+}
+
 static void item_bind_meta(struct BeamItem *it)
 {
     ++index_generation;
@@ -720,7 +780,7 @@ static void item_bind_meta(struct BeamItem *it)
     it->bonus=(unsigned char)(bonus>144?144:bonus);
     if (beam_hidden_contains(&hidden,it->path)) it->flags|=BEAM_ITEM_FLAG_HIDDEN;
     else it->flags&=(unsigned char)~BEAM_ITEM_FLAG_HIDDEN;
-    words=beam_aliases_words(&aliases,(int)it->alias_index);
+    words=item_search_words(it);
     it->mask=beam_text_mask(it->name)|(words?beam_text_mask(words):0UL)|
              (it->title?beam_text_mask(it->title):0UL);
 }
@@ -731,7 +791,7 @@ static void bind_all_meta(void)
     for (i=0;i<item_count;i++) item_bind_meta(&items[i]);
 }
 
-/* Returns the index of a newly created item, otherwise -1. */
+/* Return the new or refreshed index, otherwise -1. */
 static int index_add(const char *path,int kind,int root)
 {
     int index,created;
@@ -742,7 +802,6 @@ static int index_add(const char *path,int kind,int root)
     index=beam_index_add(&beam_index,path,kind,root,&created);
     if (index==-1) { index_full=1; return -1; }
     if (index<0) { ++paths_truncated; return -1; }
-    if (!created) return -1;
     item_bind_meta(&items[index]);
     return index;
 }
@@ -909,6 +968,7 @@ static int root_bits(unsigned long roots)
 }
 static int scan_stale_marked;
 static void scan_complete(void);
+static void reconcile_scan(int complete);
 /* Rescan the given roots.  Existing entries stay searchable throughout:
  * they are marked stale, refreshed when found again, and only the ones that
  * really vanished are removed once the walk completes. */
@@ -952,6 +1012,13 @@ static long micros_since(const struct timeval *start)
     GetSysTime(&now);
     return (long)(now.tv_secs-start->tv_secs)*1000000L+
            ((long)now.tv_micro-(long)start->tv_micro);
+}
+
+static unsigned long timing_elapsed(const struct timeval *start)
+{
+    struct timeval now;
+    GetSysTime(&now);
+    return beam_elapsed_us(start->tv_secs,start->tv_micro,now.tv_secs,now.tv_micro);
 }
 
 /* Index sources outside the drawer walk (only on full rebuilds): ARexx
@@ -1034,10 +1101,12 @@ static void scan_complete(void)
     if (scan_full_rebuild) index_sources();
     /* The walk finished: whatever is still stale has really disappeared.
        Sweeping renumbers items, so any shown result list must be rebuilt. */
-    beam_index_sweep(&beam_index);
+    scan_snapshot(&completed);
+    reconcile_scan(beam_scan_cacheable(&completed));
     ++index_generation;
     search_pending=1;
-    scan_snapshot(&completed);
+    /* Preserve pre-sweep failure flags while reporting the final size. */
+    completed.applications=(unsigned long)item_count;
     if (cfg.index_cache && index_cache_path[0]) {
         if (!beam_scan_cacheable(&completed)) {
             /* A partial result must not appear as a complete cached index
@@ -1068,9 +1137,10 @@ static void scan_step(void)
     while (scan_active && budget-->0) {
         struct BeamScanFrame *f;
         const char *filename;
-        if ((budget&7)==0 &&
-            ((SetSignal(0,0)&input_signals) ||
-             micros_since(&start)>BEAM_SCAN_BUDGET_MICROS)) break;
+        /* Input takes priority between directory entries, including slow
+           icon reads; only the clock measurement is sampled every eight. */
+        if ((SetSignal(0,0)&input_signals) ||
+            ((budget&7)==0 && micros_since(&start)>BEAM_SCAN_BUDGET_MICROS)) break;
         if (index_full && !scan_stale_marked) {
             /* A first build has reached its capacity: nothing left to do. */
             scan_complete(); break;
@@ -1152,7 +1222,7 @@ static void scan_step(void)
      * since the sweep renumbers items. */
     if (scan_redraw_ticks>0) --scan_redraw_ticks;
     if (window && (!scan_active ||
-                   (scan_redraw_ticks==0 && item_count!=previous_items))) {
+                   ((scan_redraw_ticks==0 || result_count==0) && item_count!=previous_items))) {
         scan_redraw_ticks=BEAM_SCAN_REDRAW_TICKS;
         if (!scan_active) previous_selection=-1; /* indices may have moved */
         search_items();
@@ -1285,6 +1355,18 @@ static struct BeamLauncherPlugin *query_plugin(void)
 static int browse_active;
 static int ext_active;
 static int args_item=-1;          /* item waiting for typed arguments */
+static void reconcile_scan(int complete)
+{
+    int tracked[BEAM_MAX_RESULTS+1],n=0,i;
+    int ordinary=!browse_active && !ext_active && !rows_active && !help_mode &&
+                 args_item<0 && beam_search_scope_parse(query,NULL)!=BEAM_SCOPE_PLUGIN;
+    if (ordinary) for (i=0;i<result_count;i++) tracked[n++]=results[i];
+    tracked[n]=args_item;
+    beam_index_reconcile(&beam_index,complete,tracked,(unsigned int)n+1U);
+    if (ordinary) for (i=0;i<result_count;i++) results[i]=tracked[i];
+    args_item=tracked[n];
+}
+
 static int selected_alias_index(void)
 {
     if (browse_active || args_item>=0 || rows_active || ext_active) return -1;
@@ -1543,7 +1625,7 @@ static int browse_parent(void)
     return browse_enter(parent);
 }
 static int random_pick;
-static void search_items(void)
+static void search_items_impl(void)
 {
     int i,k,score,oldscore,scope;
     const char *search_query;
@@ -1661,7 +1743,6 @@ static void search_items(void)
     }
     beam_query_masks_build(search_query,&query_masks);
     {
-        struct timeval started;
         unsigned int qlen=(unsigned int)strlen(search_query),clen=(unsigned int)strlen(cand_query);
         int single=*search_query && !strpbrk(search_query," \t,;") &&
                    scope!=BEAM_SCOPE_RECENT && scope!=BEAM_SCOPE_FAVORITE;
@@ -1671,7 +1752,6 @@ static void search_items(void)
         if (single && !cand_bits)
             cand_bits=(unsigned char *)AllocVec((ULONG)beam_index.capacity/8UL+1UL,MEMF_ANY|MEMF_CLEAR);
         if (!cand_bits) single=narrow=0;
-        if (TimerBase) GetSysTime(&started);
     for (i=0;i<item_count;i++) {
         const struct BeamItem *it=&items[i];
         if (narrow && !(cand_bits[i>>3]&(1<<(i&7)))) continue;
@@ -1692,12 +1772,15 @@ static void search_items(void)
             /* Cheap, sound early reject before any string matching. */
             if (beam_query_masks_reject(&query_masks,it->mask)) continue;
             score=beam_search_rank_alias(search_query,it->name,
-                 beam_aliases_words(&aliases,(int)it->alias_index)?
-                 beam_aliases_words(&aliases,(int)it->alias_index):it->title,pinned,
+                 item_search_words(it),pinned,
                  (unsigned int)it->bonus);
         }
         if (!score) continue;
         if (single) cand_bits[i>>3]|=(unsigned char)(1<<(i&7));
+        /* Keep every match in the narrowing bitmap, but do not walk the
+           whole result list when this score cannot enter the top results.
+           Equal scores retain the original index order. */
+        if (score<=scores[cap-1]) continue;
         for (k=0;k<cap;k++) {
             oldscore=scores[k];
             if (score>oldscore) {
@@ -1717,7 +1800,6 @@ static void search_items(void)
             cand_scope=scope; cand_generation=index_generation;
         }
         if (narrow) ++timing_narrowed;
-        if (TimerBase) timing_search=(unsigned long)micros_since(&started);
     }
     for (k=0;k<cap;k++) if (results[k]>=0) ++result_count;
     if (previous_item>=0) {
@@ -1726,6 +1808,15 @@ static void search_items(void)
             break;
         }
     }
+}
+
+static void search_items(void)
+{
+    struct timeval started;
+    if (plugin_job.active && strcmp(query,plugin_original_query)) plugin_abandon();
+    if (TimerBase) GetSysTime(&started);
+    search_items_impl();
+    if (TimerBase) timing_search=(unsigned long)micros_since(&started);
 }
 
 /* One TextFit() call (graphics V36) replaces shortening the text a
@@ -1826,7 +1917,7 @@ static void render_parts(int parts)
     const char *shell_command=NULL;
     char label[256], aux[256];
     if (!window) return;
-    if (search_pending) { search_items(); parts=BEAM_RENDER_ALL; }
+    if (search_pending && (parts&BEAM_RENDER_BODY)) { search_items(); parts=BEAM_RENDER_ALL; }
     render_pending&=~parts;
     rp=window->RPort;
     width=window->Width-window->BorderLeft-window->BorderRight;
@@ -1844,6 +1935,10 @@ static void render_parts(int parts)
         SetAPen(rp,palette.shadow);
         Move(rp,window->BorderLeft+6,base+lineheight+3);
         Draw(rp,window->Width-window->BorderRight-7,base+lineheight+3);
+    }
+    if ((parts&BEAM_RENDER_HEADER) && timing_input_pending && !timing_header_done) {
+        beam_latency_record(&timing_input,timing_elapsed(&timing_input_start));
+        timing_header_done=1;
     }
     if (!(parts&BEAM_RENDER_BODY)) return;
     SetAPen(rp,palette.background);
@@ -2142,6 +2237,14 @@ static void render_parts(int parts)
                   window->Height-window->BorderBottom-8-(int)(rp->TxHeight-rp->TxBaseline),
                   beam_str(MSG_FOOT_DEFAULT),width-18);
     }
+    if (timing_input_pending) {
+        beam_latency_record(&timing_results,timing_elapsed(&timing_input_start));
+        timing_input_pending=0;timing_header_done=0;
+    }
+    if (timing_first_pending && result_count>0 && !completions.count && !rows_active) {
+        beam_latency_record(&timing_first,timing_elapsed(&timing_first_start));
+        timing_first_pending=0;
+    }
 }
 
 static void render(void)
@@ -2205,6 +2308,9 @@ static void palette_apply(void)
 
 static void hide_window(void)
 {
+    timing_input_pending=timing_first_pending=timing_header_done=0;
+    plugin_abandon();
+    preview_ticks=0;preview_text[0]=preview_for[0]=0;
     preview_clear();
     ext_exit();
     args_item=-1;
@@ -2238,9 +2344,11 @@ static void ensure_plugins(void)
 static void show_window(void)
 {
     int w,h,maxheight,top,left,rows,font_height,state_index;
+    struct timeval opened;
     struct TextAttr font_attr;
     struct Screen *active;
     if (window) { WindowToFront(window); ActivateWindow(window); return; }
+    GetSysTime(&opened);
     ensure_plugins();
     active=IntuitionBase?IntuitionBase->ActiveScreen:NULL;
     pubscreen=NULL;
@@ -2260,8 +2368,10 @@ static void show_window(void)
     font_attr.ta_Style=FS_NORMAL;font_attr.ta_Flags=0;
     /* OpenFont() only finds fonts already in memory (ROM topaz or fonts
        another program loaded); OpenDiskFont() loads any font from FONTS:. */
+    DiskfontBase=OpenLibrary("diskfont.library",36); /* only needed to open the font */
     launcher_font=DiskfontBase?OpenDiskFont(&font_attr):OpenFont(&font_attr);
     if (!launcher_font && DiskfontBase) launcher_font=OpenFont(&font_attr);
+    if (DiskfontBase) { CloseLibrary(DiskfontBase); DiskfontBase=NULL; }
     font_height=launcher_font?(int)launcher_font->tf_YSize:(int)pubscreen->RastPort.TxHeight;
     state_index=window_state_find(pubscreen_key);
     w=last_width?last_width:(state_index>=0?window_states[state_index].width:cfg.window_width);
@@ -2312,6 +2422,7 @@ static void show_window(void)
         beam_copy(status,shell_notice,sizeof(status)); shell_notice[0]=0;
     } else status[0]=0;
     search_items(); render();
+    timing_window=(unsigned long)micros_since(&opened);
 }
 
 static void plugin_status(const char *message)
@@ -2324,11 +2435,73 @@ static void plugin_status(const char *message)
 
 /* Native protocol-1 plugins reply through the public message port. ARexx
  * scripts use the atomic text transport. Neither blocks the event loop. */
-static void plugin_finish(const char *reply,int is_error)
+static void plugin_request_complete(unsigned long serial)
+{
+    int slot=beam_requests_complete(&plugin_requests,serial);
+    if (slot>=0) {
+        plugin_request_file[slot]=0;
+        plugin_request_path[slot][0]=0;
+        plugin_request_name[slot][0]=0;
+    }
+}
+static unsigned long plugin_request_age(int slot)
+{
+    struct timeval now;
+    if (!plugin_requests.serial[slot]) return 0;
+    GetSysTime(&now);
+    return beam_elapsed_ms(plugin_request_started[slot].tv_secs,plugin_request_started[slot].tv_micro,
+                          now.tv_secs,now.tv_micro);
+}
+static void plugin_request_limit_status(void)
+{
+    int i;
+    beam_copy(status,beam_str(MSG_PLUGIN_REQUEST_LIMIT),sizeof(status));
+    for (i=0;i<BEAM_PLUGIN_REQUEST_LIMIT;i++) if (plugin_requests.serial[i]) {
+        unsigned int n=(unsigned int)strlen(status),j=0;
+        char label[25];
+        while (plugin_request_name[i][j] && j+1<sizeof(label)) {
+            unsigned char c=(unsigned char)plugin_request_name[i][j];
+            label[j]=(char)((c<32 || c==127)?' ':c);++j;
+        }
+        label[j]=0;
+        if (n+3<sizeof(status)) {
+            strcat(status," | ");n+=3;
+            beam_copy(status+n,label,sizeof(status)-n);
+        }
+    }
+}
+/* Inspect only detached atomic file replies, at most twice a second and
+ * never ahead of queued input. Native requests need no filesystem polling. */
+static void plugin_retired_poll(void)
+{
+    int i;
+    ULONG inputs=(cx_port?(1UL<<cx_port->mp_SigBit):0UL)|
+                 (window?(1UL<<window->UserPort->mp_SigBit):0UL);
+    if (SetSignal(0,0)&inputs) return;
+    for (i=0;i<BEAM_PLUGIN_REQUEST_LIMIT;i++) {
+        BPTR lock;
+        if (SetSignal(0,0)&inputs) return;
+        if (!plugin_requests.serial[i] || !plugin_request_file[i] ||
+            (plugin_job.active && plugin_requests.serial[i]==plugin_serial)) continue;
+        lock=Lock((STRPTR)plugin_request_path[i],ACCESS_READ);
+        if (lock) {
+            unsigned long serial=plugin_requests.serial[i];
+            UnLock(lock);
+            DeleteFile((STRPTR)plugin_request_path[i]);
+            plugin_request_complete(serial);
+        }
+    }
+}
+
+static void plugin_finish(const char *reply,int is_error,int terminal)
 {
     char part_path[BEAM_MAX_PATH+6];
     char timing[24];
     unsigned long elapsed=beam_job_elapsed_ms(&plugin_job);
+    if (terminal) plugin_request_complete(plugin_serial);
+    beam_plugin_health_record(&plugin_health,plugin_active_manifest,
+        is_error?BEAM_PLUGIN_HEALTH_ERROR:BEAM_PLUGIN_HEALTH_SUCCESS);
+    plugin_health_flush_ticks=20;arm_timer();
     if (preview_job) {
         preview_job=0;
         if (!strcmp(query,plugin_original_query)) {
@@ -2336,8 +2509,8 @@ static void plugin_finish(const char *reply,int is_error)
             beam_copy(preview_for,query,sizeof(preview_for));
         }
         beam_job_end(&plugin_job);
-        DeleteFile((STRPTR)plugin_result_path);
-        if (strlen(plugin_result_path)+5<sizeof(part_path)) {
+        if (plugin_file_reply) DeleteFile((STRPTR)plugin_result_path);
+        if (plugin_file_reply && strlen(plugin_result_path)+5<sizeof(part_path)) {
             sprintf(part_path,"%s.part",plugin_result_path);
             DeleteFile((STRPTR)part_path);
         }
@@ -2359,34 +2532,35 @@ static void plugin_finish(const char *reply,int is_error)
         sprintf(timing," (%lu.%lus)",elapsed/1000UL,(elapsed%1000UL)/100UL);
         if (strlen(status)+strlen(timing)<sizeof(status)) strcat(status,timing);
     }
-    beam_plugin_health_record(&plugin_health,plugin_active_manifest,
-        is_error?BEAM_PLUGIN_HEALTH_ERROR:BEAM_PLUGIN_HEALTH_SUCCESS);
     if (is_error && beam_plugin_health_is_quarantined(&plugin_health,
                                                        plugin_active_manifest))
         plugin_status(beam_str(MSG_PLUGIN_QUARANTINED_NOW));
-    beam_plugin_health_save(&plugin_health,BEAM_PLUGIN_HEALTH_PATH);
     beam_job_end(&plugin_job);
     /* The finished result files are ours. Timeout does NOT delete its path:
      * the unsupervised child may still be writing it. */
-    DeleteFile((STRPTR)plugin_result_path);
-    if (strlen(plugin_result_path)+5<sizeof(part_path)) {
+    if (plugin_file_reply) DeleteFile((STRPTR)plugin_result_path);
+    if (plugin_file_reply && strlen(plugin_result_path)+5<sizeof(part_path)) {
         sprintf(part_path,"%s.part",plugin_result_path);
         DeleteFile((STRPTR)part_path);
     }
     if (window) render();
 }
+/* Detach, never kill, an unsupervised child. Its serial/path remain unique;
+ * do not unlink files while an abandoned ARexx process may still write them. */
+static void plugin_abandon(void)
+{
+    beam_job_end(&plugin_job);
+    preview_job=0;
+    preview_ticks=0;preview_waiting=0;
+    preview_text[0]=preview_for[0]=0;
+}
+
 static void plugin_cancel(void)
 {
-    char part_path[BEAM_MAX_PATH+6];
     unsigned long elapsed;
     if (!plugin_job.active) return;
     elapsed=beam_job_elapsed_ms(&plugin_job);
-    beam_job_end(&plugin_job);
-    DeleteFile((STRPTR)plugin_result_path);
-    if (strlen(plugin_result_path)+5<sizeof(part_path)) {
-        sprintf(part_path,"%s.part",plugin_result_path);
-        DeleteFile((STRPTR)part_path);
-    }
+    plugin_abandon();
     sprintf(status,beam_str(MSG_PLUGIN_CANCELED),
         plugin_active_name,elapsed/1000UL,(elapsed%1000UL)/100UL);
     if (window) render();
@@ -2397,31 +2571,38 @@ static void plugin_poll(void)
     char line[BEAM_PLUGIN_MAX_RESULT+16],out[BEAM_PLUGIN_MAX_RESULT+1];
     int parsed,error;
     if (!plugin_job.active) return;
-    f=Open((STRPTR)plugin_result_path,MODE_OLDFILE);
-    if (f) {
-        if (FGets(f,line,sizeof(line))) {
-            parsed=beam_plugin_parse_reply(line,out,sizeof(out),&error);
-            Close(f);
-            if (parsed==1) { plugin_finish(out,error);return; }
-            if (parsed<0) { plugin_finish(beam_str(MSG_PLUGIN_INVALID_RESPONSE),1);return; }
-        } else Close(f);
-    }
-    if (beam_job_tick(&plugin_job)) {
-        beam_job_end(&plugin_job);
-        if (preview_job) { preview_job=0; return; } /* a slow preview is no failure */
+    if (!window || strcmp(query,plugin_original_query)) { plugin_abandon();return; }
+    if (beam_job_elapsed(&plugin_job,timing_elapsed(&plugin_started)/1000UL)) {
+        int was_preview=preview_job;
+        beam_job_end(&plugin_job);preview_job=0;
         beam_plugin_health_record(&plugin_health,plugin_active_manifest,
                                   BEAM_PLUGIN_HEALTH_TIMEOUT);
-        beam_plugin_health_save(&plugin_health,BEAM_PLUGIN_HEALTH_PATH);
+        plugin_health_flush_ticks=20; arm_timer();
         /* No forced child termination: classic Shell provides no portable,
          * safe way to kill a potentially hung third-party process. */
-        if (!strcmp(query,plugin_original_query)) {
+        if (!was_preview && !strcmp(query,plugin_original_query)) {
             if (beam_plugin_health_is_quarantined(&plugin_health,
                                                    plugin_active_manifest))
                 plugin_status(beam_str(MSG_PLUGIN_TIMEOUT_QUARANTINED));
             else plugin_status(beam_str(MSG_PLUGIN_TIMEOUT));
         }
         if (window) render();
+        return;
     }
+    f=plugin_file_reply?Open((STRPTR)plugin_result_path,MODE_OLDFILE):0;
+    if (f) {
+        if (FGets(f,line,sizeof(line))) {
+            parsed=beam_plugin_parse_reply(line,out,sizeof(out),&error);
+            if (parsed==1) {
+                char extra[2];
+                if (FGets(f,extra,sizeof(extra))) parsed=-1;
+            } else if (parsed==0) parsed=-1; /* published file is already final */
+            Close(f);
+            if (parsed==1) { plugin_finish(out,error,1);return; }
+            if (parsed<0) { plugin_finish(beam_str(MSG_PLUGIN_INVALID_RESPONSE),1,1);return; }
+        } else { Close(f);plugin_finish(beam_str(MSG_PLUGIN_INVALID_RESPONSE),1,1);return; }
+    }
+
 }
 /* "Resident" plugins, done safely.  AmigaDOS can only keep *pure*
  * (re-entrant) programs resident; ordinary C programs keep static data
@@ -2474,20 +2655,37 @@ static int plugin_cached_command(const char *command,char *out,unsigned int cap)
 
 static void execute_plugin(struct BeamLauncherPlugin *p);
 static void arm_timer(void);
+static int plugin_preview_ticks(const struct BeamLauncherPlugin *p)
+{
+    int i,delay;
+    if (!p) return 0;
+    for (i=0;i<plugin_count;i++) if (p==&plugins[i]) {
+        delay=beam_plugin_preview_delay(&cfg,plugin_manifest[i],p->preview);
+        return (delay+49)/50;
+    }
+    return 0;
+}
 static void schedule_preview(void)
 {
     struct BeamLauncherPlugin *p=query_plugin();
     preview_ticks=0;
-    if (!p || !p->preview || !*query_plugin_input(p)) return;
-    preview_ticks=BEAM_PREVIEW_TICKS;
+    if (!p || !*query_plugin_input(p)) return;
+    preview_ticks=plugin_preview_ticks(p);
+    if (!preview_ticks) return;
+    preview_requested_ms=preview_ticks*50;
+    GetSysTime(&preview_scheduled);
     arm_timer();
 }
 
 static void run_preview(void)
 {
     struct BeamLauncherPlugin *p=query_plugin();
-    if (!window || !p || !p->preview || rows_active || !*query_plugin_input(p)) return;
-    if (plugin_job.active) { preview_ticks=BEAM_PREVIEW_TICKS/2; arm_timer(); return; }
+    if (!window || !p || !plugin_preview_ticks(p) || rows_active || !*query_plugin_input(p)) return;
+    /* The shared timer may already be partway through its first tick. */
+    if (timing_elapsed(&preview_scheduled)<(unsigned long)preview_requested_ms*1000UL) {
+        preview_ticks=1;arm_timer();return;
+    }
+    if (plugin_job.active) { preview_ticks=plugin_preview_ticks(p);arm_timer();return; }
     executing_preview=1;
     execute_plugin(p);
     executing_preview=0;
@@ -2500,13 +2698,24 @@ static void execute_plugin(struct BeamLauncherPlugin *p)
     char hex[BEAM_QUERY_LEN*2+2],command[512];
     struct DateStamp stamp;
     LONG rc;
+    int request_slot;
     int plugin_index=(p>=plugins && p<plugins+plugin_count)?(int)(p-plugins):-1;
+    if (!executing_preview) {
+        preview_ticks=0;preview_waiting=0;preview_text[0]=preview_for[0]=0;
+    }
     if (plugin_job.active && preview_job && !executing_preview) {
         /* Enter wins over a running preview; its late reply is ignored. */
-        beam_job_end(&plugin_job); preview_job=0;
+        plugin_abandon();
     }
     if (plugin_job.active) {
         if (!executing_preview) { plugin_status(beam_str(MSG_PLUGIN_BUSY)); render(); }
+        return;
+    }
+    if (!beam_requests_can_start(&plugin_requests,executing_preview)) {
+        if (executing_preview) preview_waiting=1;
+        else {
+            plugin_request_limit_status();render();
+        }
         return;
     }
     if (p>=plugins && p<plugins+plugin_count &&
@@ -2534,15 +2743,19 @@ static void execute_plugin(struct BeamLauncherPlugin *p)
     /* A unique path prevents late results from a timed-out process from
      * being mistaken for those of the next invocation. */
     DateStamp(&stamp);
-    ++plugin_serial;
-    sprintf(plugin_result_path,"T:Beam68-%08lx-%08lx-%04x",
+    do {
+        ++plugin_serial;
+        if (!plugin_serial) ++plugin_serial;
+    } while (beam_requests_find(&plugin_requests,plugin_serial)>=0);
+    sprintf(plugin_result_path,"T:Beam68-%08lx-%08lx-%08lx",
             (unsigned long)FindTask(NULL),
             ((unsigned long)stamp.ds_Minute*3000UL+(unsigned long)stamp.ds_Tick),
-            (unsigned int)(plugin_serial&65535U));
+            plugin_serial);
     {
         char cached[BEAM_MAX_PATH];
         const char *run=plugin_cached_command(p->command,cached,sizeof(cached))?cached:p->command;
         int rexx_script=strlen(run)>5 && beam_equal(run+strlen(run)-5,".rexx");
+        plugin_file_reply=rexx_script;
         if (rexx_script) {
             int rexx;
             Forbid(); rexx=FindPort((STRPTR)"REXX")!=NULL; Permit();
@@ -2563,17 +2776,31 @@ static void execute_plugin(struct BeamLauncherPlugin *p)
     }
     /* The child owns separate NIL: handles (see dos_compat.c), so it can
      * never close the launcher's inherited streams on any OS 3.x. */
+    request_slot=beam_requests_reserve(&plugin_requests,plugin_serial,executing_preview);
+    if (request_slot<0) {
+        if (executing_preview) preview_waiting=1;
+        else { plugin_request_limit_status();render(); }
+        return;
+    }
+    plugin_request_file[request_slot]=(unsigned char)plugin_file_reply;
+    beam_copy(plugin_request_path[request_slot],plugin_result_path,BEAM_MAX_PATH);
     rc=beam_system(command,NULL,NULL,1);
     if (rc==-1) {
+        plugin_request_complete(plugin_serial);
         beam_plugin_health_record(&plugin_health,plugin_active_manifest,
                                   BEAM_PLUGIN_HEALTH_ERROR);
-        beam_plugin_health_save(&plugin_health,BEAM_PLUGIN_HEALTH_PATH);
+        plugin_health_flush_ticks=20; arm_timer();
         plugin_status(beam_str(MSG_PLUGIN_ERR_START)); render();return;
     }
     beam_copy(plugin_original_query,query,sizeof(plugin_original_query));
     beam_query_history_record(&query_history,query);
     if (query_history.pending>=4)
         beam_query_history_save(&query_history,BEAM_QUERY_HISTORY_PATH);
+    GetSysTime(&plugin_started);
+    plugin_request_started[request_slot]=plugin_started;
+    plugin_request_timeout[request_slot]=(unsigned short)cfg.plugin_timeout;
+    plugin_request_preview[request_slot]=(unsigned char)executing_preview;
+    beam_copy(plugin_request_name[request_slot],plugin_active_name,BEAM_REQUEST_NAME_MAX);
     beam_job_begin_timeout(&plugin_job,cfg.plugin_timeout);
     plugin_status(beam_str(MSG_PLUGIN_RUNNING));
     arm_timer(); render();
@@ -3258,11 +3485,10 @@ static void load_plugins(void)
 
 static void reload_plugins_only(void)
 {
-    if (plugin_job.active) {
-        beam_copy(status,beam_str(MSG_PLUGINS_CANCEL_FIRST),sizeof(status));
-        return;
-    }
+    plugin_abandon();
+    rows_active=0;plugin_row_count=0;plugin_confirm=-1;
     load_plugins();
+    search_items();
     if (safe_mode) beam_copy(status,beam_str(MSG_SAFE_PLUGINS_OFF),sizeof(status));
     else if (plugin_load_errors)
         sprintf(status,beam_str(MSG_PLUGINS_RELOADED_ERRORS),(long)plugin_load_errors);
@@ -3360,6 +3586,7 @@ static int reload_config(void)
         cfg.window_height!=next->window_height) {
         last_width=0; last_height=0; /* apply preferred size next popup */
     }
+    plugin_abandon();
     notify_stop();
     reopen_window=window!=NULL;
     if (reopen_window) hide_window();
@@ -3431,7 +3658,8 @@ static void drain_control(void)
                 for (i=0;i<BEAM_THEME_COLOR_COUNT;i++)
                     custom_colors[i]=theme_msg->custom_colors[i];
             } else if (command==BEAM_CTL_PREVIEW_THEME) command=0;
-            FreeVec(raw); /* validated one-way protocol: allocated by control.c */
+            if(command==BEAM_CTL_QUERY_VERSION) beam_control_reply_version(msg);
+            FreeVec(raw); /* validated protocol: allocated by control.c */
         } else if (raw->mn_ReplyPort) {
             ReplyMsg(raw); /* don't free another sender's allocation */
         } else if (raw->mn_Length>=sizeof(*msg) && msg->magic==BEAM_CONTROL_MAGIC) {
@@ -3477,7 +3705,8 @@ static void free_reply(struct Message *raw)
 {
     struct Beam68ReplyMessage *m=(struct Beam68ReplyMessage *)raw;
     if (raw->mn_ReplyPort) ReplyMsg(raw);
-    else if (raw->mn_Length>=sizeof(*m) && m->magic==BEAM68_REPLY_MAGIC) FreeVec(raw);
+    else if (raw->mn_Length>=offsetof(struct Beam68ReplyMessage,magic)+sizeof(m->magic) &&
+             m->magic==BEAM68_REPLY_MAGIC) FreeVec(raw);
     /* anything else is not ours to free */
 }
 
@@ -3496,29 +3725,42 @@ static void drain_replies(void)
     struct Message *raw;
     while ((raw=GetMsg(reply_port))) {
         struct Beam68ReplyMessage *m=(struct Beam68ReplyMessage *)raw;
-        if (!raw->mn_ReplyPort && raw->mn_Length>=sizeof(*m) &&
-            m->magic==BEAM68_REPLY_MAGIC && m->version==BEAM68_REPLY_VERSION &&
-            plugin_job.active &&
-            m->serial==(unsigned long)plugin_serial && m->count>0) {
-            int i,k,n=m->count>BEAM68_MAX_ROWS?BEAM68_MAX_ROWS:(int)m->count;
-            int same_query=!strcmp(query,plugin_original_query);
-            for (i=0;i<n;i++) {
-                plugin_rows[i]=m->rows[i];
-                plugin_rows[i].text[BEAM68_PLUGIN_MAX_RESULT]=0;
-                plugin_rows[i].value[sizeof(plugin_rows[i].value)-1]=0;
-                for (k=0;plugin_rows[i].text[k];k++)
-                    if ((unsigned char)plugin_rows[i].text[k]<32) plugin_rows[i].text[k]=' ';
-            }
+        int request_slot=-1,terminal=0;
+        if (!raw->mn_ReplyPort && raw->mn_Length>=offsetof(struct Beam68ReplyMessage,rows) &&
+            m->magic==BEAM68_REPLY_MAGIC) {
+            request_slot=beam_requests_find(&plugin_requests,m->serial);
+            terminal=raw->mn_Length>=sizeof(*m) && m->version==BEAM68_REPLY_VERSION;
+        }
+        if (plugin_job.active && beam_job_elapsed(&plugin_job,timing_elapsed(&plugin_started)/1000UL))
+            plugin_poll();
+        if (!raw->mn_ReplyPort && raw->mn_Length>=offsetof(struct Beam68ReplyMessage,rows) &&
+            m->magic==BEAM68_REPLY_MAGIC && request_slot>=0 && !plugin_request_file[request_slot] &&
+            beam_job_accept_reply(&plugin_job,plugin_serial,m->serial,
+                !strcmp(query,plugin_original_query),window!=NULL)) {
+            int i,n=(int)m->count,valid=raw->mn_Length>=sizeof(*m) &&
+                m->version==BEAM68_REPLY_VERSION &&
+                m->is_error<=1 && n>0 && n<=BEAM68_MAX_ROWS;
             int was_preview=preview_job;
-            beam_copy(rows_title,plugin_active_name,sizeof(rows_title));
-            plugin_finish(plugin_rows[0].text,m->is_error);
-            if (!was_preview && !m->is_error && same_query &&
-                (n>1 || plugin_rows[0].kind!=BEAM68_ROW_TEXT)) {
-                plugin_row_count=n; rows_active=1;
-                sprintf(status,beam_str(MSG_ROWS_STATUS),rows_title,(long)n);
-                search_items();
-                if (window) render();
+            for (i=0;valid && i<n;i++)
+                if (!beam_job_validate_row(m->rows[i].kind,m->rows[i].text,
+                        sizeof(m->rows[i].text),m->rows[i].value,sizeof(m->rows[i].value))) valid=0;
+            if (!valid) plugin_finish(beam_str(MSG_PLUGIN_INVALID_RESPONSE),1,terminal);
+            else {
+                for (i=0;i<n;i++) plugin_rows[i]=m->rows[i];
+                beam_copy(rows_title,plugin_active_name,sizeof(rows_title));
+                plugin_finish(plugin_rows[0].text,m->is_error,1);
+                if (!was_preview && !m->is_error &&
+                    (n>1 || plugin_rows[0].kind!=BEAM68_ROW_TEXT)) {
+                    plugin_row_count=n; rows_active=1;
+                    sprintf(status,beam_str(MSG_ROWS_STATUS),rows_title,(long)n);
+                    search_items();
+                    if (window) render();
+                }
             }
+        } else if (request_slot>=0 && !plugin_request_file[request_slot] && terminal) {
+            /* Completion of detached/timed-out work releases capacity only;
+               it cannot restore old rows, status or plugin health. */
+            plugin_request_complete(m->serial);
         }
         free_reply(raw);
     }
@@ -3546,7 +3788,7 @@ static void drain_rexx(void)
     if (!rexx_port) return;
     while ((rmsg=(struct RexxMsg *)GetMsg(rexx_port))) {
         struct BeamRexxCommand cmd;
-        char output[350];
+        char output[768];
         int rc=0;
         output[0]=0;
         if (!IsRexxMsg(rmsg)) {
@@ -3573,10 +3815,10 @@ static void drain_rexx(void)
                 reload_plugins_only();render();break;
             case BEAM_REXX_QUIT: quitting=1;break;
             case BEAM_REXX_STATUS:
-                sprintf(output,"version=0.1 items=%ld scanning=%ld plugins=%ld errors=%ld busy=%ld",
+                sprintf(output,"version=" BEAM68_VERSION " items=%ld scanning=%ld plugins=%ld errors=%ld busy=%ld outstanding=%lu",
                     (long)item_count,(long)(scan_active?1:0),
                     (long)plugin_count,(long)plugin_load_errors,
-                    (long)(plugin_job.active?1:0));
+                    (long)(plugin_job.active?1:0),(unsigned long)beam_requests_count(&plugin_requests));
                 break;
             case BEAM_REXX_INDEX:
                 {
@@ -3589,15 +3831,45 @@ static void drain_rexx(void)
                 }
                 break;
             case BEAM_REXX_VERSION:
-                beam_copy(output,"0.1",sizeof(output));break;
+                beam_copy(output,BEAM68_VERSION,sizeof(output));break;
             case BEAM_REXX_HELP:
                 beam_copy(output,
-                    "SHOW HIDE RELOAD RELOADPLUGINS REINDEX QUIT STATUS INDEX VERSION PLUGINS PLUGIN <1..16> TIMING HELP",
+                    "SHOW HIDE RELOAD RELOADPLUGINS REINDEX QUIT STATUS INDEX VERSION PLUGINS PLUGIN <1..16> REQUESTS REQUEST <1..3> TIMING [RESET] HELP",
                     sizeof(output));break;
+            case BEAM_REXX_REQUESTS:
+                sprintf(output,"outstanding=%lu limit=%u automatic_limit=%u waiting=%ld",
+                    (unsigned long)beam_requests_count(&plugin_requests),BEAM_PLUGIN_REQUEST_LIMIT,
+                    BEAM_PLUGIN_PREVIEW_LIMIT,(long)(preview_waiting?1:0));
+                break;
+            case BEAM_REXX_REQUEST:
+                {
+                    int slot=cmd.plugin_index;
+                    if (!beam_request_format((unsigned int)slot,plugin_requests.serial[slot],
+                        plugin_request_name[slot],plugin_request_preview[slot],plugin_request_file[slot],
+                        plugin_job.active && plugin_requests.serial[slot]==plugin_serial,
+                        plugin_request_age(slot),(unsigned long)plugin_request_timeout[slot]*1000UL,
+                        output,sizeof(output))) rc=10;
+                }
+                break;
             case BEAM_REXX_TIMING:
-                sprintf(output,"search=%luus cacheload=%luus scan=%luus startup=%luus items=%ld narrowed=%lu",
+                sprintf(output,"search=%luus cacheload=%luus scan=%luus startup=%luus items=%ld narrowed=%lu "
+                        "window=%luus inputpaint=%luus inputmax=%luus inputs=%lu "
+                        "resultpaint=%luus resultmax=%luus results=%lu "
+                        "firstmatch=%luus firstmax=%luus matches=%lu poolused=%lu poolallocated=%lu",
                         timing_search,timing_cache,timing_scan,timing_startup,
-                        (long)item_count,timing_narrowed);
+                        (long)item_count,timing_narrowed,timing_window,
+                        timing_input.last,timing_input.maximum,timing_input.samples,
+                        timing_results.last,timing_results.maximum,timing_results.samples,
+                        timing_first.last,timing_first.maximum,timing_first.samples,
+                        beam_index.pool_used,beam_index.pool_size);
+                break;
+            case BEAM_REXX_TIMING_RESET:
+                memset(&timing_input,0,sizeof(timing_input));
+                memset(&timing_results,0,sizeof(timing_results));
+                memset(&timing_first,0,sizeof(timing_first));
+                timing_input_pending=timing_first_pending=timing_header_done=0;
+                timing_search=timing_narrowed=timing_window=0;
+                beam_copy(output,"Timing samples reset",sizeof(output));
                 break;
             case BEAM_REXX_PLUGINS:
                 ensure_plugins();
@@ -3654,14 +3926,18 @@ static void handle_window_messages(void)
     ULONG cls;
     UWORD code, qualifier;
     while (window && (m=(struct IntuiMessage *)GetMsg(window->UserPort))) {
+        struct timeval input_started;
         WORD mouse_y=m->MouseY;
         ULONG seconds=m->Seconds, micros=m->Micros;
         cls=m->Class; code=m->Code; qualifier=m->Qualifier;
+        if (cls==IDCMP_VANILLAKEY || cls==IDCMP_RAWKEY) GetSysTime(&input_started);
         ReplyMsg((struct Message *)m);
         /* Typed-ahead text keys only queue a search; anything else (Enter,
            navigation, mouse) first needs results for the current query. */
-        if (search_pending &&
-            !(cls==IDCMP_VANILLAKEY && code!=13 && code!=10 && code!=27 && code!=9)) {
+        if (search_pending && beam_input_flush_search(
+                cls==IDCMP_VANILLAKEY?BEAM_INPUT_TEXT:
+                cls==IDCMP_RAWKEY?BEAM_INPUT_RAW:BEAM_INPUT_OTHER,
+                code, (qualifier&(IEQUALIFIER_LSHIFT|IEQUALIFIER_RSHIFT))!=0)) {
             search_items(); render_pending|=BEAM_RENDER_ALL;
         }
         if (cls==IDCMP_CLOSEWINDOW) { hide_window(); return; }
@@ -3851,6 +4127,8 @@ static void handle_window_messages(void)
                                             BEAM_EDIT_INSERT,clip[k]);
                     beam_query_history_end(&query_history);
                     status[0]=0; last_clicked=-1;
+                    timing_edit_begin(&input_started);
+                    schedule_preview();
                     search_pending=1; render_pending|=BEAM_RENDER_ALL;
                 } else DisplayBeep(pubscreen);
                 continue;
@@ -3918,6 +4196,7 @@ static void handle_window_messages(void)
                 else if (code>=32 && code<127) op=BEAM_EDIT_INSERT;
                 edited=op && beam_query_edit(query,sizeof(query),&query_cursor,op,(char)code);
                 if (edited) {
+                    timing_edit_begin(&input_started);
                     rows_active=0;
                     schedule_preview();
                     beam_query_history_end(&query_history);
@@ -3928,8 +4207,12 @@ static void handle_window_messages(void)
             }
         }
     }
-    if (window && (render_pending || search_pending))
+    if (window && (render_pending || search_pending)) {
+        /* Echo the entire queued edit before ranking; the input field must
+           not wait for a large index search or body repaint. */
+        if (search_pending) render_parts(BEAM_RENDER_HEADER);
         render_parts(render_pending|(search_pending?BEAM_RENDER_ALL:0));
+    }
 }
 
 /* QUICK_LAUNCH=<qualifiers> adds global "<qualifiers> 1".."9" hotkeys
@@ -4040,9 +4323,9 @@ static void event_loop(void)
             struct Message *wbm;
             while ((wbm=GetMsg(wb_reply_port))) beam_wb_launch_reply(wbm);
         }
+        if (window) handle_window_messages();
         if (reply_port) drain_replies();
         if (outgoing_rexx.reply) outgoing_rexx_poll();
-        if (window) handle_window_messages();
         if (timer_port && timer_pending && (mask&(1UL<<timer_port->mp_SigBit))) {
             /* Only one outstanding request; reply must be consumed before
              * rearming the same IORequest. */
@@ -4051,6 +4334,15 @@ static void event_loop(void)
             outgoing_rexx_poll();
             if (scan_active) scan_step();
             if (plugin_job.active) plugin_poll();
+            if (plugin_files_pending() && ++plugin_retired_poll_ticks>=10) {
+                plugin_retired_poll_ticks=0;plugin_retired_poll();
+            }
+            if (plugin_health_flush_ticks && --plugin_health_flush_ticks==0) {
+                if (window && (SetSignal(0,0)&(1UL<<window->UserPort->mp_SigBit)))
+                    plugin_health_flush_ticks=1;
+                else if (plugin_health.pending)
+                    beam_plugin_health_save(&plugin_health,BEAM_PLUGIN_HEALTH_PATH);
+            }
             if (notify_refresh_ticks && --notify_refresh_ticks==0) {
                 if (scan_active) notify_refresh_ticks=BEAM_NOTIFY_DEBOUNCE_TICKS;
                 else {
@@ -4063,6 +4355,17 @@ static void event_loop(void)
                     if (window) render();
                 }
             }
+            if (icon_preview_ticks && --icon_preview_ticks==0 && window) {
+                /* A newly queued key wins over optional disk I/O. */
+                if (SetSignal(0,0)&(1UL<<window->UserPort->mp_SigBit))
+                    icon_preview_ticks=1;
+                else {
+                    char path[BEAM_MAX_PATH];
+                    beam_copy(path,pending_icon_path,sizeof(path));
+                    preview_load_path(path);
+                    render();
+                }
+            }
             if (preview_ticks && --preview_ticks==0) run_preview();
             if (recovery_grace_ticks && --recovery_grace_ticks==0 &&
                 recovery_marker_owned) {
@@ -4071,6 +4374,10 @@ static void event_loop(void)
                 recovery_marker_owned=0;
             }
             arm_timer();
+        }
+        if (preview_waiting && window && !plugin_job.active &&
+            beam_requests_can_start(&plugin_requests,1)) {
+            preview_waiting=0;schedule_preview();
         }
     }
 }
@@ -4096,6 +4403,12 @@ static int beam_main(int argc,char **argv)
     int success=0,resident_started=0,requested_items,actual_items=0;
     const char *startup_failure="Required OS libraries could not be opened (AmigaOS 3.0+ required).";
     BPTR safe_lock=0;
+    /* An existing resident needs no configuration, catalogs or index work. */
+    if (beam_control_running()) return 0;
+    startup_failure="Could not open timer.device or allocate its message port. Free memory and try again.";
+    if (!init_timer()) goto cleanup;
+    GetSysTime(&startup_time);
+    startup_failure="Required OS libraries could not be opened (AmigaOS 3.0+ required).";
     IntuitionBase=(struct IntuitionBase *)OpenLibrary("intuition.library",39);
     GfxBase=(struct GfxBase *)OpenLibrary("graphics.library",39);
     CxBase=OpenLibrary("commodities.library",39);
@@ -4103,7 +4416,6 @@ static int beam_main(int argc,char **argv)
     /* Any version: V44+ (OS 3.1.4/3.5/3.9/3.2) provides OpenWorkbenchObjectA();
        older systems use the built-in WBStartup launcher (wb_launch.c). */
     WorkbenchBase=OpenLibrary("workbench.library",0);
-    DiskfontBase=OpenLibrary("diskfont.library",36); /* optional */
     RexxSysBase=(struct RxsLib *)OpenLibrary("rexxsyslib.library",0); /* optional */
     beam_locale_open(); /* optional: built-in English without a catalog */
     if (!IntuitionBase || !GfxBase || !CxBase || !IconBase)
@@ -4152,9 +4464,6 @@ static int beam_main(int argc,char **argv)
     beam_recent_docs_size(&recent_docs,cfg.recent_docs_max);
     beam_hidden_load(&hidden,BEAM_HIDDEN_PATH);
     beam_recent_docs_load(&recent_docs,BEAM_RECENT_DOCS_PATH);
-    startup_failure="Could not open timer.device or allocate its message port. Free memory and try again.";
-    if (!init_timer()) goto cleanup;
-    GetSysTime(&startup_time);
     help_build();   /* plugins are added on first use (ensure_plugins) */
     if (safe_mode)
         beam_copy(status,recovery_safe_mode?

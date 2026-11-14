@@ -8,7 +8,11 @@
 #include "preset.h"
 #include "beam.h"
 #include "search_rank.h"
+#include "item_index.h"
+#include "index_cache.h"
+#include "plugin_job.h"
 void qa_fail_writes(int n);
+void qa_fail_alloc(int n);
 void qa_fail_rename(int n);
 static int put(const char *p,const char *text)
 {
@@ -24,6 +28,68 @@ static int has(const char *p,const char *text)
     buf[n]=0;return strstr(buf,text)!=NULL;
 }
 #define CHECK(x) do { if (!(x)) { printf("FAIL line %d: %s\n",__LINE__,#x); return 20; } } while(0)
+static int check_02(const char *root)
+{
+    static struct BeamConfig cfg;
+    struct BeamIndex index={0},loaded={0};
+    struct BeamPluginRequests requests={{0}};
+    char path[160],cache[120];
+    char *pool;
+    int i,count,delay=0,result=20;
+#define CHECK02(x) do { if (!(x)) { printf("FAIL line %d: %s\n",__LINE__,#x);goto cleanup; } } while(0)
+    beam_config_defaults(&cfg);cfg.max_items=512;cfg.index_cache=1;
+    cfg.dir_count=1;strcpy(cfg.dirs[0],"SYS:Tools");
+    CHECK02(beam_index_init(&index,512) && beam_index_init(&loaded,512));
+    for (i=0;;i++) {
+        sprintf(path,"SYS:Tools/Long QA drawer/Collection number %03d/Application",i);
+        if (index.pool_used+strlen(path)+1>index.pool_size) break;
+        CHECK02(beam_index_add(&index,path,BEAM_ITEM_FILE,0,NULL)==i);
+    }
+    count=index.count;pool=index.pool;
+    qa_fail_alloc(0);
+    CHECK02(beam_index_add(&index,path,BEAM_ITEM_FILE,0,NULL)==-1);
+    CHECK02(index.pool==pool && index.count==count && beam_index_find(&index,index.items[0].path)==0);
+    qa_fail_alloc(-1);
+    CHECK02(beam_index_add(&index,path,BEAM_ITEM_FILE,0,NULL)==count);
+    CHECK02(beam_index_set_title(&index,0,"Original title"));
+    pool=index.pool;qa_fail_alloc(0);
+    CHECK02(!beam_index_set_title(&index,0,"Replacement title"));
+    CHECK02(index.pool==pool && !strcmp(index.items[0].title,"Original title"));
+    qa_fail_alloc(-1);
+    CHECK02(beam_index_set_title(&index,0,"Replacement title"));
+    CHECK02(beam_index_reconcile(&index,0,NULL,0)==0);
+    puts("PASS: native allocation failure, preserved index/title and retry");
+    sprintf(cache,"%s/Beam68.index",root);
+    CHECK02(beam_cache_save(&cfg,&index,cache));count=index.count;
+    CHECK02(beam_index_add(&index,"SYS:Tools/New QA item",BEAM_ITEM_FILE,0,NULL)>=0);
+    CHECK02(beam_cache_save(&cfg,&index,cache));
+    CHECK02(put(cache,"interrupted/corrupt primary\n"));
+    qa_fail_rename(0);
+    CHECK02(beam_cache_load(&cfg,&loaded,cache) && loaded.count==count);
+    CHECK02(!strcmp(loaded.items[0].title,"Replacement title"));
+    CHECK02(beam_cache_load(&cfg,&loaded,cache) && loaded.count==count);
+    puts("PASS: native cache backup validation, failed promotion and recovery");
+    CHECK02(beam_requests_reserve(&requests,1,1)>=0);
+    CHECK02(beam_requests_reserve(&requests,2,1)>=0);
+    CHECK02(beam_requests_reserve(&requests,3,1)==-1);
+    CHECK02(beam_requests_reserve(&requests,3,0)>=0);
+    for (i=4;i<10004;i++) CHECK02(beam_requests_reserve(&requests,(unsigned long)i,1)==-1);
+    CHECK02(beam_requests_count(&requests)==3);
+    CHECK02(beam_requests_complete(&requests,1)>=0);
+    CHECK02(!beam_requests_can_start(&requests,1));
+    CHECK02(beam_requests_complete(&requests,2)>=0);
+    CHECK02(beam_requests_can_start(&requests,1));
+    CHECK02(beam_plugin_preview_parse_delay("750",&delay) && delay==750);
+    CHECK02(!beam_plugin_preview_parse_delay("750ms",&delay) && delay==750);
+    puts("PASS: native request admission bound and exact preview delay parsing");
+    result=0;
+cleanup:
+    qa_fail_alloc(-1);
+    beam_index_free(&loaded);beam_index_free(&index);
+    return result;
+#undef CHECK02
+}
+
 int main(void)
 {
     char root[80],dir[100],preset[100],target[120];
@@ -61,6 +127,7 @@ int main(void)
     CHECK(DeleteFile((STRPTR)target));
     CHECK(!Lock((STRPTR)target,ACCESS_READ));
     puts("PASS: isolated defaults, save, reload and settings removal");
+    CHECK(check_02(root)==0);
     /* Reproducible CPU matcher baseline. Not a UI/disk/startup benchmark. */
     for(k=0;k<3;k++) {
         n=sizes[k];

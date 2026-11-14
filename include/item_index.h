@@ -25,6 +25,8 @@ struct BeamIndex {
     int count;
     int capacity;
     int full;               /* an add was refused: capacity or pool exhausted */
+    /* The path pool grows on demand; borrowed string pointers may move
+       on add/title, as well as on sweep. Item indices remain stable on add. */
     char *pool;
     unsigned long pool_used;
     unsigned long pool_size;
@@ -32,6 +34,11 @@ struct BeamIndex {
     unsigned int hash_mask; /* hash size - 1 (power of two) */
 };
 
+#ifdef BEAM_INDEX_TEST
+/* Host tests only; -1 disables deterministic allocation failure injection. */
+void beam_index_test_fail_after(long count);
+#endif
+int beam_index_reconcile(struct BeamIndex *index,int complete,int *tracked,unsigned int tracked_count);
 int beam_index_init(struct BeamIndex *x, int capacity);
 void beam_index_free(struct BeamIndex *x);
 void beam_index_clear(struct BeamIndex *x);
@@ -40,8 +47,8 @@ int beam_index_find(const struct BeamIndex *x, const char *path);
  * -2 for an invalid path.  *created is set when a new item was appended. */
 int beam_index_add(struct BeamIndex *x, const char *path, int kind, int root,
                    int *created);
-/* Attach a title (e.g. a WHDLoad game name) to the item just added; the
- * text is stored in the pool directly after its path.  Returns 1 if set. */
+/* Add or replace a title. Allocation failure preserves the old index and
+ * title; text remains adjacent to its path. Returns 1 if set. */
 int beam_index_set_title(struct BeamIndex *x, int index, const char *title);
 /* Mark items as stale: those whose root bit is set in root_mask, plus
  * volume items when include_volumes is non-zero. */

@@ -230,3 +230,21 @@ role permissions.push flag as an App permission. Release creation and uploads
 still require Contents:write, enforced by GitHub. Installation access tokens
 expire after one hour; refresh through your token helper when needed. The helper
 and release configuration must use the same 1Password vault/item/field.
+
+## Submit an already published release to Aminet
+
+When a GitHub or GitLab publication receipt exists, Aminet-only publication
+uses the retained, checksum-verified publication stage and the documentation
+from the tagged commit. Working-tree edits do not require rebuilding this
+already published archive. Enable Aminet and set the uploader in the external
+configuration, then prepare and review the two files:
+
+```sh
+python3 scripts/release.py prepare-aminet --tag 0.1
+python3 scripts/release.py publish --tag 0.1 --to aminet --confirm-publish
+```
+
+Preparation writes `outputs/release/aminet-existing/` and a separate manifest.
+It does not change the repository publication manifest, packages, tags or receipts.
+The upload retains the existing partial-submission protection and awaits moderation.
+Do not delete receipts or edit fingerprints to work around a stale build.

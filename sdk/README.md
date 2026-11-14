@@ -55,10 +55,12 @@ text or error result. Native ARexx host-control plugins still use row messages.
 
 ### Live previews
 
-`PREVIEW=YES` asks the launcher to run the plugin about 400 ms after the
-user stops typing and show the answer under the query. Make such plugins
-quick and side-effect free; previews never count towards quarantine and
-SYSTEM plugins never preview.
+`PREVIEW=YES` opts into automatic previews, with a default typing pause of
+400 ms. Users can disable previews or choose 100-5000 ms per plugin in
+Preferences -> Plugins -> Details -> Preview. Enter still runs manually.
+These controls cannot enable previews for action-only or SYSTEM plugins.
+Keep previews quick and side-effect free; preview failures and timeouts
+contribute to the launcher's existing quarantine policy.
 
 ### Selectable results in Protocol 1
 
@@ -194,3 +196,23 @@ to delete the installed files.
 - **Treat input as untrusted.** Validate everything; never pass it to a Shell
   unquoted.
 - **Clean up.** Close what you open; leave nothing running.
+
+### Cancellation and late replies
+
+Beam68 0.2 detaches outstanding requests when the query changes, the window
+closes or plugins reload. Echo the supplied serial unchanged. A detached or
+expired reply is ignored, including when the user later types the same query.
+Cancellation does not forcibly terminate your process; keep plugin work
+bounded and close your own resources. Publish one complete reply with valid
+row kinds, nonempty labels and terminated, control-free buffers. ARexx replies
+must be published atomically as exactly one TEXT= or ERROR= line.
+
+### Outstanding-request limit in Beam68 0.2
+
+The launcher admits at most three uncompleted requests, preserving the last
+slot for manual runs when automatic previews fill the first two. Cancellation
+and timeout do not prove your process exited, so they do not release capacity.
+Send one terminal reply with the supplied serial, or publish the atomic ARexx
+result, even when reporting a failure. Late completions release capacity but
+are not displayed. A plugin that never completes can keep its slot occupied;
+keep work bounded and return promptly after publishing the terminal result.

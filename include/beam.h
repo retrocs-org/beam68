@@ -1,7 +1,8 @@
 #ifndef BEAM68_H
 #define BEAM68_H
 /* Release version, compared against a plugin manifest's MIN_BEAM68. */
-#define BEAM68_VERSION "0.1"
+#define BEAM68_VERSION "0.2"
+#define BEAM68_VERSION_DATE "14.11.2026"
 #define BEAM_MAX_DIRS 16
 #define BEAM_MAX_PLUGINS 16
 #define BEAM_MAX_ITEMS_LIMIT 2048
@@ -74,6 +75,9 @@ struct BeamConfig {
     char file_patterns[BEAM_FILE_PATTERNS_LEN];
     char plugin_files[BEAM_MAX_PLUGINS][BEAM_MAX_PATH];
     int plugin_file_count;
+    /* Per-manifest overrides; zero delay keeps the 400ms default. */
+    unsigned short plugin_preview_delay[BEAM_MAX_PLUGINS];
+    unsigned char plugin_preview_disabled[BEAM_MAX_PLUGINS];
     /* Paths in this list remain installed but are not loaded. */
     char disabled_plugins[BEAM_MAX_PLUGINS][BEAM_MAX_PATH];
     int disabled_plugin_count;
@@ -185,6 +189,9 @@ int beam_version_valid(const char *v);
  * PROGDIR:Plugins/<Name>/<Name>.plugin.  Rewrites the old form in place. */
 void beam_plugin_path_migrate(char *spec, unsigned int cap);
 int beam_plugin_enabled(const struct BeamConfig *c, const char *path);
+int beam_plugin_preview_parse_delay(const char *text,int *delay_ms);
+int beam_plugin_preview_delay(const struct BeamConfig *config,const char *path,int manifest_preview);
+int beam_plugin_preview_set(struct BeamConfig *config,const char *path,int enabled,int delay_ms);
 int beam_plugin_set_enabled(struct BeamConfig *c, const char *path, int enabled);
 void beam_plugin_forget_disabled(struct BeamConfig *c, const char *path);
 

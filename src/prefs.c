@@ -6,6 +6,8 @@
 #include <exec/lists.h>
 #include <intuition/intuition.h>
 #include <intuition/screens.h>
+#include <intuition/sghooks.h>
+#include <utility/hooks.h>
 #include <graphics/gfxbase.h>
 #include <graphics/rastport.h>
 #include <graphics/view.h>
@@ -56,7 +58,7 @@
 
 /* Version string for the AmigaDOS Version command and the GUI installer
  * (getversion).  Non-static so the compiler keeps it. */
-const char beam68prefs_version_tag[]="$VER: Beam68Prefs 0.1 (27.10.2026)";
+const char beam68prefs_version_tag[]="$VER: Beam68Prefs " BEAM68_VERSION " (" BEAM68_VERSION_DATE ")";
 
 struct IntuitionBase *IntuitionBase;
 struct GfxBase *GfxBase;
@@ -165,6 +167,7 @@ struct Library *KeymapBase;
 #define G_BOOKMARK_BROWSE 100
 #define G_URL_COMMAND 101
 #define G_SECTION_SOURCES 102
+#define G_ABOUT 103
 #define PREF_MAIN_RESTART 100UL
 #define PREF_RAW_RETURN 0x44
 #define PREF_RAW_ESCAPE 0x45
@@ -173,6 +176,7 @@ struct Library *KeymapBase;
 #define PREF_RAW_LEFT 0x4f
 #define PREF_RAW_RIGHT 0x4e
 #define PREF_RAW_F1 0x50
+#define PREF_RAW_F2 0x51
 #define PREF_RAW_F7 0x56
 #define PREF_RAW_F8 0x57
 #define PREF_RAW_F9 0x58
@@ -756,6 +760,8 @@ static int build_window(void)
                         pstr(PMSG_STOP),PLACETEXT_IN,GA_Disabled,!launcher_running,TAG_IGNORE,0);
         g[G_MAIN_STOP]=last;
     }
+    last=add_gadget(BUTTON_KIND,last,G_ABOUT,16,button_y,145,17,
+                    pstr(PMSG_ABOUT_BUTTON),PLACETEXT_IN);g[G_ABOUT]=last;
     last=add_gadget(BUTTON_KIND,last,G_USE,w-275,button_y,80,17,pstr(PMSG_USE),PLACETEXT_IN); g[G_USE]=last;
     last=add_gadget(BUTTON_KIND,last,G_SAVE,w-190,button_y,80,17,pstr(PMSG_SAVE),PLACETEXT_IN); g[G_SAVE]=last;
     last=add_gadget(BUTTON_KIND,last,G_CANCEL,w-105,button_y,85,17,pstr(PMSG_CANCEL),PLACETEXT_IN); g[G_CANCEL]=last;
@@ -1253,8 +1259,17 @@ static void modify_list(int remove)
             }
             beam_plugin_forget_disabled(&config,data[selection]);
         }
-        for (i=selection;i<n-1;i++) beam_copy(data[i],data[i+1],BEAM_MAX_PATH);
+        for (i=selection;i<n-1;i++) {
+            beam_copy(data[i],data[i+1],BEAM_MAX_PATH);
+            if (page==PAGE_PLUGINS) {
+                config.plugin_preview_delay[i]=config.plugin_preview_delay[i+1];
+                config.plugin_preview_disabled[i]=config.plugin_preview_disabled[i+1];
+            }
+        }
         --n;
+        if (page==PAGE_PLUGINS) {
+            config.plugin_preview_delay[n]=0;config.plugin_preview_disabled[n]=0;
+        }
     } else {
         input=entry_value();
         if (!input) { DisplayBeep(screen); return; }
@@ -1271,6 +1286,9 @@ static void modify_list(int remove)
         }
         if (n>=max) { DisplayBeep(screen); return; }
         for (i=0;i<n;i++) if (beam_equal(path,data[i])) return;
+        if (page==PAGE_PLUGINS) {
+            config.plugin_preview_delay[n]=0;config.plugin_preview_disabled[n]=0;
+        }
         beam_copy(data[n++],path,BEAM_MAX_PATH);
     }
     if (page==PAGE_DIRS) config.dir_count=n;
@@ -1613,6 +1631,8 @@ static void move_plugin(int direction)
 {
     char path[BEAM_MAX_PATH];
     int target;
+    unsigned short delay;
+    unsigned char disabled;
     if (page!=PAGE_PLUGINS || selection<0 ||
         selection>=config.plugin_file_count) { DisplayBeep(screen); return; }
     target=selection+direction;
@@ -1623,6 +1643,10 @@ static void move_plugin(int direction)
     beam_copy(path,config.plugin_files[selection],sizeof(path));
     beam_copy(config.plugin_files[selection],config.plugin_files[target],BEAM_MAX_PATH);
     beam_copy(config.plugin_files[target],path,BEAM_MAX_PATH);
+    delay=config.plugin_preview_delay[selection];disabled=config.plugin_preview_disabled[selection];
+    config.plugin_preview_delay[selection]=config.plugin_preview_delay[target];
+    config.plugin_preview_disabled[selection]=config.plugin_preview_disabled[target];
+    config.plugin_preview_delay[target]=delay;config.plugin_preview_disabled[target]=disabled;
     selection=target;
     close_window();
     if (!build_window()) done=1;
@@ -1640,6 +1664,145 @@ static void show_selected_plugin(void)
             beam_plugin_diagnostic(plugin_states[selection]));
     SetWindowTitles(win,(STRPTR)detail_title,(STRPTR)~0UL);
 }
+/* A local gadget list avoids disturbing the main Preferences page. The
+ * value is committed only after explicit OK/Return and strict validation. */
+/* Active string gadgets consume Escape before the window sees RAWKEY.
+ * End editing explicitly and carry a distinct cancellation code to GADGETUP.
+ * Intuition calls hooks with hook/object/message in a0/a2/a1. */
+static ULONG preview_delay_edit(register struct Hook *hook __asm("a0"),
+                                register struct SGWork *work __asm("a2"),
+                                register ULONG *command __asm("a1"))
+{
+    (void)hook;
+    if (*command!=SGH_KEY) return 0;
+    if (work->IEvent && work->IEvent->ie_Code==0x45) {
+        work->Actions=SGA_END;
+        work->Code=0x45;
+    }
+    return 1;
+}
+
+static int plugin_preview_delay_entry(int *value)
+{
+    struct Gadget *list=NULL,*last,*input;
+    struct NewGadget ng;
+    struct Hook edit_hook;
+    struct Window *dialog=NULL;
+    struct IntuiMessage *message;
+    char initial[16];
+    int accepted=0,finished=0,top,height,width=360;
+    top=(int)screen->WBorTop+(int)screen->Font->ta_YSize+28;
+    height=top+62;
+    if (screen->Width<width || (int)screen->Height-(int)screen->BarHeight-1<height) {
+        DisplayBeep(screen);return 0;
+    }
+    last=CreateContext(&list);
+    if (!last) goto cleanup;
+    memset(&ng,0,sizeof(ng));
+    ng.ng_TextAttr=&topaz;ng.ng_VisualInfo=visual;
+    ng.ng_LeftEdge=20;ng.ng_TopEdge=(WORD)top;
+    ng.ng_Width=320;ng.ng_Height=14;ng.ng_Flags=PLACETEXT_ABOVE;
+    ng.ng_GadgetText=(UBYTE *)pstr(PMSG_PREVIEW_DELAY_LABEL);ng.ng_GadgetID=1;
+    memset(&edit_hook,0,sizeof(edit_hook));
+    edit_hook.h_Entry=(HOOKFUNC)(void (*)(void))preview_delay_edit;
+    sprintf(initial,"%ld",(long)*value);
+    input=CreateGadget(STRING_KIND,last,&ng,GTST_String,(ULONG)initial,
+                       GTST_MaxChars,12,GTST_EditHook,(ULONG)&edit_hook,TAG_DONE);
+    if (!input) goto cleanup;
+    ng.ng_TopEdge=(WORD)(top+30);ng.ng_Width=140;ng.ng_Height=17;
+    ng.ng_Flags=PLACETEXT_IN;ng.ng_GadgetText=(UBYTE *)pstr(PMSG_OK);ng.ng_GadgetID=2;
+    last=CreateGadget(BUTTON_KIND,input,&ng,TAG_DONE);
+    if (!last) goto cleanup;
+    ng.ng_LeftEdge=200;ng.ng_GadgetText=(UBYTE *)pstr(PMSG_CANCEL);ng.ng_GadgetID=3;
+    last=CreateGadget(BUTTON_KIND,last,&ng,TAG_DONE);
+    if (!last) goto cleanup;
+    dialog=OpenWindowTags(NULL,WA_PubScreen,(ULONG)screen,
+        WA_Left,(ULONG)(((int)screen->Width-width)/2),
+        WA_Top,(ULONG)((int)screen->BarHeight+1+
+            ((int)screen->Height-(int)screen->BarHeight-1-height)/2),
+        WA_Width,(ULONG)width,WA_Height,(ULONG)height,
+        WA_Title,(ULONG)pstr(PMSG_PREVIEW_TITLE),WA_Gadgets,(ULONG)list,
+        WA_DragBar,TRUE,WA_CloseGadget,TRUE,WA_Activate,TRUE,
+        WA_IDCMP,STRINGIDCMP|BUTTONIDCMP|IDCMP_CLOSEWINDOW|IDCMP_REFRESHWINDOW|
+                  IDCMP_VANILLAKEY|IDCMP_RAWKEY,TAG_DONE);
+    if (!dialog) goto cleanup;
+    GT_RefreshWindow(dialog,NULL);ActivateGadget(input,dialog,NULL);
+    while (!finished) {
+        WaitPort(dialog->UserPort);
+        while ((message=GT_GetIMsg(dialog->UserPort))) {
+            ULONG cls=message->Class;
+            UWORD code=message->Code;
+            struct Gadget *gadget=(struct Gadget *)message->IAddress;
+            int apply=0;
+            GT_ReplyIMsg(message);
+            if (finished) continue;
+            if (cls==IDCMP_REFRESHWINDOW) {
+                GT_BeginRefresh(dialog);GT_EndRefresh(dialog,TRUE);
+            } else if (cls==IDCMP_CLOSEWINDOW ||
+                       (cls==IDCMP_VANILLAKEY && code==27) ||
+                       (cls==IDCMP_RAWKEY && code==0x45)) finished=1;
+            else if (cls==IDCMP_GADGETUP && gadget) {
+                if (gadget->GadgetID==3) finished=1;
+                else if (gadget->GadgetID==2 || (gadget->GadgetID==1 && code==0)) apply=1;
+                else if (gadget->GadgetID==1 && code==0x45) finished=1;
+            } else if (cls==IDCMP_VANILLAKEY && (code==13 || code==10)) apply=1;
+            if (apply) {
+                struct StringInfo *info=(struct StringInfo *)input->SpecialInfo;
+                int parsed;
+                if (info && beam_plugin_preview_parse_delay((const char *)info->Buffer,&parsed)) {
+                    *value=parsed;accepted=1;finished=1;
+                } else {
+                    DisplayBeep(screen);
+                    SetWindowTitles(dialog,(STRPTR)pstr(PMSG_PREVIEW_DELAY_INVALID),(STRPTR)~0UL);
+                    ActivateGadget(input,dialog,NULL);
+                }
+            }
+        }
+    }
+cleanup:
+    if (dialog) CloseWindow(dialog);
+    else DisplayBeep(screen);
+    if (list) FreeGadgets(list);
+    return accepted;
+}
+
+static void plugin_preview_controls(void)
+{
+    struct EasyStruct es;
+    ULONG args[3];
+    int answer,delay,enabled;
+    const char *manifest;
+    if (selection<0 || selection>=config.plugin_file_count) return;
+    manifest=config.plugin_files[selection];
+    es.es_StructSize=sizeof(es);es.es_Flags=0;
+    es.es_Title=(STRPTR)pstr(PMSG_PREVIEW_TITLE);
+    if (!plugin_metadata[selection].preview ||
+        beam_plugin_has_capability(&plugin_metadata[selection],"SYSTEM")) {
+        es.es_TextFormat=(STRPTR)pstr(PMSG_PREVIEW_UNAVAILABLE);
+        es.es_GadgetFormat=(STRPTR)pstr(PMSG_OK);
+        EasyRequestArgs(win,&es,NULL,NULL);return;
+    }
+    collect_page();
+    for (;;) {
+        enabled=!config.plugin_preview_disabled[selection];
+        delay=config.plugin_preview_delay[selection]?config.plugin_preview_delay[selection]:400;
+        es.es_TextFormat=(STRPTR)pstr(PMSG_PREVIEW_BODY);
+        es.es_GadgetFormat=(STRPTR)pstr(PMSG_PREVIEW_BUTTONS);
+        args[0]=(ULONG)(plugin_metadata[selection].name[0]?plugin_metadata[selection].name:manifest);
+        args[1]=(ULONG)pstr(enabled?PMSG_STATE_ON:PMSG_STATE_OFF);
+        args[2]=(ULONG)delay;
+        answer=(int)EasyRequestArgs(win,&es,NULL,args);
+        if (!answer) break;
+        if (answer==1) enabled=!enabled;
+        else if (answer==2) { delay-=100;if(delay<100)delay=100; }
+        else if (answer==3) { delay+=100;if(delay>5000)delay=5000; }
+        else if (answer==4) {
+            if (!plugin_preview_delay_entry(&delay)) continue;
+        } else if (answer==5) { enabled=1;delay=400; }
+        if (!beam_plugin_preview_set(&config,manifest,enabled,delay)) {DisplayBeep(screen);break;}
+    }
+}
+
 static void plugin_details(void)
 {
     struct EasyStruct es;
@@ -1686,6 +1849,8 @@ static void plugin_details(void)
         const char *cursor=body;
         static char text_page[520];
         do {
+            const char *page_start=cursor;
+            int answer,more;
             unsigned int lines=0,used=0;
             while (*cursor && lines<8) {
                 unsigned int next,n=beam_text_line(cursor,60,&next);
@@ -1694,9 +1859,14 @@ static void plugin_details(void)
                 text_page[used++]='\n';cursor+=next;++lines;
             }
             text_page[used]=0;
-            es.es_GadgetFormat=(STRPTR)(*cursor?"Next|Close":pstr(PMSG_OK));
+            more=*cursor!=0;
+            es.es_GadgetFormat=(STRPTR)pstr(more?PMSG_PREVIEW_DETAILS_MORE:PMSG_PREVIEW_DETAILS_LAST);
             args[0]=(ULONG)text_page;
-            if (EasyRequestArgs(win,&es,NULL,args)!=1) break;
+            answer=(int)EasyRequestArgs(win,&es,NULL,args);
+            if (!answer) break;
+            if (answer==(more?2:1)) {
+                plugin_preview_controls();cursor=page_start;
+            }
         } while (*cursor);
     }
 }
@@ -1711,7 +1881,7 @@ static void export_diagnostics(void)
     beam_plugin_health_load(&plugin_health,BEAM_PLUGIN_HEALTH_PATH);
     f=Open((STRPTR)"RAM:Beam68-Diagnostics.txt",MODE_NEWFILE);
     if (!f) { DisplayBeep(screen);set_title(pstr(PMSG_REPORT_FAILED));return; }
-    sprintf(line,"Beam68 0.1 diagnostics\nlauncher=%s hotkey=%s\nitems=%ld depth=%ld theme=%s shell=%s\nplugins=%ld timeout=%lds\n",
+    sprintf(line,"Beam68 " BEAM68_VERSION " diagnostics\nlauncher=%s hotkey=%s\nitems=%ld depth=%ld theme=%s shell=%s\nplugins=%ld timeout=%lds\n",
         beam_control_running()?"running":"stopped",config.hotkey,
         (long)config.max_items,(long)config.max_depth,beam_theme_name(config.theme),
         config.shell_commands?"on":"off",(long)config.plugin_file_count,
@@ -2191,6 +2361,21 @@ static void show_guide(void)
     CloseLibrary(AmigaGuideBase); AmigaGuideBase=NULL;
 }
 
+static void show_about(void)
+{
+    struct EasyStruct es;
+    ULONG args[3];char running[64];int reported;
+    reported=beam_control_version(running,sizeof(running));
+    if(reported==0) beam_copy(running,pstr(PMSG_ABOUT_NOT_RUNNING),sizeof(running));
+    else if(reported<0) beam_copy(running,pstr(PMSG_ABOUT_UNAVAILABLE),sizeof(running));
+    es.es_StructSize=sizeof(es);es.es_Flags=0;
+    es.es_Title=(STRPTR)pstr(PMSG_ABOUT_TITLE);
+    es.es_TextFormat=(STRPTR)pstr(PMSG_ABOUT_BODY);
+    es.es_GadgetFormat=(STRPTR)pstr(PMSG_OK);
+    args[0]=(ULONG)BEAM68_VERSION;args[1]=(ULONG)running;args[2]=(ULONG)BEAM68_VERSION_DATE;
+    EasyRequestArgs(win,&es,NULL,args);
+}
+
 static void handle_rawkey(UWORD code,UWORD qualifier)
 {
     int previous;
@@ -2205,6 +2390,7 @@ static void handle_rawkey(UWORD code,UWORD qualifier)
         return;
     }
     if (code==PREF_RAW_HELP) { show_guide(); return; }
+    if (code==PREF_RAW_F2) { show_about();return; }
     if (code==PREF_RAW_F1) {
         set_title(pstr(PMSG_F1_HINT));
         return;
@@ -2443,6 +2629,7 @@ static void handle_events(void)
         else if (id==G_PRESET_IMPORT) import_preset();
         else if (id==G_THEME_EXPORT) export_theme_gadget();
         else if (id==G_CAPTURE) begin_hotkey_capture();
+        else if (id==G_ABOUT) show_about();
         else if (id==G_MAIN_START) control_main_app(BEAM_CTL_SHOW);
         else if (id==G_MAIN_RESTART) control_main_app(PREF_MAIN_RESTART);
         else if (id==G_MAIN_STOP) control_main_app(BEAM_CTL_QUIT);

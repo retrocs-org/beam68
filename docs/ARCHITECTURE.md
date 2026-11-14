@@ -10,7 +10,7 @@ Workbench launch (WBStartup/Beam68Start Project)
         |             +-> DOS icon/HUNK scanner -> RAM index -> fuzzy + bounded history ranking
         +-> BEAM68.CONTROL named Exec port
                        ^
-                       | one-way versioned Exec message
+                       | versioned Exec control message
                   Beam68Prefs (GadTools UI)
                        |
                        +-> Use: ENV:Beam68/Beam68.cfg
@@ -28,9 +28,11 @@ Config load preference: ENV: -> ENVARC: -> PROGDIR: fallback. This follows the A
 
 ## Control protocol
 
-Name: `BEAM68.CONTROL`. Message fields: `struct Message` + 32-bit magic `0x42453638`, version `1`, command enum (Reload=1, Reindex=2, Show=3, Quit=4).
+Name: `BEAM68.CONTROL`. Message fields: `struct Message` + 32-bit magic `0x42453638`, version `1`, command enum (Reload=1, Reindex=2, Show=3, Quit=4, Hide=5, ReloadPlugins=6, PreviewTheme=7, QueryVersion=8).
 
-A sender allocates the entire message in public memory, atomically finds and sends to the port inside `Forbid()` / `Permit()` and then returns immediately. The launcher frees the message after receipt. There is **no reply port or synchronous wait**. The message must never contain process-private pointers. Only one launcher can register the named port; shutdown removes it from the system's public list before deleting its backing MsgPort.
+A sender allocates the entire message in public memory, atomically finds and sends to the port inside `Forbid()` / `Permit()` and then returns immediately. The launcher frees the message after receipt. Ordinary actions have no reply port or synchronous wait. The message must never contain process-private pointers. Only one launcher can register the named port; shutdown removes it from the system's public list before deleting its backing MsgPort.
+
+QueryVersion is read-only and carries a bounded private reply-port name and serial, never a borrowed port pointer. About waits at most 25 ticks. The launcher allocates a separate version response and looks up the named recipient atomically before sending; after timeout the port is removed and late replies are discarded safely. Missing launchers and older/busy launchers are distinguished from a reported version. This does not change public plugin Protocol 1.
 
 **No security boundary** is provided: any local program that knows the protocol could send a control command, as is common for classic-Amiga message ports.
 
@@ -42,8 +44,8 @@ The launcher starts reading current config into its static `next_cfg`. Numeric a
 
 `INDEX_CACHE=YES` stores a bounded index in `PROGDIR:Beam68.index` (next to
 the launcher). It is deliberately not in ENVARC:, because the Startup-Sequence
-copies all of ENVARC: into RAM on every boot. Schema 4 stores kind, root and
-a %XX-escaped path per line (the name is derived from the path), plus a
+copies all of ENVARC: into RAM on every boot. Schema 5 stores kind, root,
+a %XX-escaped path and optional title per line, plus a
 schema marker, an indexing-configuration hash and an ending checksum. Old
 schema-3 files in ENVARC:/ENV: are deleted at startup. All entries must pass validation
 before the launcher accepts them. Malformed/truncated/old-format data
@@ -152,7 +154,7 @@ After about 30 seconds the wait expires but the AmigaDOS child is not killed,
 so abandoned files and runaway third-party processes remain an OS-level
 limitation. Native manifests and reply messages both declare public Protocol 1.
 
-The project **application version is 0.1**, regardless of source changes.
+The project **application version is 0.2**. Keep it at 0.2 until explicitly requested otherwise.
 
 ## Custom themes, memory fallback and recovery (version 0.1)
 
@@ -244,7 +246,7 @@ settings in Beam68.cfg.
 
 The public `BEAM68` Exec port accepts the standard ARexx `RexxMsg` format,
 validates via rexxsyslib and replies before returning to the scheduler. It is
-independent of the private one-way control port `BEAM68.CONTROL`, and it
+independent of the private control port `BEAM68.CONTROL`, and it
 accepts only the fixed command vocabulary in `src/rexx_commands.c`. Status
 queries are read-only and use cached state rather than rescanning disks.
 `rexxsyslib.library` is optional at startup; no mandatory ARexx dependency is
@@ -276,7 +278,7 @@ produce useful partial results in RAM but must never turn those into a
 claimed-complete persistent cache. `scan_status.c` owns a portable predicate
 for this and includes unit tests for all rejection conditions.
 
-All 13 bundled native plugins send public Protocol 1 Exec messages through
+All 14 bundled native plugins send public Protocol 1 Exec messages through
 BEAM68_REPLY, including text and error results. The launcher validates the
 message version and request serial. ARexx scripts use a separate atomic
 TEXT=/ERROR= transport: write a request-specific .part file and rename it
@@ -345,3 +347,229 @@ Pre-release plugin formats are not retained as compatibility versions.
   fallback; host tests compile it with `BEAM_HOST`.
 - **Manuals**: AmigaGuide files checked by `tests/test_guides.py`
   (balanced nodes, links, the per-page nodes Beam68Prefs opens).
+
+## Search responsiveness in 0.2
+
+Raw key releases and unmapped keys no longer split queued text into extra
+searches. Result-dependent actions flush the pending query, including
+Shift+Delete. The query header paints before ranking and body rendering.
+Scans check for input between directory entries and refresh new matches on
+the next scan tick while no results are visible. Optional disk icon previews
+load only after a selection settles for approximately 100–150 ms.
+
+Matcher scoring is unchanged; substring searches stop after the first best
+word-boundary hit and typo-prefix checks inspect only the required prefix.
+
+## Startup and index memory in 0.2
+
+Duplicate launches return before loading configuration, libraries or catalogs;
+the existing later resident check is retained. The diskfont library opens only
+when a launcher window needs a font, and closes after acquiring the font.
+Startup timing starts immediately after timer.device initialization, before
+other library, configuration, metadata and index loading.
+
+The index path pool starts at the lesser of 4 KiB or the configured capacity
+budget (56 bytes per item), then doubles as needed up to that existing budget.
+Items and the hash table retain their configured capacities. Unused pool bytes
+are not cleared. Growth copies only live bytes and rebases every path, display
+name and title before freeing the old pool. Borrowed string pointers must not
+survive add/title operations. Allocation failure leaves existing entries valid
+and follows the existing index-full behavior; growth temporarily needs both
+old and new pool allocations. With the default 512-item setting, the initial
+pool reservation falls from 28 KiB to 4 KiB; larger populated indexes grow.
+
+## Low-memory recovery and rescan consistency in 0.2
+
+Index allocation and growth failures preserve existing paths, hashes and
+metadata. Existing titles are replaced by building a compact replacement
+string pool before committing it; unchanged titles require no allocation.
+Updated titles and kind upgrades refresh launcher metadata and invalidate
+query narrowing. The configured pool and item limits still apply.
+
+A completed scan snapshots its errors before reconciliation. Only a fully
+walked, uncapped, error-free scan may remove stale entries or create a complete
+cache. Otherwise reconciliation clears stale flags and retains unverified
+entries. This favors retaining possibly outdated results over treating an
+unreadable drawer as proof of deletion. The next successful scan can remove
+them. Ordinary result indices and an argument-entry target are remapped during
+compaction; removed targets become -1 rather than referring to another item.
+
+Loading a cache into a populated index builds and validates a separate index,
+then swaps it in. Corrupt, mismatched and out-of-memory reloads leave the live
+index untouched. Initial cache loading uses the empty index directly and
+rejects partial data on failure. Cache writes finish a .new file before moving
+the prior cache to .bak and installing the replacement. On failure, restoration
+is attempted; if restoration also fails, the backup remains for recovery.
+A successful replacement retains a committed backup; interrupted-save
+recovery and backup rotation are described below.
+
+Host-only deterministic allocation failure injection covers initial allocation,
+pool expansion, title replacement and cache loading. Cache tests also inject
+write failures and both replacement rename failures. These hooks are absent
+from the native binary; memory and undefined-behavior sanitizers cover the
+same growth, compaction and rollback cases on the host.
+
+## Plugin request lifecycle in 0.2
+
+Text edits immediately detach the current plugin request, even when a later
+edit restores the same text. Programmatic query changes are also checked before
+searching. Close, explicit cancellation, plugin reload and committed settings
+reload detach outstanding requests and clear preview state. A new invocation
+uses a fresh 32-bit serial and unique result path. Replies require an active,
+unexpired request, the current serial/query and an open window. Queued window
+edits are processed before native replies, avoiding an obsolete result paint.
+Plugin Protocol 1 and SDK message layout remain unchanged.
+
+Native requests use only the public reply port, without polling or deleting
+unused reply files. Headers/counts/error flags, row kinds, nonempty terminated
+labels and bounded control-free values are validated before row copying.
+Correlatable malformed native packets finish the request as errors; obsolete
+packets are discarded without affecting current results or health. Atomic text
+replies must contain exactly one complete valid line. Empty, truncated,
+control-containing and extra-line replies fail instead of being displayed.
+
+Timeouts use elapsed time from timer.device rather than counting delivered
+scheduling ticks. Expired replies cannot revive a request. Preview failures and
+timeouts contribute to the existing health/quarantine policy. Routine health
+saves are deferred for about one second and yield to queued input; clean exit
+and deliberate reboot still save pending counters immediately.
+
+Cancellation never kills an unsupervised child or unlinks a file it could
+still be writing. A crashed process without a reply is detected by deadline,
+not by an OS process-exit notification. Abandoned text files may remain in T:
+until cleanup/reboot. Children retain normal OS privileges and may continue
+running; request detachment is not process isolation or termination. Optional
+first-use package caching and OS filesystem/program-loading calls retain their
+normal filesystem latency; plugin execution itself remains asynchronous.
+
+## User data during 0.2 installation
+
+Both installers treat an existing portable Beam68.cfg, Aliases.txt and each
+bundled theme file as user-owned. New binaries and manuals update normally;
+missing editable files receive defaults. GUI creation of missing ENVARC settings
+uses a pre-existing portable configuration when present, then extends plugin
+entries without replacing user choices. Missing ENV configuration inherits
+ENVARC; aliases follow the same existing-data precedence. Plugin defaults seed
+missing ENVARC settings from an installed package-local or legacy flat .cfg
+before using shipped defaults. Persistent favorites and history files are not
+installation targets, and their 0.1 formats remain readable and writable.
+
+## Per-plugin preview controls in 0.2
+
+Preferences -> Plugins -> Details -> Preview provides Toggle, Faster, Slower,
+Delay... and Default. Controls edit the in-memory configuration; Use/Save retain their
+existing session/permanent semantics. Delays range from 100 to 5000 ms in
+100 ms UI steps, with a default of 400 ms. Hand-edited valid delays are rounded
+up to the shared 50 ms timer tick. Manual Enter invocation is unaffected.
+A manifest must still declare PREVIEW=YES: user preferences cannot opt an
+action-only plugin into automatic execution.
+
+PLUGIN_PREVIEW_DISABLED stores a manifest path. PLUGIN_PREVIEW_DELAY stores
+milliseconds|manifest-path. Both may precede or follow PLUGIN entries, accept
+legacy flat-path migration and use case-insensitive path matching. A second
+read pass resolves overrides only when these keys occur; ordinary configs
+need no extra pass. Unknown plugin overrides and invalid delays are ignored.
+Saving emits canonical keys for installed entries and drops removed entries.
+
+Runtime storage is one unsigned short delay and one disabled byte for each
+of 16 configured manifests (48 bytes on the target), with no heap allocation.
+Preferences swaps/shifts these fields with plugin paths, initializes newly
+added slots and keeps policy across package updates. Scheduling checks the
+current override both when arming and when firing a preview; settings reload
+already detaches the preceding request and clears the old timer.
+
+## Bounded plugin requests in 0.2
+
+The visible BeamPluginJob and a three-slot outstanding-request table have
+separate lifetimes. Ending the visible job never implicitly frees the table
+entry. Launch admission checks the table before cache/program preparation;
+reservation happens just before asynchronous spawn, with rollback on failure.
+Serials skip zero and any outstanding serial at wrap. Preview admission stops
+at two occupied slots, leaving the third available to manual invocation.
+
+The latest blocked preview is represented by one waiting flag and the current
+query, with no per-keystroke queue or allocation. Replies, close/reload and
+edits cannot reinstate a previous queued query. Capacity release schedules a
+fresh delayed preview only if the window remains open and its current plugin
+still permits previews.
+
+Terminal native packets release matching slots independently of visible-job
+acceptance; late packets cannot update rows/status/health. Correlatable but
+truncated or unsupported-version messages may fail a visible job without
+proving completion, so its slot stays held. Atomic ARexx final-file presence
+signals completion of detached work. Known final files are inspected only at
+500ms intervals and only after input, never by globbing or scanning T:.
+Timeouts retain slots. There is no automatic expiry-based recycling, which
+would allow a permanently hung plugin to accumulate unlimited invocations.
+Native-only detached requests need no timer polling.
+
+The table and three bounded reply paths use less than 1 KiB on the native
+target, without heap allocation. This bounds uncompleted protocol requests,
+not hostile third-party code or process lifetime after a terminal response.
+Actual process-exit supervision remains separate from request completion.
+
+## Interrupted cache-save recovery in 0.2
+
+Loading tries the fully validated primary cache first, then .old, then .bak.
+Every candidate must pass the same schema, indexing-settings fingerprint,
+capacity, row validation, checksum and end-of-file checks. .old contains the
+latest previous primary while a pre-existing .bak is retained during save.
+Neither .new nor partially parsed rows are accepted as a committed cache.
+A lone .new from an interrupted first save therefore causes a normal scan.
+
+Allocation/pool-capacity failure aborts recovery without treating the file as
+corrupt or attempting backup promotion. Populated indexes remain transactional:
+no failed candidate replaces live results. Initial startup reuses the empty
+index while trying candidates, so recovery needs no second full index.
+
+After a backup is validated, filename repair is best effort. An invalid primary
+is moved aside to .new; the chosen backup is renamed to primary. If promotion
+fails, restoration of the prior filename is attempted and the validated backup
+is retained. Even when file repair is refused, validated contents remain usable
+in memory. A validated primary permits discarding an uncommitted .new and
+cleaning up interrupted backup rotation; repair failure never invalidates the
+in-memory load.
+
+Saving keeps existing .bak data until the new primary has committed. If .bak
+already exists, the previous primary moves to .old; failed installation rolls
+that move back. After commit, .old rotates to .bak. Failed final rotation leaves
+.old recoverable. An unresolved .old prevents another save from overwriting
+recovery state until a successful load repairs it. All cache files stay next
+to the launcher rather than in ENV/ENVARC; recovery adds disk storage, not a
+second persistent RAM index. Filesystem corruption can still require a rescan.
+
+## Request visibility in 0.2
+
+REQUESTS reports the count, admission limits and latest-preview waiting flag.
+REQUEST 1..3 reports a stable slot snapshot: captured plugin name, serial,
+mode, transport, age and original timeout. Names/timestamps/policy are copied
+at launch, so details never borrow pointers into a reloaded plugin table.
+Completing/reusing a slot clears or replaces its captured name. Request state
+is derived at read time; it does not assert that a child process is alive or
+has exited, and diagnostic reads never release slots or alter health.
+
+Names are bounded and stripped of control characters in diagnostic output.
+Query arguments and manifest paths are not added to per-request records.
+The limit footer names holding plugins, and Beam68Status.rexx includes every
+slot (including free holes). Age uses saturating unsigned-millisecond arithmetic
+rather than a microsecond counter that would saturate after about 71 minutes.
+No additional periodic wakeups, file I/O or heap allocation are needed for
+these snapshots; new timing fields are read only on request.
+
+## Direct preview-delay entry
+
+Delay... opens a small native GadTools requester with a focused text field,
+OK and Cancel. The field accepts exact whole-millisecond values in 100..5000;
+invalid input stays visible for correction and never changes the old value.
+Explicit OK/Return commits to the outer preview dialog; Tab does not commit.
+Cancel, Escape and window close discard the local entry. The outer Preferences
+Use/Save semantics remain unchanged, and entering a delay does not enable a
+disabled preview. Field, buttons, validation feedback and controls are translated
+in English, German and Swedish. The requester uses its own gadget list and
+releases it on cancellation, window/allocation failure and successful commit.
+
+The same bounded decimal parser handles numeric dialog input and delay entries
+in configuration files. It rejects signs, fractions, units, out-of-range values
+and overflow before modifying its output. The shared timer still rounds the
+effective wait upward to its 50ms granularity; the exact requested value is
+preserved in preferences.

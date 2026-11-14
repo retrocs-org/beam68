@@ -8,6 +8,20 @@
 #define BEAM_PLUGIN_TICKS_PER_SECOND 20 /* 50ms scheduling tick */
 #define BEAM_PLUGIN_WAIT_TICKS 600 /* default 30 seconds */
 
+#define BEAM_REQUEST_NAME_MAX 64
+#define BEAM_PLUGIN_REQUEST_LIMIT 3
+#define BEAM_PLUGIN_PREVIEW_LIMIT 2
+/* Independent of the visible job: cancellation/timeout does not release a slot. */
+struct BeamPluginRequests { unsigned long serial[BEAM_PLUGIN_REQUEST_LIMIT]; };
+int beam_request_format(unsigned int slot,unsigned long serial,const char *name,
+                         int preview,int file_reply,int active,unsigned long age_ms,
+                         unsigned long timeout_ms,char *out,unsigned int capacity);
+unsigned int beam_requests_count(const struct BeamPluginRequests *requests);
+int beam_requests_can_start(const struct BeamPluginRequests *requests,int preview);
+int beam_requests_find(const struct BeamPluginRequests *requests,unsigned long serial);
+int beam_requests_reserve(struct BeamPluginRequests *requests,unsigned long serial,int preview);
+int beam_requests_complete(struct BeamPluginRequests *requests,unsigned long serial);
+
 struct BeamPluginJob {
     unsigned int age;
     unsigned int timeout_ticks;
@@ -17,6 +31,13 @@ struct BeamPluginJob {
 void beam_job_begin(struct BeamPluginJob *job);
 /* Configurable 5..120 second timeout. Invalid input falls back to 30. */
 void beam_job_begin_timeout(struct BeamPluginJob *job, int seconds);
+/* Elapsed-time deadlines do not stretch when event-loop ticks are delayed. */
+int beam_job_elapsed(struct BeamPluginJob *job,unsigned long milliseconds);
+int beam_job_accept_reply(const struct BeamPluginJob *job,unsigned long expected,
+                          unsigned long received,int same_query,int visible);
+/* Validate a protocol-1 row without reading past either fixed buffer. */
+int beam_job_validate_row(unsigned int kind,const char *text,unsigned int text_cap,
+                          const char *value,unsigned int value_cap);
 void beam_job_end(struct BeamPluginJob *job);
 /* 1 when expired; zero while running. */
 int beam_job_tick(struct BeamPluginJob *job);

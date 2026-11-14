@@ -156,6 +156,45 @@ class ReleaseTests(unittest.TestCase):
         command('add', '.')
         command('commit', '-qm', 'source')
         return command
+    def existing_aminet_fixture(self):
+        git = self.initgit()
+        m = self.build()
+        git('tag', '-a', m['tag'], '-m', 'Release')
+        atomic_json(self.tool.state/'receipt.json', {'manifest_sha256': sha(self.tool.manifest),
+                    'current': None, 'completed': ['github']})
+        self.config.update(aminet=True, uploader='maintainer@example.net')
+        return m
+
+    def test_existing_aminet_uses_published_bytes_and_tagged_docs(self):
+        m = self.existing_aminet_fixture()
+        manifest_before = self.tool.manifest.read_bytes()
+        receipt_before = (self.tool.state/'receipt.json').read_bytes()
+        (self.root/'README.md').write_text('Unreleased working documentation')
+        prepared, folder, key = self.tool.prepare_existing_aminet()
+        self.assertEqual(sha(folder/'Beam68-0.1.lha'), m['files']['Beam68-0.1.lha'])
+        self.assertNotIn(b'Unreleased working documentation', (folder/'Beam68-0.1.readme').read_bytes())
+        self.assertEqual(self.tool.manifest.read_bytes(), manifest_before)
+        self.assertEqual((self.tool.state/'receipt.json').read_bytes(), receipt_before)
+        self.assertEqual(self.tool.prepare_existing_aminet()[2], key)
+        (folder/'Beam68-0.1.lha').write_bytes(b'tampered')
+        with self.assertRaises(ReleaseError):
+            self.tool.prepare_existing_aminet()
+
+    def test_existing_aminet_refuses_unpublished_or_changed_tag(self):
+        self.existing_aminet_fixture()
+        receipt = self.tool.state/'receipt.json'
+        original = receipt.read_bytes()
+        atomic_json(receipt, {'manifest_sha256': sha(self.tool.manifest), 'current': None, 'completed': []})
+        with self.assertRaises(ReleaseError):
+            self.tool.prepare_existing_aminet()
+        receipt.write_bytes(original)
+        (self.root/'README.md').write_text('Another commit')
+        git = lambda *args: ORIGINAL_RUN(self.root, ['git', *args])
+        git('add', 'README.md'); git('commit', '-qm', 'later')
+        git('tag', '-fa', self.tool.tag, '-m', 'different')
+        with self.assertRaises(ReleaseError):
+            self.tool.prepare_existing_aminet()
+
     def test_plan_has_no_mutations_and_all_build_steps(self):
         with patch.object(rel, 'run', side_effect=AssertionError('plan ran a command')):
             plan = self.tool.plan()

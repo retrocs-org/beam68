@@ -1,5 +1,5 @@
 @database Beam68PluginSDK.guide
-@$VER: Beam68PluginSDK.guide 0.1 (27.10.2026)
+@$VER: Beam68PluginSDK.guide 0.2 (14.11.2026)
 @author "Beam68 contributors"
 @(c) "MIT License"
 @wordwrap
@@ -103,7 +103,8 @@ Decode with X2C(hex) ("-" means empty), write one TEXT= or ERROR= line to
 use the Protocol 1 text transport and need RexxMast. Native plugins that
 control ARexx hosts use row messages.
 
-PREVIEW=YES runs the plugin ~400 ms after typing stops and shows the
+PREVIEW=YES opts into previews (default 400 ms). Users may disable them or
+choose 100..5000 ms per plugin; Enter remains available. It shows the
 answer under the query.  Keep previews fast and side-effect free.
 
 @endnode

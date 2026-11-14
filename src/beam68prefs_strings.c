@@ -254,4 +254,17 @@ const char *const beam68prefs_strings[BEAM68PREFS_STRING_COUNT]={
     "Index ARexx scripts in REXX: (script:)", /* PMSG_SRC_REXX */
     "Bookmark files", /* PMSG_SRC_BOOKMARKS */
     "Open URL with", /* PMSG_SRC_URL_COMMAND */
+    "Live preview", /* PMSG_PREVIEW_TITLE */
+    "%.64s\nPreview: %s\nDelay: %ld ms\nChoose Use or Save after closing Details.", /* PMSG_PREVIEW_BODY */
+    "Toggle|Faster|Slower|Delay...|Default|Done", /* PMSG_PREVIEW_BUTTONS */
+    "This plugin does not allow live previews.\nYou can still run it with Enter.", /* PMSG_PREVIEW_UNAVAILABLE */
+    "Next|Preview...|Close", /* PMSG_PREVIEW_DETAILS_MORE */
+    "Preview...|Close", /* PMSG_PREVIEW_DETAILS_LAST */
+    "Delay in ms (100-5000)", /* PMSG_PREVIEW_DELAY_LABEL */
+    "Enter a number from 100 to 5000", /* PMSG_PREVIEW_DELAY_INVALID */
+    "About...", /* PMSG_ABOUT_BUTTON */
+    "About Beam68", /* PMSG_ABOUT_TITLE */
+    "Beam68\nApplication launcher for AmigaOS\n\nPreferences version: %s\nRunning Beam68: %s\nBuild date: %s\nPlugin protocol: 1\n\nBeam68 contributors\nhttps://beam68.retrocs.org\nhttps://github.com/retrocs-org/beam68", /* PMSG_ABOUT_BODY */
+    "Not running", /* PMSG_ABOUT_NOT_RUNNING */
+    "Unavailable (older or busy launcher)", /* PMSG_ABOUT_UNAVAILABLE */
 };

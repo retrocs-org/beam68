@@ -1,4 +1,4 @@
-Beam68 0.1 build notes
+Beam68 0.2 build notes
 
 Set BEAM68_CC to m68k-amigaos-gcc or BEAM68_VBCC to a configured vbcc/NDK tree.
 Run scripts/build-amiga.sh all to rebuild all 17 runtime executables.

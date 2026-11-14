@@ -538,8 +538,10 @@ int beam_plugin_install(struct Window *win,struct BeamConfig *c,
     } else {
         for (i=0;i<c->plugin_file_count;i++)
             if (beam_equal(c->plugin_files[i],spec)) break;
-        if (i==c->plugin_file_count)
+        if (i==c->plugin_file_count) {
+            c->plugin_preview_delay[i]=0;c->plugin_preview_disabled[i]=0;
             beam_copy(c->plugin_files[c->plugin_file_count++],spec,BEAM_MAX_PATH);
+        }
     }
     beam_plugin_set_enabled(c,spec,!conflict);
     sprintf(body,pstr(PMSG_INST_DONE),manifest_buf.name,

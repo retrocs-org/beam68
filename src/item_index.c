@@ -5,7 +5,21 @@
 
 #ifdef BEAM_HOST
 #include <stdlib.h>
+#ifdef BEAM_INDEX_TEST
+static long allocation_budget=-1;
+void beam_index_test_fail_after(long count) { allocation_budget=count; }
+static void *test_alloc(unsigned long n,int clear)
+{
+    if (allocation_budget==0) return NULL;
+    if (allocation_budget>0) --allocation_budget;
+    return clear?calloc(1,(size_t)n):malloc((size_t)n);
+}
+#define INDEX_ALLOC(n) test_alloc((unsigned long)(n),1)
+#define POOL_ALLOC(n) test_alloc((unsigned long)(n),0)
+#else
 #define INDEX_ALLOC(n) calloc(1,(size_t)(n))
+#define POOL_ALLOC(n) malloc((size_t)(n))
+#endif
 #define INDEX_FREE(p) free(p)
 #else
 #include <exec/types.h>
@@ -13,6 +27,7 @@
 #include <proto/exec.h>
 #define INDEX_ALLOC(n) AllocVec((ULONG)(n),MEMF_ANY|MEMF_CLEAR)
 #define INDEX_FREE(p) FreeVec(p)
+#define POOL_ALLOC(n) AllocVec((ULONG)(n),MEMF_ANY)
 #endif
 
 static int fold(int c)
@@ -57,7 +72,8 @@ int beam_index_init(struct BeamIndex *x,int capacity)
     while (size<(unsigned int)capacity*2U) size<<=1;
     x->items=(struct BeamItem *)INDEX_ALLOC(sizeof(struct BeamItem)*(unsigned long)capacity);
     x->pool_size=(unsigned long)capacity*BEAM_POOL_BYTES_PER_ITEM;
-    x->pool=(char *)INDEX_ALLOC(x->pool_size);
+    if (x->pool_size>4096UL) x->pool_size=4096UL;
+    x->pool=(char *)POOL_ALLOC(x->pool_size);
     x->hash=(unsigned short *)INDEX_ALLOC(sizeof(unsigned short)*(unsigned long)size);
     if (!x->items || !x->pool || !x->hash) { beam_index_free(x); return 0; }
     x->capacity=capacity;
@@ -68,7 +84,7 @@ int beam_index_init(struct BeamIndex *x,int capacity)
 void beam_index_clear(struct BeamIndex *x)
 {
     x->count=0; x->full=0; x->pool_used=0;
-    memset(x->hash,0,sizeof(unsigned short)*(x->hash_mask+1U));
+    if (x->hash) memset(x->hash,0,sizeof(unsigned short)*(x->hash_mask+1U));
 }
 
 static unsigned int slot_for(const struct BeamIndex *x,const char *path,int *found)
@@ -91,6 +107,30 @@ int beam_index_find(const struct BeamIndex *x,const char *path)
     return found;
 }
 
+/* Grow only path storage, keeping item addresses and the configured limit.
+ * All pool-backed pointers are rebased before the old allocation is freed. */
+static int pool_reserve(struct BeamIndex *x,unsigned long needed)
+{
+    unsigned long size=x->pool_size,limit=(unsigned long)x->capacity*BEAM_POOL_BYTES_PER_ITEM;
+    char *pool;
+    int i;
+    if (needed<=size) return 1;
+    if (needed>limit) return 0;
+    while (size<needed) size=size>limit/2UL?limit:size*2UL;
+    pool=(char *)POOL_ALLOC(size);
+    if (!pool) return 0;
+    memcpy(pool,x->pool,(size_t)x->pool_used);
+    for (i=0;i<x->count;i++) {
+        struct BeamItem *it=&x->items[i];
+        it->name=pool+(it->name-x->pool);
+        if (it->title) it->title=pool+(it->title-x->pool);
+        it->path=pool+(it->path-x->pool);
+    }
+    INDEX_FREE(x->pool);
+    x->pool=pool;x->pool_size=size;
+    return 1;
+}
+
 int beam_index_add(struct BeamIndex *x,const char *path,int kind,int root,
                    int *created)
 {
@@ -99,7 +139,7 @@ int beam_index_add(struct BeamIndex *x,const char *path,int kind,int root,
     int found;
     struct BeamItem *it;
     if (created) *created=0;
-    if (!x || !path || !*path) return -2;
+    if (!x || !x->items || !x->hash || !x->pool || !path || !*path) return -2;
     n=(unsigned long)strlen(path)+1UL;
     if (n>BEAM_MAX_PATH || strlen(beam_index_name_for(path))>=BEAM_MAX_NAME) return -2;
     slot=slot_for(x,path,&found);
@@ -114,11 +154,20 @@ int beam_index_add(struct BeamIndex *x,const char *path,int kind,int root,
         it->flags&=(unsigned char)~BEAM_ITEM_FLAG_STALE;
         return found;
     }
-    if (x->count>=x->capacity || x->pool_used+n>x->pool_size) { x->full=1; return -1; }
+    if (x->count>=x->capacity) { x->full=1; return -1; }
+    if (x->pool_used+n>x->pool_size) {
+        char copy[BEAM_MAX_PATH];
+        /* The caller may pass a substring of another indexed path. */
+        memcpy(copy,path,(size_t)n);
+        if (!pool_reserve(x,x->pool_used+n)) { x->full=1; return -1; }
+        memcpy(x->pool+x->pool_used,copy,(size_t)n);
+    } else {
+        memcpy(x->pool+x->pool_used,path,(size_t)n);
+    }
+    /* Strings were copied before initializing the new item. */
     it=&x->items[x->count];
     memset(it,0,sizeof(*it));
     it->path=x->pool+x->pool_used;
-    memcpy(it->path,path,(size_t)n);
     x->pool_used+=n;
     it->name=beam_index_name_for(it->path);
     it->kind=(unsigned char)kind;
@@ -132,17 +181,58 @@ int beam_index_add(struct BeamIndex *x,const char *path,int kind,int root,
     return x->count-1;
 }
 
+static int replace_title(struct BeamIndex *x,int index,const char *title)
+{
+    unsigned long needed=0,size=x->pool_size,used=0,limit=(unsigned long)x->capacity*BEAM_POOL_BYTES_PER_ITEM;
+    char *pool;
+    int i;
+    for (i=0;i<x->count;i++) {
+        const char *text=i==index?title:x->items[i].title;
+        needed+=(unsigned long)strlen(x->items[i].path)+1UL;
+        if (text) needed+=(unsigned long)strlen(text)+1UL;
+    }
+    if (needed>limit) { x->full=1; return 0; }
+    while (size<needed) size=size>limit/2UL?limit:size*2UL;
+    pool=(char *)POOL_ALLOC(size);
+    if (!pool) { x->full=1; return 0; }
+    for (i=0;i<x->count;i++) {
+        struct BeamItem *it=&x->items[i];
+        const char *text=i==index?title:it->title;
+        unsigned long n=(unsigned long)strlen(it->path)+1UL;
+        unsigned long offset=(unsigned long)(it->name-it->path);
+        memcpy(pool+used,it->path,(size_t)n);
+        it->path=pool+used;
+        it->name=it->path+offset;
+        used+=n;
+        if (text) {
+            n=(unsigned long)strlen(text)+1UL;
+            memcpy(pool+used,text,(size_t)n);
+            it->title=pool+used;used+=n;
+            if (it->kind==BEAM_ITEM_BOOKMARK) it->name=it->title;
+        } else it->title=NULL;
+    }
+    INDEX_FREE(x->pool);x->pool=pool;x->pool_size=size;x->pool_used=used;
+    return 1;
+}
+
 int beam_index_set_title(struct BeamIndex *x,int index,const char *title)
 {
     struct BeamItem *it;
     unsigned long n;
     if (!x || index<0 || index>=x->count || !title || !*title) return 0;
     it=&x->items[index];
-    /* Sweep moves path+title as one block, so they must be adjacent. */
-    if (it->title || x->pool+x->pool_used!=it->path+strlen(it->path)+1) return 0;
     n=(unsigned long)strlen(title)+1UL;
-    if (n>BEAM_MAX_PATH || x->pool_used+n>x->pool_size) return 0;
-    memcpy(x->pool+x->pool_used,title,(size_t)n);
+    if (n>BEAM_MAX_PATH) return 0;
+    if (it->title && !strcmp(it->title,title)) return 1;
+    /* Keep path/title adjacency for sweep; replacement commits atomically. */
+    if (it->title || x->pool+x->pool_used!=it->path+strlen(it->path)+1)
+        return replace_title(x,index,title);
+    if (x->pool_used+n>x->pool_size) {
+        char copy[BEAM_MAX_PATH];
+        memcpy(copy,title,(size_t)n);
+        if (!pool_reserve(x,x->pool_used+n)) { x->full=1; return 0; }
+        memcpy(x->pool+x->pool_used,copy,(size_t)n);
+    } else memcpy(x->pool+x->pool_used,title,(size_t)n);
     it->title=x->pool+x->pool_used;
     x->pool_used+=n;
     /* A bookmark is found and shown by its title, not its URL. */
@@ -154,6 +244,7 @@ void beam_index_mark_stale(struct BeamIndex *x,unsigned long root_mask,
                            int include_volumes)
 {
     int i;
+    x->full=0; /* a new scan can retry a previous memory/capacity failure */
     for (i=0;i<x->count;i++) {
         struct BeamItem *it=&x->items[i];
         if (it->root==BEAM_ROOT_NONE) {
@@ -163,9 +254,10 @@ void beam_index_mark_stale(struct BeamIndex *x,unsigned long root_mask,
     }
 }
 
-int beam_index_sweep(struct BeamIndex *x)
+int beam_index_reconcile(struct BeamIndex *x,int complete,int *tracked,unsigned int tracked_count)
 {
     int i,out=0,removed=0;
+    unsigned int j;
     unsigned long used=0;
     /* Items and their strings were appended in the same order, so live
        strings only ever move towards the start of the pool: an in-place,
@@ -173,7 +265,14 @@ int beam_index_sweep(struct BeamIndex *x)
     for (i=0;i<x->count;i++) {
         struct BeamItem it=x->items[i];
         unsigned long n,name_offset;
-        if (it.flags&BEAM_ITEM_FLAG_STALE) { ++removed; continue; }
+        if (!complete) it.flags&=(unsigned char)~BEAM_ITEM_FLAG_STALE;
+        if (it.flags&BEAM_ITEM_FLAG_STALE) {
+            for (j=0;j<tracked_count;j++) if (tracked[j]==i) tracked[j]=-1;
+            ++removed;continue;
+        }
+        /* Only compare old indices. New indices are always lower than i,
+           so remapped entries cannot be matched again by a later item. */
+        for (j=0;j<tracked_count;j++) if (tracked[j]==i) tracked[j]=out;
         n=(unsigned long)strlen(it.path)+1UL;
         if (it.title) n+=(unsigned long)strlen(it.title)+1UL; /* adjacent */
         name_offset=(unsigned long)(it.name-it.path);
@@ -197,4 +296,9 @@ int beam_index_sweep(struct BeamIndex *x)
         x->hash[slot]=(unsigned short)(i+1);
     }
     return removed;
+}
+
+int beam_index_sweep(struct BeamIndex *x)
+{
+    return beam_index_reconcile(x,1,NULL,0);
 }

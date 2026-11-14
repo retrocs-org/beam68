@@ -16,6 +16,9 @@
 #define BEAM_REXX_INDEX 11
 #define BEAM_REXX_RELOAD_PLUGINS 12
 #define BEAM_REXX_TIMING 13
+#define BEAM_REXX_TIMING_RESET 14
+#define BEAM_REXX_REQUESTS 15
+#define BEAM_REXX_REQUEST 16
 struct BeamRexxCommand { int action; int plugin_index; };
 /* Return 1 on recognized syntax, 0 on invalid/unknown syntax. A plugin
  * index is zero-based internally but one-based in the script interface. */

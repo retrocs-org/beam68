@@ -1,4 +1,4 @@
-## version $VER: Beam68Prefs.catalog 0.1 (27.10.2026)
+## version $VER: Beam68Prefs.catalog 0.2 (14.11.2026)
 ## language deutsch
 ## codeset 0
 ;
@@ -755,3 +755,32 @@ Lesezeichen-Dateien
 PMSG_SRC_URL_COMMAND
 URL öffnen mit
 ;Open URL with
+
+PMSG_PREVIEW_TITLE
+Live-Vorschau
+PMSG_PREVIEW_BODY
+%.64s\nVorschau: %s\nVerzoegerung: %ld ms\nDanach Benutzen oder Speichern waehlen.
+PMSG_PREVIEW_BUTTONS
+Umschalten|Schneller|Langsamer|Zeit...|Standard|Fertig
+PMSG_PREVIEW_UNAVAILABLE
+Dieses Plugin erlaubt keine Live-Vorschau.\nEs kann weiterhin mit Enter gestartet werden.
+PMSG_PREVIEW_DETAILS_MORE
+Weiter|Vorschau...|Schliessen
+PMSG_PREVIEW_DETAILS_LAST
+Vorschau...|Schliessen
+
+PMSG_PREVIEW_DELAY_LABEL
+Zeit in ms (100-5000)
+PMSG_PREVIEW_DELAY_INVALID
+Zahl von 100 bis 5000 eingeben
+
+PMSG_ABOUT_BUTTON
+Info...
+PMSG_ABOUT_TITLE
+Ueber Beam68
+PMSG_ABOUT_BODY
+Beam68\nProgrammstarter fuer AmigaOS\n\nVersion der Einstellungen: %s\nLaufendes Beam68: %s\nBuild-Datum: %s\nPlugin-Protokoll: 1\n\nBeam68 contributors\nhttps://beam68.retrocs.org\nhttps://github.com/retrocs-org/beam68
+PMSG_ABOUT_NOT_RUNNING
+Nicht gestartet
+PMSG_ABOUT_UNAVAILABLE
+Nicht verfügbar (älterer oder beschäftigter Starter)

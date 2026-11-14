@@ -23,6 +23,66 @@ static int has_file_text(const char *name,const char *needle)
     fclose(f);
     return strstr(buffer,needle)!=NULL;
 }
+static void test_preview_controls(void)
+{
+    static struct BeamConfig c,d;
+    const char *clock="PROGDIR:Plugins/Clock/Clock.plugin";
+    const char *calc="PROGDIR:Plugins/Calc/Calc.plugin";
+    const char *file="build/testsettings/PROGDIR/preview.cfg";
+    int parsed=750;
+    assert(beam_plugin_preview_parse_delay("100",&parsed) && parsed==100);
+    assert(beam_plugin_preview_parse_delay("5000",&parsed) && parsed==5000);
+    assert(beam_plugin_preview_parse_delay("  750\t",&parsed) && parsed==750);
+    assert(beam_plugin_preview_parse_delay("0123",&parsed) && parsed==123);
+    assert(!beam_plugin_preview_parse_delay("",&parsed) && parsed==123);
+    assert(!beam_plugin_preview_parse_delay("99",&parsed) && parsed==123);
+    assert(!beam_plugin_preview_parse_delay("5001",&parsed) && parsed==123);
+    assert(!beam_plugin_preview_parse_delay("-100",&parsed) && parsed==123);
+    assert(!beam_plugin_preview_parse_delay("1.5",&parsed) && parsed==123);
+    assert(!beam_plugin_preview_parse_delay("750ms",&parsed) && parsed==123);
+    assert(!beam_plugin_preview_parse_delay("999999999999999999999",&parsed) && parsed==123);
+    assert(!beam_plugin_preview_parse_delay("750\n",&parsed) && parsed==123);
+    assert(!beam_plugin_preview_parse_delay(NULL,&parsed) && parsed==123);
+    assert(!beam_plugin_preview_parse_delay("750",NULL));
+    put_file(file,
+        "# Keep preview notes\nPLUGIN_PREVIEW_DISABLED=PROGDIR:Plugins/Clock.plugin\n"
+        "PLUGIN_PREVIEW_DELAY=750|progdir:plugins/CLOCK.plugin\n"
+        "PLUGIN_PREVIEW_DELAY=1200|PROGDIR:Plugins/Calc/Calc.plugin\n"
+        "PLUGIN_PREVIEW_DELAY=0|PROGDIR:Plugins/Calc/Calc.plugin\n"
+        "PLUGIN_PREVIEW_DELAY=300xyz|PROGDIR:Plugins/Calc/Calc.plugin\n"
+        "PLUGIN_PREVIEW_DELAY=900|Work:NotInstalled.plugin\n"
+        "PLUGIN=PROGDIR:Plugins/Calc.plugin\nPLUGIN=PROGDIR:Plugins/Clock.plugin\n");
+    beam_config_defaults(&c);assert(beam_config_read(&c,"PROGDIR:preview.cfg"));
+    assert(c.plugin_file_count==2 && beam_config_valid(&c));
+    assert(beam_plugin_preview_delay(&c,clock,1)==0);
+    assert(beam_plugin_preview_delay(&c,calc,1)==1200);
+    assert(beam_plugin_preview_delay(&c,calc,0)==0); /* manifest must opt in */
+    assert(!beam_plugin_preview_set(&c,clock,1,99));
+    assert(!beam_plugin_preview_set(&c,clock,1,5001));
+    assert(!beam_plugin_preview_set(&c,"Work:Unknown.plugin",1,400));
+    assert(beam_plugin_preview_set(&c,clock,1,750));
+    assert(beam_plugin_preview_delay(&c,clock,1)==750);
+    assert(beam_plugin_preview_set(&c,clock,0,750));
+    assert(beam_config_write(&c,"PROGDIR:preview.cfg"));
+    assert(has_file_text(file,"# Keep preview notes"));
+    assert(has_file_text(file,"PLUGIN_PREVIEW_DELAY=750|PROGDIR:Plugins/Clock/Clock.plugin"));
+    beam_config_defaults(&d);assert(beam_config_read(&d,"PROGDIR:preview.cfg"));
+    assert(beam_plugin_preview_delay(&d,clock,1)==0 && d.plugin_preview_delay[1]==750);
+    assert(beam_plugin_preview_set(&d,clock,1,400));
+    assert(beam_plugin_preview_delay(&d,clock,1)==400);
+    /* File order changes cannot transfer the override to another plugin. */
+    put_file(file,"PLUGIN_PREVIEW_DELAY=1500|PROGDIR:Plugins/Calc.plugin\n"
+                  "PLUGIN=PROGDIR:Plugins/Clock.plugin\nPLUGIN=PROGDIR:Plugins/Calc.plugin\n");
+    beam_config_defaults(&d);assert(beam_config_read(&d,"PROGDIR:preview.cfg"));
+    assert(beam_plugin_preview_delay(&d,clock,1)==400);
+    assert(beam_plugin_preview_delay(&d,calc,1)==1500);
+    d.plugin_file_count=1;
+    assert(beam_config_write(&d,"PROGDIR:preview.cfg"));
+    assert(!has_file_text(file,"PLUGIN_PREVIEW_DELAY="));
+    d.plugin_preview_delay[0]=99;assert(!beam_config_valid(&d));
+    puts("Per-plugin previews: opt-in, disable, delay, ordering, migration and persistence: PASS");
+}
+
 int main(void)
 {
     static struct BeamConfig c,d;
@@ -79,6 +139,7 @@ int main(void)
     d.plugin_file_count=2;
     assert(beam_config_write(&d,BEAM_CONFIG_ENV));
     assert(!has_file_text("build/testsettings/ENV/Beam68/Beam68.cfg","PLUGIN_DISABLED=PROGDIR:Plugins/Memory/Memory.plugin"));
+    test_preview_controls();
     puts("Plugin enable/disable, manual order, dedup, persistence, stale cleanup: PASS");
     return 0;
 }

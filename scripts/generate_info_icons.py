@@ -187,8 +187,8 @@ def main():
     # GUI installer: Workbench runs the Installer utility on the script.
     install = ROOT / "Install.info"
     install.write_bytes(project_object(installer_art(), "Installer", [
-        "APPNAME=Beam68", "SCRIPT=Install", "MINUSER=AVERAGE",
-        "DEFUSER=AVERAGE"]))
+        "APPNAME=Beam68", "SCRIPT=Install", "MINUSER=NOVICE",
+        "DEFUSER=NOVICE"]))
     print("Created", install)
     # WBStartup entry; the installer sets the real Default Tool path.
     (ROOT / "installer").mkdir(exist_ok=True)

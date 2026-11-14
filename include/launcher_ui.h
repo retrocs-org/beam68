@@ -2,6 +2,17 @@
 #define BEAM68_LAUNCHER_UI_H
 /* Portable, allocation-free helpers for the AmigaOS Intuition launcher UI.
  * The cursor is a byte offset: Beam68's original matcher is ASCII-only. */
+struct BeamLatency { unsigned long last, maximum, samples; };
+/* Saturating counters keep diagnostics bounded even in long resident runs. */
+unsigned long beam_elapsed_ms(unsigned long start_seconds,unsigned long start_micros,
+                              unsigned long end_seconds,unsigned long end_micros);
+unsigned long beam_elapsed_us(unsigned long start_seconds,unsigned long start_micros,
+                              unsigned long end_seconds,unsigned long end_micros);
+void beam_latency_record(struct BeamLatency *metric,unsigned long micros);
+enum BeamInputKind { BEAM_INPUT_TEXT, BEAM_INPUT_RAW, BEAM_INPUT_OTHER };
+/* Ignore raw key releases and unmapped keys when coalescing typed input.
+ * Actions which consume the selected result must flush the pending search. */
+int beam_input_flush_search(int kind,unsigned int code,int shift);
 enum BeamEditOp {
     BEAM_EDIT_INSERT=1,
     BEAM_EDIT_BACKSPACE,

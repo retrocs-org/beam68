@@ -823,9 +823,65 @@ class Release:
             git(self.root, 'push', '--no-follow-tags', remote, 'refs/tags/' + m['tag'] + ':refs/tags/' + m['tag'])
         need(self.tag_preflight(m, remote), 'Remote tag verification failed')
 
+    def prepare_existing_aminet(self):
+        """Stage a receipted release without rebuilding changed working sources."""
+        need(self.config['aminet'], 'Enable Aminet in the external release configuration')
+        m = load(self.manifest)
+        receipt = load(self.state/'receipt.json')
+        need(receipt.get('manifest_sha256') == sha(self.manifest) and
+             receipt.get('current') is None and
+             bool(set(receipt.get('completed', [])) & {'github', 'gitlab'}),
+             'Existing release has no completed repository publication receipt')
+        need(m.get('version') == self.version and m.get('tag') == self.tag,
+             'Existing release version or tag differs')
+        need(git(self.root, 'rev-parse', 'refs/tags/'+self.tag+'^{commit}') == m.get('commit'),
+             'Existing release tag differs from the receipted commit')
+        stage = self.prepared_check(m)
+        archive = 'Beam68-'+self.version+'.lha'
+        checksum = archive+'.sha256'
+        need((stage/checksum).read_text() == sha(stage/archive)+'  '+archive+'\n',
+             'Existing release runtime checksum differs')
+        # Generate metadata from the released commit, never current working docs.
+        mod = module(self.root, 'make-aminet-release')
+        with tempfile.TemporaryDirectory(prefix='beam68-aminet-docs-') as temp:
+            snapshot = Path(temp)
+            for name in ('VERSION', 'README.md', 'CHANGELOG.md'):
+                (snapshot/name).write_text(git(self.root, 'show', m['commit']+':'+name)+'\n')
+            mod.ROOT = snapshot
+            mod.VERSION = self.version
+            readme = mod.readme(self.config['author'], self.config['uploader'], archive)
+        folder = self.state/'aminet-existing'
+        need(not folder.is_symlink(), 'Linked Aminet preparation directory')
+        folder.mkdir(exist_ok=True)
+        prepared = dict(m, aminet=True, author=self.config['author'], uploader=self.config['uploader'])
+        prepared['aminet_files'] = {archive: sha(stage/archive),
+                                  archive[:-4]+'.readme': hashlib.sha256(readme).hexdigest()}
+        metadata = self.state/'aminet-existing.json'
+        if metadata.exists():
+            need(load(metadata) == prepared, 'Existing Aminet preparation differs; preserve its metadata and receipt')
+            for name, digest in prepared['aminet_files'].items():
+                path = folder/name
+                need(path.is_file() and not path.is_symlink() and sha(path) == digest,
+                     'Prepared Aminet file changed: '+name)
+        else:
+            need(not (self.state/'aminet-receipt.json').exists(), 'Preserve existing Aminet receipt before recovery')
+            for name in prepared['aminet_files']:
+                need(not (folder/name).exists() and not (folder/name).is_symlink(),
+                     'Existing Aminet preparation file; inspect before recovery')
+            shutil.copyfile(stage/archive, folder/archive)
+            (folder/(archive[:-4]+'.readme')).write_bytes(readme)
+            atomic_json(metadata, prepared)
+        print('Verified published runtime; Aminet files: outputs/release/aminet-existing/', flush=True)
+        return prepared, folder, sha(metadata)
+
     def publish(self, destinations, confirmed):
         need(confirmed, 'Publication requires --confirm-publish')
         need(destinations and len(destinations) == len(set(destinations)) and set(destinations) <= {'github', 'gitlab', 'aminet'}, 'Invalid or duplicate destinations')
+        if destinations == ['aminet'] and (self.state/'receipt.json').exists():
+            m, folder, key = self.prepare_existing_aminet()
+            Aminet(m, folder, self.state/'aminet-receipt.json', key).publish()
+            print('Aminet submission acknowledged; awaiting moderation.', flush=True)
+            return
         m = self.manifest_check()
         key = sha(self.manifest)
         receipt_path = self.state / 'receipt.json'
@@ -876,7 +932,7 @@ class Release:
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=('source','plan', 'build', 'check', 'prepare', 'publish','release'))
+    parser.add_argument('command', choices=('source','plan', 'build', 'check', 'prepare', 'prepare-aminet', 'publish','release'))
     parser.add_argument('--config', type=Path, default=Path(os.environ.get('BEAM68_RELEASE_CONFIG',str(Path.home()/'Development/tools/git-release/projects/beam68.json'))))
     parser.add_argument('--notes', type=Path, default=ROOT / 'docs/RELEASE-NOTES.md')
     parser.add_argument('--to', default='gitlab,github')
@@ -897,7 +953,7 @@ def main(argv=None):
         push_source(tool.config,args.to.split(','),args.confirm_push,args.dry_run,ROOT,args.initialize,args.commit_message)
         return
     need(not args.initialize and not args.confirm_push and not args.dry_run and args.commit_message is None, 'Source options apply only to source')
-    need(args.command in ('prepare','publish','release') or (args.tag is None and args.tag_message is None), 'Tag options apply only to prepare/publish/release')
+    need(args.command in ('prepare','prepare-aminet','publish','release') or (args.tag is None and args.tag_message is None), 'Tag options apply only to prepare/publish/release')
     if args.command == 'plan':
         for command in tool.plan():
             print(shlex.join(command))
@@ -908,6 +964,8 @@ def main(argv=None):
         tool.build()
     elif args.command == 'check':
         tool.check()
+    elif args.command == 'prepare-aminet':
+        tool.prepare_existing_aminet()
     elif args.command == 'prepare':
         tool.prepare(args.notes)
     else:
@@ -917,7 +975,15 @@ def main(argv=None):
         tool.publish(args.to.split(','), args.confirm_publish)
     if args.command=='build':
         return
-    print(args.command.capitalize() + ' completed. ' + ('No publication performed.' if args.command not in ('publish','release') else 'See outputs/release/receipt.json.'))
+    if args.command in ('publish', 'release'):
+        receipts = []
+        if any(target in ('github', 'gitlab') for target in args.to.split(',')):
+            receipts.append('outputs/release/receipt.json')
+        if 'aminet' in args.to.split(','):
+            receipts.append('outputs/release/aminet-receipt.json')
+        print(args.command.capitalize() + ' completed. See ' + ' and '.join(receipts) + '.')
+    else:
+        print(args.command.capitalize() + ' completed. No publication performed.')
 
 if __name__ == '__main__':
     try:

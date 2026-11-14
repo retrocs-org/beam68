@@ -68,7 +68,7 @@ static int fuzzy_word_prefix(const char *needle,const char *haystack)
         int available=0,n;
         int boundary=(j==0 || !word_char((unsigned char)haystack[j-1]));
         if (!boundary) continue;
-        while (word_char((unsigned char)haystack[j+available])) ++available;
+        while (available<qn+1 && word_char((unsigned char)haystack[j+available])) ++available;
         for (n=qn-1;n<=qn+1;n++) {
             if (n>0 && available>=n && one_edit(needle,qn,haystack+j,n))
                 return 3000-j;
@@ -94,7 +94,8 @@ int beam_match_score(const char *needle, const char *haystack)
 
     /* Word-boundary prefix and ordinary substring. */
     for (j = 0; haystack[j]; ++j) {
-        int n = 0;
+        int n = 1;
+        if (j==0 || lower_ascii(haystack[j])!=lower_ascii(needle[0])) continue;
         while (needle[n] && haystack[j+n] &&
                lower_ascii((unsigned char)needle[n]) == lower_ascii((unsigned char)haystack[j+n]))
             ++n;
@@ -103,6 +104,8 @@ int beam_match_score(const char *needle, const char *haystack)
                             haystack[j-1] == '-' || haystack[j-1] == '_');
             int score = (boundary ? 6000 : 4000) - j;
             if (score > best) best = score;
+            /* Later boundary and substring hits cannot beat this one. */
+            if (boundary && best>0) return best;
         }
     }
     if (best > 0) return best;
@@ -201,7 +204,7 @@ unsigned long beam_match_marks(const char *needle,const char *haystack)
         for (j=0;haystack[j];++j) {
             int available=0;
             if (j && word_char((unsigned char)haystack[j-1])) continue;
-            while (word_char((unsigned char)haystack[j+available])) ++available;
+            while (available<qn+1 && word_char((unsigned char)haystack[j+available])) ++available;
             for (n=qn-1;n<=qn+1;n++)
                 if (n>0 && available>=n && one_edit(needle,qn,haystack+j,n)) return span(j,n);
         }

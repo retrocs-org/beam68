@@ -18,6 +18,14 @@ static void bad(const char *s)
 int main(void)
 {
     char b[300], tiny[5];
+    check("REQUESTS",BEAM_REXX_REQUESTS,-1);
+    check(" request 1 ",BEAM_REXX_REQUEST,0);
+    check("REQUEST 3",BEAM_REXX_REQUEST,2);
+    bad("REQUEST");bad("REQUEST 0");bad("REQUEST 4");bad("REQUEST -1");
+    bad("REQUEST 1 MORE");bad("REQUESTS 1");bad("REQUEST 1;QUIT");
+    check("TIMING",BEAM_REXX_TIMING,-1);
+    check(" timing reset ",BEAM_REXX_TIMING_RESET,-1);
+    bad("TIMING RESET NOW");bad("TIMING UNKNOWN");bad("TIMING RESET;QUIT");
     check("SHOW",BEAM_REXX_SHOW,-1);
     check("  show   ",BEAM_REXX_SHOW,-1);
     check("HiDe",BEAM_REXX_HIDE,-1);

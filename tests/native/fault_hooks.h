@@ -9,3 +9,8 @@ LONG qa_FPuts(BPTR file,CONST_STRPTR text);
 LONG qa_Rename(CONST_STRPTR from,CONST_STRPTR to);
 #define FPuts qa_FPuts
 #define Rename qa_Rename
+
+#include <proto/exec.h>
+#undef AllocVec
+APTR qa_AllocVec(ULONG size,ULONG flags);
+#define AllocVec qa_AllocVec

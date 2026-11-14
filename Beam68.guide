@@ -1,11 +1,11 @@
 @database Beam68.guide
-@$VER: Beam68.guide 0.1 (27.10.2026)
+@$VER: Beam68.guide 0.2 (14.11.2026)
 @author "Beam68 contributors"
 @(c) "MIT License"
 @wordwrap
-@node MAIN "Beam68 0.1 - Manual"
+@node MAIN "Beam68 0.2 - Manual"
 
-                    @{b}Beam68 0.1@{ub}
+                    @{b}Beam68 0.2@{ub}
      A keyboard application launcher for AmigaOS 3.x
 
   @{" Introduction       " link INTRO}  What Beam68 does
@@ -353,6 +353,11 @@ Press F1 in the launcher for the full list with examples.  Plugins marked
 @{b}SYSTEM@{ub} ask for a second Enter.  A plugin that fails three times in
 a row is quarantined until you enable it again in Beam68Prefs.
 
+Aminet Browser (new in 0.2): type aminet:search tracker to search Aminet,
+read details/readmes and confirm downloads. Installation opens the archive
+with your archive handler; follow the package's own installer. Requires an
+active TCP/IP stack. DOWNLOAD_DIR is available in plugin Settings.
+
 @endnode
 
 @node PACKAGES "Plugin packages"
@@ -404,6 +409,9 @@ Open SYS:Prefs/Beam68Prefs, or press F5 in the launcher.  The pages:
 @{b}Use@{ub} applies the settings until reboot, @{b}Save@{ub} keeps them,
 @{b}Cancel@{ub} discards changes.  F7/F8 or Left/Right switch pages; the
 Help key opens this manual at the current page.
+About... (F2 in Preferences) shows the Preferences build and asks the running
+launcher for its own version. A stopped, older or busy launcher is identified
+explicitly; its version is never guessed from the Preferences executable.
 
 @endnode
 
@@ -572,6 +580,16 @@ manual edit press F3 in the launcher.
   COMPACT_MODE=AUTO           PLUGIN_TIMEOUT=30  ICON_PREVIEW=NO
   PLUGIN=PROGDIR:Plugins/Calc/Calc.plugin       (repeat)
   PLUGIN_DISABLED=...         INSTALL_DIR=SYS:Utilities/Beam68
+  PLUGIN_PREVIEW_DISABLED=PROGDIR:Plugins/Calc/Calc.plugin
+  PLUGIN_PREVIEW_DELAY=1000|PROGDIR:Plugins/Calc/Calc.plugin
+
+Per-plugin previews: Plugins -> Details -> Preview... in Preferences.
+Toggle disables automatic work without blocking Enter. Faster/Slower changes
+the delay in 100 ms steps (100..5000 ms). Delay... opens direct numeric
+entry: type a whole number such as 750, then OK or Return. Cancel keeps the
+previous value. Default restores 400 ms and enables previews. Choose Use or Save afterwards. Plugins must declare PREVIEW=YES;
+these controls cannot enable automatic execution for action-only plugins.
+Settings follow manifest paths when plugins are reordered.
 
 Other files in ENVARC:Beam68: Favorites.txt, Aliases.txt, History.txt and
 the Plugins drawer with plugin settings.  The index cache is

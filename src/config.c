@@ -81,6 +81,9 @@ void beam_config_defaults(struct BeamConfig *c)
     beam_copy(c->plugin_files[c->plugin_file_count++],"PROGDIR:Plugins/DeveloperTools.plugin",BEAM_MAX_PATH);
     beam_copy(c->plugin_files[c->plugin_file_count++],"PROGDIR:Plugins/ARexxRunner.plugin",BEAM_MAX_PATH);
     beam_copy(c->plugin_files[c->plugin_file_count++],"PROGDIR:Plugins/MusicControls.plugin",BEAM_MAX_PATH);
+    beam_copy(c->plugin_files[c->plugin_file_count++],"PROGDIR:Plugins/AminetBrowser/AminetBrowser.plugin",BEAM_MAX_PATH);
+    beam_copy(c->disabled_plugins[c->disabled_plugin_count++],
+        "PROGDIR:Plugins/AminetBrowser/AminetBrowser.plugin",BEAM_MAX_PATH);
 }
 
 static int config_theme(const char *name)
@@ -111,6 +114,45 @@ int beam_plugin_enabled(const struct BeamConfig *c, const char *path)
     if (!c || !path) return 0;
     for (i=0;i<c->disabled_plugin_count;i++)
         if (beam_equal(c->disabled_plugins[i],path)) return 0;
+    return 1;
+}
+static int preview_slot(const struct BeamConfig *c,const char *path)
+{
+    char canonical[BEAM_MAX_PATH];int i;
+    if (!c || !path || !*path || strlen(path)>=sizeof(canonical)) return -1;
+    beam_copy(canonical,path,sizeof(canonical));
+    beam_plugin_path_migrate(canonical,sizeof(canonical));
+    for (i=0;i<c->plugin_file_count;i++)
+        if (beam_equal(c->plugin_files[i],canonical)) return i;
+    return -1;
+}
+int beam_plugin_preview_parse_delay(const char *text,int *delay_ms)
+{
+    int value=0,digits=0;
+    if (!text || !delay_ms) return 0;
+    while (*text==' ' || *text=='\t') ++text;
+    while (*text>='0' && *text<='9') {
+        if (value>500) return 0;
+        value=value*10+(*text++-'0');
+        if (value>5000) return 0;
+        digits=1;
+    }
+    while (*text==' ' || *text=='\t') ++text;
+    if (!digits || *text || value<100) return 0;
+    *delay_ms=value;return 1;
+}
+int beam_plugin_preview_delay(const struct BeamConfig *c,const char *path,int manifest_preview)
+{
+    int i=preview_slot(c,path);
+    if (!manifest_preview || i<0 || c->plugin_preview_disabled[i]) return 0;
+    return c->plugin_preview_delay[i]?c->plugin_preview_delay[i]:400;
+}
+int beam_plugin_preview_set(struct BeamConfig *c,const char *path,int enabled,int delay_ms)
+{
+    int i=preview_slot(c,path);
+    if (i<0 || (enabled!=0 && enabled!=1) || delay_ms<100 || delay_ms>5000) return 0;
+    c->plugin_preview_disabled[i]=(unsigned char)!enabled;
+    c->plugin_preview_delay[i]=(unsigned short)(delay_ms==400?0:delay_ms);
     return 1;
 }
 void beam_plugin_forget_disabled(struct BeamConfig *c, const char *path)
@@ -341,7 +383,7 @@ int beam_config_read(struct BeamConfig *c, const char *file)
     BPTR f;
     char line[512];
     char *eq, *key, *value;
-    int n;
+    int n,has_preview=0;
     f=Open((STRPTR)file,MODE_OLDFILE);
     if (!f) return 0;
     /* Directory/plugin entries replace defaults, not append to them. */
@@ -349,12 +391,16 @@ int beam_config_read(struct BeamConfig *c, const char *file)
     c->excluded_dir_count=0;
     c->plugin_file_count=0;
     c->disabled_plugin_count=0;
+    memset(c->plugin_preview_delay,0,sizeof(c->plugin_preview_delay));
+    memset(c->plugin_preview_disabled,0,sizeof(c->plugin_preview_disabled));
     while (read_line(f,line,sizeof(line))) {
         key=beam_trim(line);
         if (!*key || *key=='#' || *key==';') continue;
         eq=strchr(key,'='); if (!eq) continue;
         *eq=0; value=beam_trim(eq+1); key=beam_trim(key);
-        if (beam_equal(key,"HOTKEY")) beam_copy(c->hotkey,value,sizeof(c->hotkey));
+        if (beam_equal(key,"PLUGIN_PREVIEW_DISABLED") || beam_equal(key,"PLUGIN_PREVIEW_DELAY"))
+            has_preview=1;
+        else if (beam_equal(key,"HOTKEY")) beam_copy(c->hotkey,value,sizeof(c->hotkey));
         else if (beam_equal(key,"INSTALL_DIR")) beam_copy(c->install_dir,value,sizeof(c->install_dir));
         else if (beam_equal(key,"DIR") && c->dir_count<BEAM_MAX_DIRS && *value)
             beam_copy(c->dirs[c->dir_count++],value,BEAM_MAX_PATH);
@@ -438,6 +484,28 @@ int beam_config_read(struct BeamConfig *c, const char *file)
         else if (beam_equal(key,"COMPACT_MODE"))
             c->compact_mode=beam_equal(value,"YES")?BEAM_COMPACT_ALWAYS:
                             beam_equal(value,"NO")?BEAM_COMPACT_NEVER:BEAM_COMPACT_AUTO;
+    }
+    if (has_preview) {
+        if (Seek(f,0,OFFSET_BEGINNING)==-1) { Close(f);return 0; }
+        while (read_line(f,line,sizeof(line))) {
+            int slot;
+            key=beam_trim(line);
+            if (!*key || *key=='#' || *key==';') continue;
+            eq=strchr(key,'=');if (!eq) continue;
+            *eq=0;value=beam_trim(eq+1);key=beam_trim(key);
+            if (beam_equal(key,"PLUGIN_PREVIEW_DISABLED")) {
+                slot=preview_slot(c,value);
+                if (slot>=0) c->plugin_preview_disabled[slot]=1;
+            } else if (beam_equal(key,"PLUGIN_PREVIEW_DELAY")) {
+                char *separator=strchr(value,'|');
+                int delay;
+                if (!separator) continue;
+                *separator++=0;
+                if (!beam_plugin_preview_parse_delay(value,&delay)) continue;
+                slot=preview_slot(c,beam_trim(separator));
+                if (slot>=0) c->plugin_preview_delay[slot]=(unsigned short)(delay==400?0:delay);
+            }
+        }
     }
     Close(f);
     return 1;
@@ -624,7 +692,10 @@ int beam_config_valid(const struct BeamConfig *c)
     for (i=0;i<c->excluded_dir_count;i++)
         if (!safe_setting(c->excluded_dirs[i]) ||
             !strchr(c->excluded_dirs[i],':') || strchr(c->excluded_dirs[i],'*')) return 0;
-    for (i=0;i<c->plugin_file_count;i++) if (!safe_setting(c->plugin_files[i])) return 0;
+    for (i=0;i<c->plugin_file_count;i++) {
+        if (!safe_setting(c->plugin_files[i]) || c->plugin_preview_disabled[i]>1 ||
+            (c->plugin_preview_delay[i] && (c->plugin_preview_delay[i]<100 || c->plugin_preview_delay[i]>5000))) return 0;
+    }
     for (i=0;i<c->disabled_plugin_count;i++)
         if (!safe_setting(c->disabled_plugins[i])) return 0;
     return 1;
@@ -640,7 +711,7 @@ static int owned_key(char *line)
     char *s=beam_trim(line), *eq=strchr(s,'=');
     if (!eq || *s=='#' || *s==';') return 0;
     *eq=0; s=beam_trim(s);
-    return beam_equal(s,"INSTALL_DIR") || beam_equal(s,"PLUGIN_DISABLED") || beam_equal(s,"HOTKEY") || beam_equal(s,"HISTORY") || beam_equal(s,"INDEX_CACHE") || beam_equal(s,"SHELL_COMMANDS") || beam_equal(s,"THEME") || beam_equal(s,"CUSTOM_COLORS") || beam_equal(s,"ICON_PREVIEW") || beam_equal(s,"PLUGIN_TIMEOUT") || beam_equal(s,"DIR") ||
+    return beam_equal(s,"PLUGIN_PREVIEW_DISABLED") || beam_equal(s,"PLUGIN_PREVIEW_DELAY") || beam_equal(s,"INSTALL_DIR") || beam_equal(s,"PLUGIN_DISABLED") || beam_equal(s,"HOTKEY") || beam_equal(s,"HISTORY") || beam_equal(s,"INDEX_CACHE") || beam_equal(s,"SHELL_COMMANDS") || beam_equal(s,"THEME") || beam_equal(s,"CUSTOM_COLORS") || beam_equal(s,"ICON_PREVIEW") || beam_equal(s,"PLUGIN_TIMEOUT") || beam_equal(s,"DIR") ||
            beam_equal(s,"PLUGIN") || beam_equal(s,"SCAN_ICONS") ||
            beam_equal(s,"SCAN_EXECUTABLES") || beam_equal(s,"MAX_DEPTH") ||
            beam_equal(s,"MAX_ITEMS") || beam_equal(s,"VISIBLE_RESULTS") ||
@@ -780,6 +851,14 @@ int beam_config_write(struct BeamConfig *c, const char *path)
     for (i=0;ok && i<c->plugin_file_count;i++)
         if (!beam_plugin_enabled(c,c->plugin_files[i]))
             ok=emit_entry(output,"PLUGIN_DISABLED",c->plugin_files[i]);
+    for (i=0;ok && i<c->plugin_file_count;i++) {
+        if (c->plugin_preview_disabled[i])
+            ok=emit_entry(output,"PLUGIN_PREVIEW_DISABLED",c->plugin_files[i]);
+        if (ok && c->plugin_preview_delay[i]) {
+            sprintf(copy,"%u|%s",(unsigned int)c->plugin_preview_delay[i],c->plugin_files[i]);
+            ok=emit_entry(output,"PLUGIN_PREVIEW_DELAY",copy);
+        }
+    }
     if (Close(output)==0) ok=0;
     if (!ok) { DeleteFile((STRPTR)tmp); return 0; }
     /* Rename an existing file first; never delete it to make room for the

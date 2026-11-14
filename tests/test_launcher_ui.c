@@ -4,8 +4,37 @@
 #include "launcher_ui.h"
 int main(void)
 {
+    /* Raw releases/modifiers between text keys must not split a burst.
+       Enter, navigation and Shift+Delete must see current results. */
+    assert(!beam_input_flush_search(BEAM_INPUT_TEXT,'a',0));
+    assert(!beam_input_flush_search(BEAM_INPUT_RAW,0xa0,0));
+    assert(!beam_input_flush_search(BEAM_INPUT_RAW,0x60,0));
+    assert(!beam_input_flush_search(BEAM_INPUT_RAW,0x20,0));
+    assert(beam_input_flush_search(BEAM_INPUT_TEXT,13,0));
+    assert(beam_input_flush_search(BEAM_INPUT_TEXT,127,1));
+    assert(!beam_input_flush_search(BEAM_INPUT_TEXT,127,0));
+    assert(beam_input_flush_search(BEAM_INPUT_RAW,0x4d,0));
+    assert(beam_input_flush_search(BEAM_INPUT_RAW,0x4e,0));
+    assert(beam_input_flush_search(BEAM_INPUT_RAW,0x42,0));
+    assert(beam_input_flush_search(BEAM_INPUT_OTHER,0,0));
+    struct BeamLatency latency={0,0,0};
     char q[9]="abc";
     int cursor=3;
+    assert(beam_elapsed_ms(1,999900,2,100)==0);
+    assert(beam_elapsed_ms(1,900000,2,100000)==200);
+    assert(beam_elapsed_ms(0,0,7200,0)==7200000UL);
+    assert(beam_elapsed_ms(2,100,1,999900)==0);
+    assert(beam_elapsed_ms(0,0,~0UL/1000UL+1UL,0)==~0UL);
+    assert(beam_elapsed_us(1,999900,2,100)==200);
+    assert(beam_elapsed_us(2,100,1,999900)==0);
+    assert(beam_elapsed_us(2,200,2,100)==0);
+    assert(beam_elapsed_us(0,0,~0UL/1000000UL+1UL,0)==~0UL);
+    beam_latency_record(&latency,100);
+    beam_latency_record(&latency,30);
+    assert(latency.last==30 && latency.maximum==100 && latency.samples==2);
+    latency.samples=~0UL;
+    beam_latency_record(&latency,200);
+    assert(latency.samples==~0UL && latency.maximum==200);
     assert(beam_query_edit(q,sizeof(q),&cursor,BEAM_EDIT_LEFT,0) && cursor==2);
     assert(beam_query_edit(q,sizeof(q),&cursor,BEAM_EDIT_INSERT,'X'));
     assert(!strcmp(q,"abXc") && cursor==3);

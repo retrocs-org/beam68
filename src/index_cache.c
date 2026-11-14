@@ -1,10 +1,10 @@
-/* Portable text index cache, AmigaDOS API; no heap allocations or FPU.
+/* Portable text index cache, AmigaDOS API; no FPU.
  * A non-matching/truncated/tampered cache is discarded and rebuilt by caller.
  *
  * Schema 5: one line per item, "kind<TAB>root<TAB>path[<TAB>title]".  Only '%', control
  * bytes and DEL are %XX-escaped, so a typical line is about half the size of
  * the old all-hex schema 3.  The cache is disposable: it is written through
- * a .new file and renamed, without keeping a .bak copy.
+ * a .new file with committed .bak/.old recovery candidates.
  */
 #include <exec/types.h>
 #include <dos/dos.h>
@@ -119,16 +119,16 @@ static int parse_number(const char *s,int base,unsigned long *out)
     return 1;
 }
 
-int beam_cache_load(const struct BeamConfig *c,struct BeamIndex *x,const char *path)
+static int cache_load_into(const struct BeamConfig *c,struct BeamIndex *x,const char *path)
 {
     BPTR f;
     static char line[CACHE_LINE];
     char item_path[BEAM_MAX_PATH],*sep;
     static char item_title[BEAM_MAX_PATH];
     unsigned long fp,total,sum=5381UL,read_sum,root;
-    int i,ok=0;
+    int i,ok=0,resource_failure=0;
     beam_index_clear(x);
-    if (!c->index_cache || !path) return 0;
+    if (!c->index_cache || !path || strlen(path)>=BEAM_MAX_PATH+12U) return 0;
     f=Open((STRPTR)path,MODE_OLDFILE);
     if (!f) return 0;
     if (!get_line(f,line,sizeof(line)) ||
@@ -167,8 +167,13 @@ int beam_cache_load(const struct BeamConfig *c,struct BeamIndex *x,const char *p
             strchr(item_path,'"') || strchr(item_path,'*')) goto out;
         if (kind==BEAM_ITEM_SNIPPET && !item_title[0]) goto out;
         index=beam_index_add(x,item_path,kind,(int)root,&created);
-        if (index<0 || !created) goto out; /* full, invalid or duplicate */
-        if (item_title[0] && !beam_index_set_title(x,index,item_title)) goto out;
+        if (index<0 || !created) {
+            if (index==-1) resource_failure=1;
+            goto out;
+        }
+        if (item_title[0] && !beam_index_set_title(x,index,item_title)) {
+            resource_failure=1;goto out;
+        }
         sum=hash_item(sum,&x->items[index]);
     }
     if (!get_line(f,line,sizeof(line)) || strncmp(line,"END\t",4) ||
@@ -179,7 +184,72 @@ int beam_cache_load(const struct BeamConfig *c,struct BeamIndex *x,const char *p
 out:
     Close(f);
     if (!ok) beam_index_clear(x);
-    return ok;
+    return resource_failure?-1:ok;
+}
+
+/* A fully validated candidate can repair interrupted rename state. If any
+ * rename fails, leave the candidate intact and keep the in-memory recovery. */
+static void cache_promote(const char *path,const char *candidate)
+{
+    char temporary[BEAM_MAX_PATH+12],old[BEAM_MAX_PATH+12];
+    BPTR lock;
+    int moved=0;
+    sprintf(temporary,"%s.new",path);sprintf(old,"%s.old",path);
+    if (!strcmp(path,candidate)) {
+        char backup[BEAM_MAX_PATH+12];
+        DeleteFile((STRPTR)temporary);
+        sprintf(backup,"%s.bak",path);
+        lock=Lock((STRPTR)backup,ACCESS_READ);
+        if (lock) { UnLock(lock);DeleteFile((STRPTR)old); }
+        else Rename((STRPTR)old,(STRPTR)backup);
+        return;
+    }
+    lock=Lock((STRPTR)path,ACCESS_READ);
+    if (lock) {
+        UnLock(lock);
+        lock=Lock((STRPTR)temporary,ACCESS_READ);
+        if (lock) {
+            UnLock(lock);
+            if (!DeleteFile((STRPTR)temporary)) return;
+        }
+        if (!Rename((STRPTR)path,(STRPTR)temporary)) return;
+        moved=1;
+    }
+    if (!Rename((STRPTR)candidate,(STRPTR)path)) {
+        if (moved) Rename((STRPTR)temporary,(STRPTR)path);
+        return;
+    }
+    DeleteFile((STRPTR)temporary);DeleteFile((STRPTR)old);
+}
+
+static int cache_load_recover(const struct BeamConfig *c,struct BeamIndex *x,const char *path)
+{
+    char candidate[BEAM_MAX_PATH+12];
+    int result=cache_load_into(c,x,path);
+    if (result<0) return 0; /* memory pressure is not proof of corruption */
+    if (result) { cache_promote(path,path);return 1; }
+    /* .old protects the latest primary while an existing .bak is retained. */
+    sprintf(candidate,"%s.old",path);
+    result=cache_load_into(c,x,candidate);
+    if (result<0) return 0;
+    if (result) { cache_promote(path,candidate);return 1; }
+    sprintf(candidate,"%s.bak",path);
+    result=cache_load_into(c,x,candidate);
+    if (result>0) { cache_promote(path,candidate);return 1; }
+    return 0;
+}
+
+int beam_cache_load(const struct BeamConfig *c,struct BeamIndex *x,const char *path)
+{
+    struct BeamIndex next,old;
+    if (!x || !x->items || !x->pool || !x->hash || !c || !c->index_cache || !path || strlen(path)>=BEAM_MAX_PATH) return 0;
+    /* Startup has no live entries to protect. Reload commits only a fully
+       validated index; corruption or low memory leaves current results intact. */
+    if (!x->count) return cache_load_recover(c,x,path);
+    if (!beam_index_init(&next,x->capacity)) return 0;
+    if (!cache_load_recover(c,&next,path)) { beam_index_free(&next);return 0; }
+    old=*x;*x=next;beam_index_free(&old);
+    return 1;
 }
 
 static int put_line(BPTR f,const char *s)
@@ -190,14 +260,18 @@ int beam_cache_save(const struct BeamConfig *c,const struct BeamIndex *x,
                     const char *path)
 {
     BPTR f,lock;
-    int i,ok=1;
-    char tmp[BEAM_MAX_PATH+12];
+    int i,ok=1,had_original=0,retained_backup=0;
+    char tmp[BEAM_MAX_PATH+12],backup[BEAM_MAX_PATH+12],old[BEAM_MAX_PATH+12];
     char header[96];
     static char line[CACHE_LINE],escaped[BEAM_MAX_PATH*3];
     unsigned long checksum=5381UL;
-    if (!c->index_cache || !path || x->count<0 || x->count>c->max_items ||
-        strlen(path)+5>=sizeof(tmp)) return 0;
+    if (!c || !x || !c->index_cache || !path || x->full || x->count<0 || x->count>c->max_items ||
+        strlen(path)>=BEAM_MAX_PATH) return 0;
     sprintf(tmp,"%s.new",path);
+    sprintf(backup,"%s.bak",path);sprintf(old,"%s.old",path);
+    /* Never overwrite unresolved recovery state before a new commit. */
+    lock=Lock((STRPTR)old,ACCESS_READ);
+    if (lock) { UnLock(lock);return 0; }
     f=Open((STRPTR)tmp,MODE_NEWFILE);
     if (!f) return 0;
     sprintf(header,CACHE_MAGIC "\t%08lX\t%ld\n",fingerprint(c),(long)x->count);
@@ -225,7 +299,27 @@ int beam_cache_save(const struct BeamConfig *c,const struct BeamIndex *x,
     if (Close(f)==0) ok=0;
     if (!ok) { DeleteFile((STRPTR)tmp); return 0; }
     lock=Lock((STRPTR)path,ACCESS_READ);
-    if (lock) { UnLock(lock); DeleteFile((STRPTR)path); }
-    if (!Rename((STRPTR)tmp,(STRPTR)path)) { DeleteFile((STRPTR)tmp); return 0; }
+    if (lock) {
+        UnLock(lock);
+        lock=Lock((STRPTR)backup,ACCESS_READ);
+        if (lock) { UnLock(lock);retained_backup=1; }
+        if (!Rename((STRPTR)path,(STRPTR)(retained_backup?old:backup))) {
+            DeleteFile((STRPTR)tmp);return 0;
+        }
+        had_original=1;
+    }
+    if (!Rename((STRPTR)tmp,(STRPTR)path)) {
+        if (had_original) Rename((STRPTR)(retained_backup?old:backup),(STRPTR)path);
+        DeleteFile((STRPTR)tmp);return 0;
+    }
+    /* The new primary is committed before retiring an older backup. */
+    if (had_original && retained_backup) {
+        lock=Lock((STRPTR)backup,ACCESS_READ);
+        if (lock) {
+            UnLock(lock);
+            if (!DeleteFile((STRPTR)backup)) return 1;
+        }
+        Rename((STRPTR)old,(STRPTR)backup);
+    }
     return 1;
 }

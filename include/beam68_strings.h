@@ -190,7 +190,8 @@
 #define MSG_HELP_PREFS 185
 #define MSG_HELP_STATS_TITLE 186
 #define MSG_HELP_STATS 187
+#define MSG_PLUGIN_REQUEST_LIMIT 188
 
-#define BEAM68_STRING_COUNT 187
+#define BEAM68_STRING_COUNT 188
 extern const char *const beam68_strings[BEAM68_STRING_COUNT];
 #endif

@@ -1,6 +1,18 @@
 #include "search_rank.h"
 #include "matcher.h"
 
+const char *beam_search_builtin_alias(const char *name)
+{
+    const char *expected="beam68prefs";
+    if (!name) return 0;
+    while (*name && *expected) {
+        unsigned char c=(unsigned char)*name++;
+        if(c>='A' && c<='Z') c+=32;
+        if(c!=(unsigned char)*expected++) return 0;
+    }
+    return !*name && !*expected?"beam68 preferences settings":0;
+}
+
 static int query_terms_score(const char *query,const char *name,
                              const char *alias_words)
 {

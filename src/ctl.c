@@ -5,11 +5,12 @@
 #include <proto/exec.h>
 #include <string.h>
 #include "control.h"
+#include "beam.h"
 #include "locale_support.h"
 
 /* Version string for the AmigaDOS Version command and the GUI installer
  * (getversion).  Non-static so the compiler keeps it. */
-const char beam68ctl_version_tag[]="$VER: Beam68Ctl 0.1 (27.10.2026)";
+const char beam68ctl_version_tag[]="$VER: Beam68Ctl " BEAM68_VERSION " (" BEAM68_VERSION_DATE ")";
 
 static int is(const char *arg,const char *upper)
 {
@@ -38,7 +39,13 @@ static int ctl_main(int argc,char **argv)
 {
     ULONG action=0;
     int found,i;
+    char version[64];
     if (argc==2) {
+        if(is(argv[1],"VERSION")) {
+            found=beam_control_version(version,sizeof(version));
+            if(found==1) {PutStr(version);PutStr("\n");return 0;}
+            PutStr((STRPTR)beam_str(MSG_CTL_NOT_RUNNING));return 5;
+        }
         /* Scripts and installers: RC 0 = running, 5 = not running. */
         if (is(argv[1],"STATUS")) {
             found=beam_control_running();

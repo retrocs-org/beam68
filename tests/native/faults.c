@@ -1,7 +1,9 @@
 #include <exec/types.h>
 #include <dos/dos.h>
 #include <proto/dos.h>
-static int writes=-1,renames=-1;
+#include <proto/exec.h>
+static int writes=-1,renames=-1,allocations=-1;
+void qa_fail_alloc(int n) { allocations=n; }
 void qa_fail_writes(int n) { writes=n; }
 void qa_fail_rename(int n) { renames=n; }
 LONG qa_FPuts(BPTR file,CONST_STRPTR text)
@@ -15,4 +17,11 @@ LONG qa_Rename(CONST_STRPTR from,CONST_STRPTR to)
     if (renames==0) { renames=-1; SetIoErr(ERROR_DISK_FULL); return 0; }
     if (renames>0) --renames;
     return Rename(from,to);
+}
+
+APTR qa_AllocVec(ULONG size,ULONG flags)
+{
+    if (allocations==0) return NULL;
+    if (allocations>0) --allocations;
+    return AllocVec(size,flags);
 }

@@ -1,4 +1,4 @@
-## version $VER: Beam68Prefs.catalog 0.1 (27.10.2026)
+## version $VER: Beam68Prefs.catalog 0.2 (14.11.2026)
 ## language svenska
 ## codeset 0
 ;
@@ -755,3 +755,32 @@ Bokmärkesfiler
 PMSG_SRC_URL_COMMAND
 Öppna URL med
 ;Open URL with
+
+PMSG_PREVIEW_TITLE
+Liveforhandsvisning
+PMSG_PREVIEW_BODY
+%.64s\nForhandsvisning: %s\nFordrojning: %ld ms\nValj Anvand eller Spara efter Detaljer.
+PMSG_PREVIEW_BUTTONS
+Vaxla|Snabbare|Langsammare|Tid...|Standard|Klar
+PMSG_PREVIEW_UNAVAILABLE
+Detta insticksprogram har ingen liveforhandsvisning.\nDet kan fortfarande koras med Enter.
+PMSG_PREVIEW_DETAILS_MORE
+Nasta|Forhandsvisa...|Stang
+PMSG_PREVIEW_DETAILS_LAST
+Forhandsvisa...|Stang
+
+PMSG_PREVIEW_DELAY_LABEL
+Tid i ms (100-5000)
+PMSG_PREVIEW_DELAY_INVALID
+Ange ett tal mellan 100 och 5000
+
+PMSG_ABOUT_BUTTON
+Om...
+PMSG_ABOUT_TITLE
+Om Beam68
+PMSG_ABOUT_BODY
+Beam68\nProgramstartare foer AmigaOS\n\nInställningsversion: %s\nBeam68 som körs: %s\nByggdatum: %s\nPluginprotokoll: 1\n\nBeam68 contributors\nhttps://beam68.retrocs.org\nhttps://github.com/retrocs-org/beam68
+PMSG_ABOUT_NOT_RUNNING
+Körs inte
+PMSG_ABOUT_UNAVAILABLE
+Ej tillgänglig (äldre eller upptagen startare)

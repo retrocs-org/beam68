@@ -37,6 +37,7 @@ Plugins/WindowSwitcher/WindowSwitcher
 Plugins/DeveloperTools/DeveloperTools
 Plugins/ARexxRunner/ARexxRunner
 Plugins/MusicControls/MusicControls
+Plugins/AminetBrowser/AminetBrowser
 "
 
 runtime_data="
@@ -78,7 +79,11 @@ Plugins/ARexxRunner/ARexxRunner.plugin
 Plugins/ARexxRunner/ARexxRunner.cfg
 Plugins/MusicControls/MusicControls.plugin
 Plugins/MusicControls/MusicControls.cfg
+Plugins/AminetBrowser/AminetBrowser.plugin
+Plugins/AminetBrowser/AminetBrowser.cfg
+Plugins/AminetBrowser/AminetBrowser.guide
 scripts/Beam68Status.rexx
+scripts/Beam68Responsiveness.rexx
 scripts/Install-Beam68
 scripts/Run-Runtime-Test
 scripts/Run-Music-Test
@@ -111,7 +116,7 @@ for relative_path in $runtime_data; do
     chmod 644 "$application_dir/$relative_path"
 done
 
-echo "Beam68: staged AmigaOS 0.1 runtime package in:"
+echo "Beam68: staged AmigaOS 0.2 runtime package in:"
 echo "$application_dir"
 echo "With the amigaos-dev_020 profile, run Bin:Beam68/Beam68 or"
 echo "CD Bin:Beam68 and Execute scripts/Install-Beam68."

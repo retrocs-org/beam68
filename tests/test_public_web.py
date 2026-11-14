@@ -100,5 +100,5 @@ catalog=json.loads((WEB/'includes/marketplace.json').read_text())
 assert len(catalog['plugins'])==13 and len(catalog['themes'])==4
 for item in catalog['plugins']+catalog['themes']:
     assert (ROOT/item['path']).exists()
-assert (ROOT/'VERSION').read_text('ascii').strip()=='0.1'
+assert (ROOT/'VERSION').read_text('ascii').strip()=='0.2'
 print('PASS: PHP syntax/rendering, escaping, navigation, local CSS and screenshot metadata')

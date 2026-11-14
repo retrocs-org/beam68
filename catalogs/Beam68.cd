@@ -333,7 +333,7 @@ Show in Directory Opus
 MSG_DOPUS_FAILED (165//)
 Directory Opus did not answer
 MSG_CTL_USAGE (166//)
-Usage: Beam68Ctl RELOAD|RELOADPLUGINS|REINDEX|SHOW|HIDE|QUIT|QUITWAIT|STATUS\n
+Usage: Beam68Ctl RELOAD|RELOADPLUGINS|REINDEX|SHOW|HIDE|QUIT|QUITWAIT|STATUS|VERSION\n
 MSG_CTL_NOT_RUNNING (167//)
 Beam68 launcher is not running.\n
 MSG_REXX_NOT_RUNNING (168//)
@@ -376,3 +376,6 @@ MSG_HELP_STATS_TITLE (186//)
 Usage statistics
 MSG_HELP_STATS (187//)
 stats: lists your most-launched items
+
+MSG_PLUGIN_REQUEST_LIMIT (188//)
+Plugin request limit reached; waiting for older requests to finish.

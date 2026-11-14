@@ -1,5 +1,48 @@
 # Changelog
 
+## 0.2 — In development
+
+- Safe return from the private application stack when closing Preferences.
+- Find Beam68Prefs with ordinary preferences/settings searches.
+- Automatic Novice installation and opt-in Aminet Browser defaults.
+
+- Preferences About window reports its build and the actual running launcher version.
+
+- Independent Aminet Browser plugin: inline search and details, paged readmes,
+  confirmed downloads and archive-opening installation preparation.
+
+- Direct numeric preview-delay entry with validation and Cancel support.
+
+- Outstanding-request diagnostics identify holding plugins, request age and timeout state.
+
+- Recover validated index backups after interrupted cache replacement.
+
+- Bound outstanding plugin requests, reserve manual-run capacity and coalesce queued previews.
+
+- Per-plugin preview enable/disable and delay controls in Preferences Details.
+
+- Upgrades preserve portable settings, aliases and edited bundled themes.
+- Missing ENV/ENVARC settings inherit existing user settings and plugin-local configuration.
+
+- Obsolete plugin requests detach on query edits, close and reload.
+- Elapsed-time plugin deadlines, stricter reply validation and preview failure recovery.
+- Native requests avoid reply-file polling; routine health saves wait for idle time.
+
+- Low-memory failures preserve existing entries and titles.
+- Transactional cache reloads and rollback on failed cache replacement.
+- Incomplete rescans retain unverified entries; completed scans remap selections.
+- Changed game and bookmark titles refresh during rescans.
+
+- Resettable responsiveness diagnostics and an Amiga report script for repeatable typing tests.
+
+- On-demand index string storage reduces startup memory reservations.
+- Earlier duplicate-launch detection and deferred font-library loading.
+- Startup timing includes library, configuration and metadata loading.
+
+- More responsive typing with coalesced input and immediate query feedback.
+- Earlier display of first matches during indexing and more frequent input checks.
+- Deferred optional icon previews and reduced matcher work.
+
 ## 0.1 — First public release
 
 ### Launcher and search

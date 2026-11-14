@@ -8,6 +8,9 @@ int beam_search_rank_alias(const char *query,const char *name,
                            const char *alias_words,int pinned_position,
                            unsigned int history_bonus);
 
+/* Search words for built-in application names; NULL for other names. */
+const char *beam_search_builtin_alias(const char *name);
+
 /* Per-term character masks for a cheap, sound early reject (see matcher.h). */
 #define BEAM_QUERY_MASK_TERMS 8
 struct BeamQueryMasks { unsigned long term[BEAM_QUERY_MASK_TERMS]; int count; };

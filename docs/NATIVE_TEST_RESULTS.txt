@@ -1,0 +1,68 @@
+Beam68 0.2 native checks — 14 November 2026
+
+AmigaOS 3.2.1, 65536-byte Shell stack; isolated temporary test files.
+The native test program also completed without output redirection and returned 0.
+Matcher timings below are synthetic CPU baselines, not interactive latency measurements.
+
+Native recovery checks; isolated files: T:Beam68QA00
+PASS: simulated disk-full write preserves original on native filesystem
+PASS: commit rename failure restores original on native filesystem
+PASS: interrupted/truncated preset rejected without active writes
+PASS: successful native commit
+PASS: isolated defaults, save, reload and settings removal
+PASS: native allocation failure, preserved index/title and retry
+PASS: native cache backup validation, failed promotion and recovery
+PASS: native request admission bound and exact preview delay parsing
+matcher items=128 repeats=20 elapsed_ticks=6 (50Hz) checksum=20472320
+matcher items=1024 repeats=20 elapsed_ticks=53 (50Hz) checksum=184250880
+matcher items=4096 repeats=20 elapsed_ticks=218 (50Hz) checksum=839365120
+Native recovery and matcher baseline: PASS
+
+Interactive preview-delay requester checks on AmigaOS 3.2.1:
+- Automatic field focus and keyboard editing: PASS.
+- Reject 99 and 5001, retain editable text and show range feedback: PASS.
+- Tab does not accept the value: PASS.
+- Return accepts exactly 750 ms and outer requester shows 750 ms: PASS.
+- Escape after editing 400 to 900 cancels and the outer requester retains
+  400 ms: PASS on the corrected build. A custom edit hook handles Escape
+  while the string gadget is active.
+- Corrected build regression: invalid 99 rejected, text editable, Tab leaves
+  requester open, Return accepts exactly 750 ms: PASS.
+- Corrected native build compiles with warnings treated as errors.
+- Mouse OK/Cancel, Use/Save persistence, other languages and small-screen
+  layouts remain pending. No Use/Save was performed during these checks.
+
+After the edit-hook change: full make host-test PASS (one expected skip),
+public-source hygiene PASS, sensitive-input scan PASS, git diff --check PASS.
+Actual abrupt power-loss recovery and live plugin reply races remain unverified.
+
+Aminet Browser native network QA — 14 November 2026
+
+Isolated native Aminet checks: T:Beam68AminetQA00
+PASS: live native HTTP search and inline package parser
+PASS: live native readme: Keyboard application launcher for OS 3.x
+PASS: live native archive download (not executed)
+PASS: size limit rejects body and removes partial file
+PASS: cancellation before transfer leaves no partial file
+Aminet Browser native network checks: PASS
+
+Final plugin compiles for 68000 with warnings treated as errors and passes
+the SDK package validator. Portable parser/HTTP/archive-signature tests pass
+with address/undefined-behavior instrumentation. Full make host-test passes
+(one expected Python skip). Both installers include the new plugin and guide.
+Interactive download confirmation/window cancellation, the single-download
+guard, disk-full handling, destination conflicts and archive-handler handoff
+remain manual validation work. No package installation was performed.
+
+Preferences About / running launcher version — 14 November 2026
+
+- Launcher, Preferences and control utility: native 68000 builds PASS with
+  warnings treated as errors.
+- Actual updated launcher query on an isolated AmigaOS system:
+  Running launcher query: result=1 version=0.2
+  PASS: actual running Beam68 version received
+- Portable control tests cover a distinct reported version, no launcher,
+  older/busy launcher, timeout cleanup, late reply and malformed requests.
+- Full make host-test PASS (one expected Python skip). Catalog generation and
+  validation PASS for English, German and Swedish About strings.
+- About requester visual layout on all target displays remains unchecked.

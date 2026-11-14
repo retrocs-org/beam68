@@ -1,12 +1,21 @@
-# Beam68 0.1
+# Beam68 0.2
 
-First public release of Beam68 for classic AmigaOS.
+In development.
 
-- Resident launcher and separate native Preferences application.
-- Scoped application search, aliases, favorites, query history and drawer browsing.
-- Thirteen bundled native plugins using public Protocol 1 selectable results.
-- Four portable themes, English interface, German and Swedish catalogues.
-- Plugin SDK and examples included in the source tree.
+- Independent Aminet Browser plugin: search and details inside Beam68, paged
+  readmes, confirmed downloads and archive-opening installation preparation.
+  Requires a TCP/IP stack; no AmiGet dependency.
+
+- Startup recovers committed index backups after interrupted saves.
+
+- At most three outstanding plugin requests; automatic previews preserve a manual-run slot.
+
+- Safer low-memory recovery, cache replacement and rescan selection handling.
+
+- Coalesced text input and immediate query feedback before ranking results.
+- Earlier first matches while indexing; input checked between directory entries.
+- Optional icon previews load after the selection settles.
+- Matcher optimizations preserve existing scores and ranking.
 
 Requires AmigaOS 3.0+ and a 68000+ CPU; no FPU is required. AmigaOS 3.2 and a
 68020 are recommended. Optional integrations require their host applications.

@@ -14,6 +14,14 @@ static void mask_sound(const char *q,const char *name,const char *alias)
 }
 int main(void)
 {
+    struct BeamQueryMasks prefs_masks;
+    const char *prefs_words=beam_search_builtin_alias("Beam68Prefs");
+    assert(prefs_words && !beam_search_builtin_alias("OtherPrefs"));
+    assert(beam_search_rank_alias("preferences","Beam68Prefs",prefs_words,-1,0)>0);
+    assert(beam_search_rank_alias("settings","Beam68Prefs",prefs_words,-1,0)>0);
+    beam_query_masks_build("preferences",&prefs_masks);
+    assert(!beam_query_masks_reject(&prefs_masks,beam_text_mask("Beam68Prefs")|beam_text_mask(prefs_words)));
+
     assert(beam_search_rank("","Deluxe Paint",-1,0)==0);
     assert(beam_search_rank("","Deluxe Paint",0,0)>0);
     assert(beam_search_rank("","File Browser",0,0)>

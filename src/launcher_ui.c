@@ -120,3 +120,57 @@ unsigned int beam_text_line(const char *text,unsigned int fit,unsigned int *next
     if (next) *next=n;
     return end;
 }
+
+int beam_input_flush_search(int kind,unsigned int code,int shift)
+{
+    if (kind==BEAM_INPUT_TEXT)
+        return code==13 || code==10 || code==27 || code==9 ||
+               (code==127 && shift);
+    if (kind!=BEAM_INPUT_RAW) return 1;
+    if (code&0x80) return 0;
+    /* Intuition raw codes: navigation, Tab, Escape, function keys, Help,
+       page/home/end and wheel. Other raw events do not consume results. */
+    return code==0x42 || code==0x45 ||
+           (code>=0x4c && code<=0x57) || code==0x5f ||
+           code==0x48 || code==0x49 || code==0x70 || code==0x71 ||
+           code==0x7a || code==0x7b;
+}
+
+void beam_latency_record(struct BeamLatency *metric,unsigned long micros)
+{
+    metric->last=micros;
+    if (micros>metric->maximum) metric->maximum=micros;
+    if (metric->samples<~0UL) ++metric->samples;
+}
+
+unsigned long beam_elapsed_us(unsigned long start_seconds,unsigned long start_micros,
+                              unsigned long end_seconds,unsigned long end_micros)
+{
+    unsigned long seconds,micros,maximum=~0UL;
+    if (end_seconds<start_seconds ||
+        (end_seconds==start_seconds && end_micros<start_micros)) return 0;
+    seconds=end_seconds-start_seconds;
+    if (end_micros<start_micros) {
+        --seconds;micros=1000000UL-start_micros+end_micros;
+    } else micros=end_micros-start_micros;
+    if (seconds>maximum/1000000UL) return maximum;
+    seconds*=1000000UL;
+    if (micros>maximum-seconds) return maximum;
+    return seconds+micros;
+}
+
+unsigned long beam_elapsed_ms(unsigned long start_seconds,unsigned long start_micros,
+                              unsigned long end_seconds,unsigned long end_micros)
+{
+    unsigned long seconds,micros,maximum=~0UL;
+    if (end_seconds<start_seconds ||
+        (end_seconds==start_seconds && end_micros<start_micros)) return 0;
+    seconds=end_seconds-start_seconds;
+    if (end_micros<start_micros) {
+        --seconds;micros=1000000UL-start_micros+end_micros;
+    } else micros=end_micros-start_micros;
+    if (seconds>maximum/1000UL) return maximum;
+    seconds*=1000UL;micros/=1000UL;
+    if (micros>maximum-seconds) return maximum;
+    return seconds+micros;
+}

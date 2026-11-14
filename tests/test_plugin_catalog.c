@@ -25,7 +25,7 @@ int main(void)
     char path[BEAM_MAX_PATH];
     int state;
     {
-        static const char *names[]={"Calc","Clock","Memory","FileFinder","SystemCommands","DosTools","TaskManager","ClipboardTools","DateUtilities","WindowSwitcher","DeveloperTools","ARexxRunner","MusicControls"};
+        static const char *names[]={"Calc","Clock","Memory","FileFinder","SystemCommands","DosTools","TaskManager","ClipboardTools","DateUtilities","WindowSwitcher","DeveloperTools","ARexxRunner","MusicControls","AminetBrowser"};
         unsigned int n;
         for (n=0;n<sizeof(names)/sizeof(names[0]);n++) {
             char cmd[512],spec[160];
@@ -55,6 +55,8 @@ int main(void)
     write_test("build/testsettings/PROGDIR/Plugins/B", "binary mock\n");
     write_test("build/testsettings/PROGDIR/Plugins/Calc/Calc", "binary mock\n");
     beam_config_defaults(&cfg);
+    assert(beam_plugin_enabled(&cfg,"PROGDIR:Plugins/SystemCommands.plugin"));
+    assert(!beam_plugin_enabled(&cfg,"PROGDIR:Plugins/AminetBrowser/AminetBrowser.plugin"));
     cfg.plugin_file_count=0;
     beam_copy(cfg.install_dir,"PROGDIR:",sizeof(cfg.install_dir));
     assert(beam_catalog_resolve(&cfg,"PROGDIR:Plugins/A.plugin",path,sizeof(path)));

@@ -1,0 +1,52 @@
+@database AminetBrowser.guide
+@node MAIN "Aminet Browser for Beam68 0.2"
+Aminet Browser is an independent Beam68 Protocol 1 plugin.
+It does not require AmiGet and contains no AmiGet source code.
+
+Type aminet:search tracker and press Enter. Select a package and press
+Enter to put its details command in the query field; press Enter again
+to load the details. Next/Previous rows work the same way.
+
+Commands:
+  aminet:search tracker             Search (2-80 characters).
+  aminet:info util/wb/Beam68-0.1.lha  Summary and available actions.
+  aminet:get util/wb/Beam68-0.1.lha   Confirm and download.
+  aminet:install util/wb/Beam68-0.1.lha
+                                    Confirm, download and open archive.
+  aminet:help                        Usage.
+
+Read full readmes and page through them using the rows in the details view.
+Search results can include multiple architectures. Always check the
+readme's Architecture and Requires fields for compatibility with your machine.
+
+Installation preparation opens the downloaded archive with its Workbench
+archive handler (workbench.library V44+). It does not extract archives or run package installers itself.
+Use your archive tool and follow the package's installer or instructions.
+If no handler exists, the archive stays in the download drawer.
+
+Preferences -> Plugins -> Aminet Browser -> Settings selects DOWNLOAD_DIR.
+Default: RAM:Beam68Downloads (temporary until reboot). Use a disk drawer
+for permanent downloads. Keep enough room for the complete archive.
+
+A download has its own window; close it to cancel. Only one Beam68 Aminet
+download can be open at a time. The launcher acknowledges that visible
+transfer separately from short search/readme requests. Changing the query
+or closing Beam68 does not cancel a confirmed download; use its window.
+Completed files appear only after the transfer is checked and renamed.
+An interrupted transfer can leave a Beam68Aminetxx/archive.part drawer;
+remove it manually when no download is running. Partial files are not installed.
+
+Requires AmigaOS 3.0+, an active bsdsocket.library TCP/IP stack, and optional
+Workbench archive tools for installation. No AmiGet dependency or shell command
+interpolation. Uses classic HTTP (unencrypted) to the fixed Aminet host, not TLS.
+Packages have no authenticity guarantee from the transport; review them before
+running their installers. Live previews are disabled; networking starts on Enter.
+Search/readme responses are limited to 256 KB and 20 seconds, downloads to
+64 MB and five minutes. Resolver timeouts are controlled by your TCP/IP stack.
+The HTML parser follows Aminet's current layout and reports unsupported pages.
+
+Aminet: https://aminet.net
+This plugin is not affiliated with or endorsed by the Aminet operators.
+Archive downloads require a declared size and must match it before commit.
+Installation preparation also checks the archive signature before opening it.
+@endnode

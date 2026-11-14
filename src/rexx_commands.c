@@ -34,17 +34,26 @@ int beam_rexx_parse(const char *input, struct BeamRexxCommand *out)
     else if (token_eq(start,len,"HELP")) action=BEAM_REXX_HELP;
     else if (token_eq(start,len,"PLUGINS")) action=BEAM_REXX_PLUGINS;
     else if (token_eq(start,len,"PLUGIN")) action=BEAM_REXX_PLUGIN;
+    else if (token_eq(start,len,"REQUESTS")) action=BEAM_REXX_REQUESTS;
+    else if (token_eq(start,len,"REQUEST")) action=BEAM_REXX_REQUEST;
     else if (token_eq(start,len,"TIMING")) action=BEAM_REXX_TIMING;
     else return 0;
     while (*p==' ' || *p=='\t') p++;
-    if (action==BEAM_REXX_PLUGIN) {
+    if (action==BEAM_REXX_PLUGIN || action==BEAM_REXX_REQUEST) {
         while (*p>='0' && *p<='9') {
             if (++digits>2) return 0;
             number=number*10+(*p++-'0');
         }
         while (*p==' ' || *p=='\t') p++;
-        if (*p || !digits || number<1 || number>16) return 0;
+        if (*p || !digits || number<1 || number>(action==BEAM_REXX_REQUEST?3:16)) return 0;
         out->plugin_index=number-1;
+    } else if (action==BEAM_REXX_TIMING && *p) {
+        start=p;len=0;
+        while (*p && *p!=' ' && *p!='\t') { ++p; ++len; if (len>5) return 0; }
+        if (!token_eq(start,len,"RESET")) return 0;
+        while (*p==' ' || *p=='\t') ++p;
+        if (*p) return 0;
+        action=BEAM_REXX_TIMING_RESET;
     } else if (*p) return 0;
     out->action=action;
     return 1;

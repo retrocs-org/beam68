@@ -4,7 +4,7 @@ CFLAGS ?= -O2 -m68000 -mcrt=nix20 -Wno-pointer-sign -Wall -Wextra
 INC = -Iinclude -Isdk/include
 COMMON = src/config.c src/control.c
 PLUGIN_COMMON = src/protocol.c src/plugin_common.c src/plugin_locale.c src/beam68plugins_strings.c sdk/src/beam68plugin.c
-NEW_PLUGINS = Plugins/FileFinder/FileFinder Plugins/SystemCommands/SystemCommands Plugins/DosTools/DosTools Plugins/TaskManager/TaskManager Plugins/ClipboardTools/ClipboardTools Plugins/DateUtilities/DateUtilities Plugins/WindowSwitcher/WindowSwitcher Plugins/DeveloperTools/DeveloperTools Plugins/ARexxRunner/ARexxRunner Plugins/MusicControls/MusicControls
+NEW_PLUGINS = Plugins/FileFinder/FileFinder Plugins/SystemCommands/SystemCommands Plugins/DosTools/DosTools Plugins/TaskManager/TaskManager Plugins/ClipboardTools/ClipboardTools Plugins/DateUtilities/DateUtilities Plugins/WindowSwitcher/WindowSwitcher Plugins/DeveloperTools/DeveloperTools Plugins/ARexxRunner/ARexxRunner Plugins/MusicControls/MusicControls Plugins/AminetBrowser/AminetBrowser
 
 all: Beam68 Beam68Prefs Beam68Ctl CreateIcons Plugins/Calc/Calc Plugins/Clock/Clock Plugins/Memory/Memory $(NEW_PLUGINS)
 
@@ -59,6 +59,9 @@ Plugins/ARexxRunner/ARexxRunner: Plugins/ARexxRunner/ARexxRunner.c src/dos_compa
 Plugins/MusicControls/MusicControls: Plugins/MusicControls/MusicControls.c src/music_control.c $(PLUGIN_COMMON) include/music_control.h
 	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/MusicControls/MusicControls.c src/music_control.c $(PLUGIN_COMMON)
 
+Plugins/AminetBrowser/AminetBrowser: Plugins/AminetBrowser/AminetBrowser.c src/aminet.c src/aminet_http.c src/stack_guard.c $(PLUGIN_COMMON)
+	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/AminetBrowser/AminetBrowser.c src/aminet.c src/aminet_http.c src/stack_guard.c $(PLUGIN_COMMON)
+
 # Syntax-check native translation units without linking; requires a real 3.2 NDK.
 # Complements the portable host tests, but does not replace target runtime validation.
 native-syntax: check-toolchain
@@ -71,6 +74,12 @@ check-toolchain:
 	CC=$(CC) sh scripts/check-toolchain.sh
 
 host-test:
+	@mkdir -p build
+	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror -Itests/fake_ndk -Iinclude -o build/test_control tests/test_control.c src/control.c
+	./build/test_control
+	@mkdir -p build
+	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror -Iinclude -o build/test_aminet tests/test_aminet.c src/aminet.c
+	./build/test_aminet
 	@mkdir -p build
 	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror -Iinclude -o build/test_rexx_sequence tests/test_rexx_sequence.c src/rexx_sequence.c
 	./build/test_rexx_sequence
@@ -99,7 +108,7 @@ host-test:
 	./build/test_favorites
 	$(HOST_CC) -std=c89 -O2 -Wall -Wextra -Werror -Iinclude -DBEAM_HOST -o build/test_actions tests/test_actions.c src/actions.c src/locale_support.c src/beam68_strings.c
 	./build/test_actions
-	$(HOST_CC) -std=c89 -O2 -Wall -Wextra -Werror -DBEAM_HOST -Iinclude -o build/test_item_index tests/test_item_index.c src/item_index.c
+	$(HOST_CC) -std=c89 -O2 -Wall -Wextra -Werror -DBEAM_HOST -DBEAM_INDEX_TEST -Iinclude -o build/test_item_index tests/test_item_index.c src/item_index.c
 	./build/test_item_index
 	$(HOST_CC) -std=c89 -O2 -Wall -Wextra -Werror -Iinclude -o build/test_icon_info tests/test_icon_info.c src/icon_info.c
 	./build/test_icon_info
@@ -113,7 +122,7 @@ host-test:
 	./build/test_preset
 	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror -Itests/fake_ndk -Iinclude -o build/test_catalogue tests/test_catalogue.c tests/fake_dos.c src/catalogue.c src/plugin_package.c src/config.c src/appearance.c
 	./build/test_catalogue
-	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror -DBEAM_HOST -Itests/fake_ndk -Iinclude -o build/test_cache tests/test_cache.c tests/fake_dos.c src/index_cache.c src/item_index.c
+	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror -DBEAM_HOST -DBEAM_INDEX_TEST -Itests/fake_ndk -Iinclude -o build/test_cache tests/test_cache.c tests/fake_dos.c src/index_cache.c src/item_index.c
 	./build/test_cache
 	$(HOST_CC) -std=c89 -O2 -Wall -Wextra -Werror -Iinclude -o build/test_plugin_job tests/test_plugin_job.c src/plugin_job.c src/protocol.c
 	./build/test_plugin_job
@@ -150,10 +159,13 @@ host-test:
 	./build/test_plugin_package
 	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror -Itests/fake_ndk -Iinclude -Isdk/include -DBEAM68_NO_LOCALE -o build/test_sdk tests/test_sdk.c tests/fake_plugin_ports.c sdk/src/beam68plugin.c src/plugin_job.c src/protocol.c src/plugin_common.c src/calc_engine.c src/plugin_locale.c src/beam68plugins_strings.c
 	./build/test_sdk
+	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror -DBEAM_HOST -Itests/fake_ndk -Iinclude -o build/test_upgrade tests/test_upgrade.c tests/fake_dos.c src/config.c src/appearance.c src/favorites.c src/history.c src/query_history.c src/plugin_health.c src/aliases.c src/theme_file.c
+	./build/test_upgrade
 	python3 tests/test_build_provenance.py
 	python3 tests/test_archive_safety.py
 	python3 tests/test_package_tool.py
 	python3 tests/test_installer.py
+	python3 tests/test_installer_qa.py
 	python3 scripts/make-catalog.py --check
 	python3 tests/test_catalogs.py
 	python3 tests/test_guides.py
@@ -164,7 +176,7 @@ host-test:
 	python3 tests/test_info_icons.py
 
 clean:
-	rm -f Beam68 Beam68Prefs Beam68Ctl CreateIcons Plugins/Calc/Calc Plugins/Clock/Clock Plugins/Memory/Memory $(NEW_PLUGINS) build/test_core build/test_search_rank build/test_narrowing build/test_search_scope build/test_aliases build/test_config build/test_plugin_settings build/test_history build/test_query_history build/test_plugin_health build/test_favorites build/test_actions build/test_item_index build/test_icon_info build/test_whdload build/test_hidden build/test_sources build/test_preset build/test_catalogue build/test_cache build/test_plugin_job build/test_plugin_reply build/test_plugin_common build/test_scan_status build/test_completion build/test_music_control build/test_launcher_ui build/test_appearance build/test_theme_file build/test_themes build/test_recovery build/test_rexx_commands build/test_plugin_catalog build/test_plugin_package build/test_sdk build/test_wb_drop build/test_hotkey_capture
+	rm -f Beam68 Beam68Prefs Beam68Ctl CreateIcons Plugins/Calc/Calc Plugins/Clock/Clock Plugins/Memory/Memory $(NEW_PLUGINS) build/test_control build/test_aminet build/test_upgrade build/test_core build/test_search_rank build/test_narrowing build/test_search_scope build/test_aliases build/test_config build/test_plugin_settings build/test_history build/test_query_history build/test_plugin_health build/test_favorites build/test_actions build/test_item_index build/test_icon_info build/test_whdload build/test_hidden build/test_sources build/test_preset build/test_catalogue build/test_cache build/test_plugin_job build/test_plugin_reply build/test_plugin_common build/test_scan_status build/test_completion build/test_music_control build/test_launcher_ui build/test_appearance build/test_theme_file build/test_themes build/test_recovery build/test_rexx_commands build/test_plugin_catalog build/test_plugin_package build/test_sdk build/test_wb_drop build/test_hotkey_capture
 
 # Distribution archives: every bundled plugin as its own package, plus the SDK.
 PLUGIN_DIRS = $(sort $(dir $(wildcard Plugins/*/*.plugin)))

@@ -503,3 +503,32 @@ PMSG_SRC_BOOKMARKS (250//)
 Bookmark files
 PMSG_SRC_URL_COMMAND (251//)
 Open URL with
+
+PMSG_PREVIEW_TITLE (252//)
+Live preview
+PMSG_PREVIEW_BODY (253//)
+%.64s\nPreview: %s\nDelay: %ld ms\nChoose Use or Save after closing Details.
+PMSG_PREVIEW_BUTTONS (254//)
+Toggle|Faster|Slower|Delay...|Default|Done
+PMSG_PREVIEW_UNAVAILABLE (255//)
+This plugin does not allow live previews.\nYou can still run it with Enter.
+PMSG_PREVIEW_DETAILS_MORE (256//)
+Next|Preview...|Close
+PMSG_PREVIEW_DETAILS_LAST (257//)
+Preview...|Close
+
+PMSG_PREVIEW_DELAY_LABEL (258//)
+Delay in ms (100-5000)
+PMSG_PREVIEW_DELAY_INVALID (259//)
+Enter a number from 100 to 5000
+
+PMSG_ABOUT_BUTTON (260//)
+About...
+PMSG_ABOUT_TITLE (261//)
+About Beam68
+PMSG_ABOUT_BODY (262//)
+Beam68\nApplication launcher for AmigaOS\n\nPreferences version: %s\nRunning Beam68: %s\nBuild date: %s\nPlugin protocol: 1\n\nBeam68 contributors\nhttps://beam68.retrocs.org\nhttps://github.com/retrocs-org/beam68
+PMSG_ABOUT_NOT_RUNNING (263//)
+Not running
+PMSG_ABOUT_UNAVAILABLE (264//)
+Unavailable (older or busy launcher)

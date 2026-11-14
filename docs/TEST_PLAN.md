@@ -476,3 +476,250 @@ Run each with Installer 42.x (OS 3.1/3.2) and, if available, Installer 43.3:
    ScreenMode, Beam68Prefs ...
 4. Sources page at 640x256 and on an NTSC 640x200 screen (two-column
    section buttons), in English, Deutsch and Svenska.
+
+## Version 0.2 responsiveness
+
+- Type ahead while indexing: the complete query should paint before ranking;
+  raw key releases and modifiers must not trigger intermediate searches.
+- Type a query and immediately use Enter, arrows, Tab or Shift+Delete: the
+  action must apply to results for the latest query.
+- During an initial scan, search for an application discovered early: its
+  result should appear on the next scan update, without the normal 500ms
+  refresh throttle while the result list is empty.
+- Enable icon previews and type or change selection rapidly: results should
+  appear before the optional icon loads; no old icon should appear for the
+  newly selected item. Close the window before the preview timer fires.
+- Compare ARexx TIMING search readings and typing on a real 68000 with the
+  same index and configuration. Host benchmarks do not measure native UI
+  latency or bound the duration of an individual filesystem operation.
+
+### Startup and memory checks for 0.2
+
+- Launch twice: the second invocation exits without reading configuration or
+  loading the index, leaving the resident instance available.
+- Check startup TIMING on the same machine and index; note that 0.2 now measures
+  library/configuration/metadata loading previously omitted from the metric.
+- Start with a small and then a large index; verify pool growth preserves
+  bookmark titles, WHDLoad names, hash lookups, cache reload and rescans.
+- Repeat on low memory: a failed pool expansion must preserve existing results
+  and must not save a partial scan as a complete cache.
+- Open and close the launcher using a disk font and with diskfont.library
+  unavailable: font fallback and cleanup must continue to work.
+
+### Low-memory and rescan recovery in 0.2
+
+- Run the portable item-index/cache tests with allocation failure injection.
+  Initial allocation must clean up; growth/title failures must preserve old
+  paths, titles, hashes and selections, and a later retry must succeed.
+- Reindex while a drawer is unreadable or memory is exhausted. Existing entries
+  not revisited must remain searchable, and no incomplete scan may be cached.
+- Select an item after an entry that will be deleted, then finish a clean scan:
+  selection must remain on the same surviving item after index compaction.
+  Repeat while entering arguments; a removed target must not become another app.
+- Change a game/bookmark title and rescan. Confirm search metadata, displayed
+  text, cache reload and subsequent compaction reflect the new title.
+- Inject cache write, backup rename and install rename failures. Verify the
+  previous cache remains loadable after rollback. Corrupt or mismatched reloads
+  must leave an already populated live index intact.
+
+### Plugin lifecycle in 0.2
+
+- Start a delayed reply for query A, edit to B, then back to A. Deliver A's
+  reply after starting the new request: it must not paint rows/status or
+  finish the new request. Repeat with previews and atomic ARexx text replies.
+- Type while a plugin sleeps, crashes or returns nothing. Ordinary search
+  and navigation remain usable; a new query can issue a fresh request.
+- Set PLUGIN_TIMEOUT=5. Delay timer delivery and send a reply after five
+  seconds: it must expire based on elapsed time, not the number of ticks.
+- Send zero/excess rows, unknown kinds/version, invalid flags, unterminated
+  buffers and control characters. Current malformed requests fail cleanly;
+  old malformed requests cannot affect the current one. Test empty, incomplete
+  and multiline published text files as well.
+- Close the window, reload plugins or apply valid settings during a request.
+  Reopen/type and verify late replies cannot restore old rows or previews.
+- Repeatedly fail a preview and confirm the existing quarantine threshold
+  applies. Confirm health saves persist after idle time and clean shutdown.
+- Repeat request races on AmigaOS; portable state/validation tests and native
+  compilation do not substitute for OS message-port scheduling coverage.
+
+### Upgrade from 0.1 to 0.2
+
+- Exercise both installers with existing portable Beam68.cfg/Aliases.txt and
+  edited bundled themes. Their bytes must remain unchanged; missing files
+  must receive defaults. Keep separately edited ENV and ENVARC files intact.
+- With ENVARC settings absent, seed from the installed portable configuration;
+  with ENV absent, seed from ENVARC. Preserve comments, unknown keys, custom
+  plugin manifests and disabled-plugin choices.
+- With no ENVARC plugin settings, inherit an installed package-local or legacy
+  flat plugin .cfg before using shipped defaults. Existing ENVARC plugin
+  settings always win. Verify third-party plugin drawers remain untouched.
+- Load legacy and grouped favorites, usage/query history, flat-layout plugin
+  health records, aliases and custom theme files. Save and reopen using 0.2.
+- Run the GUI Installer and Shell script on a copy of a 0.1 installation to
+  verify actual Installer/Shell execution and stopped-resident upgrade behavior.
+  Host procedure tests and format fixtures do not execute AmigaOS Installer.
+
+### Per-plugin preview controls in 0.2
+
+- Select a PREVIEW=YES plugin, open Details -> Preview and toggle it off.
+  Use: typing must not launch a preview, while Enter still runs the plugin.
+- Set a longer delay, Save, close/reopen Preferences and restart Beam68.
+  Verify the delay and disabled state persist independently for each plugin.
+- Reorder, remove and add plugins; overrides must follow the same manifest
+  and a new plugin must not inherit a removed plugin's settings.
+- Check Default restores enabled/400 ms. A PREVIEW=NO plugin must explain
+  that previews are unavailable and remain manual-only.
+- Check 100 ms and 5000 ms limits, delayed configuration keys before PLUGIN,
+  old flat paths, invalid delay text and stale unknown-manifest overrides.
+- Verify requesters on 640x200 and larger displays in English, German and
+  Swedish. Confirm Cancel without Use/Save leaves saved settings untouched.
+
+### Bounding outstanding plugin requests in 0.2
+
+- Start two delayed previews and edit away from each. No third automatic
+  invocation may start; manual Enter must still have one slot available.
+- Fill all three slots, then type/edit/close/reopen/reload repeatedly. Ordinary
+  search remains usable, and no extra plugin request starts at capacity.
+- Let a request time out: the visible job ends but outstanding count does not
+  fall until completion. A timed-out process must not create unlimited retries.
+- Deliver old native replies in reverse order. Each releases only its serial;
+  duplicate replies cannot release a newer request or restore obsolete rows.
+- Repeat with atomic ARexx final files while the window is hidden. Capacity
+  should return through bounded idle polling, with no partial-file deletion.
+- Fail process startup and confirm no slot leaks. Send truncated/wrong-version
+  packets and check capacity remains held until recognizable completion.
+- While previews are waiting, change the query or disable/reload the plugin.
+  Only the current eligible query may run after capacity returns.
+- Verify on AmigaOS that protocol completion and process cleanup behave as
+  documented; the portable stress test does not supervise actual child tasks.
+
+### Interrupted cache replacement in 0.2
+
+- With a valid primary, leave partial .new and older .bak files: primary wins.
+- Simulate shutdown after primary moved to .bak (or .old when .bak exists):
+  startup must recover the latest validated committed candidate, not .new.
+- Corrupt primary and .old, retaining valid .bak: recover titles, paths and
+  kinds from .bak. Reject mismatched, truncated and checksum-invalid backups.
+- Leave only a complete .new: rebuild normally because it was never committed.
+- Inject failures in both promotion renames. The backup must remain available;
+  validated data can load in memory even when filename repair fails.
+- Inject index/pool allocation failure with a valid smaller backup present.
+  Do not promote/delete files merely because the primary could not fit in RAM.
+- Test actual abrupt shutdown/restart on a disposable AmigaOS installation;
+  host tests simulate rename states and do not certify filesystem power safety.
+
+### Outstanding-request visibility in 0.2
+
+- Start preview and manual requests; inspect REQUESTS and REQUEST 1..3.
+  Verify plugin names, mode, transport, launch-time timeout and increasing age.
+- Edit, close and reload while work remains outstanding. Captured names must
+  survive reordering/reload, and state must change from active to detached or
+  timedout without implying that the OS process exited.
+- Deliver a completion, then reuse that slot for another plugin: the new serial
+  and name must replace the old values; a freed slot must report only free.
+- Fill capacity and verify the launcher footer identifies holding plugins and
+  Beam68Status.rexx prints all slots, including holes. Confirm diagnostics do
+  not launch, cancel, release or otherwise alter outstanding work.
+
+### Direct preview-delay entry
+
+- Open Plugins -> Details -> Preview -> Delay...; type 750 and accept with
+  OK, then repeat with Return. The outer dialog must show 750 ms.
+- Test 100 and 5000, leading/trailing spaces and leading zeroes. Reject blank,
+  99, 5001, negative, fractional, suffixed and oversized numeric values without
+  altering the previous value. Invalid text remains editable for correction.
+- Type another value then Cancel, Escape or close the requester. The earlier
+  value must remain. Tab must not unexpectedly accept the field.
+- Change the delay while previews are disabled: they must stay disabled.
+  Use/Save, reopen Preferences and confirm the exact numeric value persists.
+- Verify allocation failure cleanup and the requester on 640x200 and larger
+  screens, in all three languages. Native interaction verification is required;
+  parser tests and a linked build do not establish focus/keyboard behaviour.
+
+### Isolated native 0.2 checks
+
+Build with BEAM68_CC set and `sh scripts/build-native-qa.sh`. The resulting
+build/Beam68ReleaseQA reserves a fresh T:Beam68QAxx drawer and never reads or
+writes active settings. It exercises native allocation failure/retry, title
+preservation, cache backup recovery with a failed promotion, request admission
+limits and preview-delay parsing. A failed check reports its line and returns
+20; the test index allocations are freed on every helper exit. Test files are
+retained in the reserved drawer for inspection.
+
+Beam68RexxProbe can query STATUS, VERSION, HELP, INDEX, TIMING, PLUGINS,
+PLUGIN 1..16, REQUESTS or REQUEST 1..3 on a running launcher without RexxMast.
+It rejects state-changing commands before sending them. Compile success is
+not a native runtime pass. The direct-entry dialog still requires interactive
+checks of focus, Return, Tab, Escape, Cancel and invalid-value feedback.
+
+### Aminet Browser in 0.2
+
+- `make host-test` covers path traversal/injection rejection, URL encoding,
+  bounded search/readme parsing, six-result paging, malformed/truncated HTTP
+  headers, response size limits and archive signature checks.
+- `scripts/build-native-qa.sh` also builds Beam68AminetQA. Run it explicitly
+  on an online test system: it reserves T:Beam68AminetQAxx, searches Aminet for
+  Beam68, fetches a readme and downloads (without executing) its archive, then
+  checks response-size rejection and cancellation cleanup. Results remain in
+  that fresh drawer. It never reads or writes active Beam68 settings.
+- Interactive checks: search and readme next/previous rows, details, download
+  confirmation Cancel, close-to-cancel during transfer, one-download guard,
+  disk-full recovery, existing destination refusal and archive-handler failure.
+- Do not treat download completion as successful application installation.
+  Installation preparation opens an archive; follow its own installer afterward.
+
+### Preferences About and running version in 0.2
+
+- About... is available on every page; F2 opens the same requester.
+- Compare Preferences version with a running launcher reporting a different
+  version. The returned value must be shown, never the local build as a guess.
+- A stopped launcher says Not running; an older launcher without the query or
+  a busy launcher says version unavailable after a bounded 25-tick wait.
+- A timed-out request must not reference a freed reply port. Late replies,
+  malformed requests, allocation failure and serial mismatch are covered by
+  test_control; the normal launcher query is also checked in native runtime.
+- Verify the About layout on small screens and all three languages.
+
+### Full Shell installation and update in 0.2
+
+- Update a legacy flat installation with a separate data drawer, then repeat
+  the update while 0.2 is running. Both must complete and report running 0.2.
+- Compare user settings, aliases, snippets and themes byte-for-byte. Preserve
+  additional plugins and existing custom icons.
+- Reuse the remembered application directory; migrate the legacy flat settings
+  only when the canonical settings file is absent.
+- Check a fresh installation and an explicit destination containing spaces.
+- Retarget known old startup entries; preserve custom startup commands and keep
+  autostart disabled when updating an installation without a startup entry.
+- Refuse to copy when the running launcher does not acknowledge shutdown.
+- Treat a failed launch or unanswered running-version query as an installation
+  error instead of reporting success.
+
+### Preferences exit and search discovery
+
+- Run Beam68StackQA from a 4096-byte Shell: repeated private-stack calls must
+  preserve arguments, return values and original task stack bounds.
+- Open and close Preferences from both Shell and Workbench. Require a normal
+  return to the caller, not merely completion of library cleanup.
+- Search for preferences and settings with Beam68Prefs indexed; verify both
+  ranking and the character-mask filter accept its built-in search words.
+- Fresh defaults enable System Commands and leave Aminet Browser disabled.
+  Updates retain saved plugin choices; a newly registered Aminet Browser is
+  disabled until the user enables it.
+
+### Interactive Installer QA package
+
+Build with `BEAM68_CC=/path/to/m68k-amigaos-gcc python3 scripts/build-installer-qa.py`.
+Open Beam68 Installer QA in the resulting `outputs/testing/Beam68-Installer-QA`
+drawer. Install once with Novice, then repeat to verify update preservation.
+Average and Expert retain plugin/startup choices; destination selection is
+restricted to the QA tree. Novice uninstall removes test programs automatically and retains saved settings;
+Average and Expert keep the removal and settings choices.
+The report is `RAM:Beam68InstallerQA/report.txt`; the Installer transcript is
+`RAM:Beam68InstallerQA/installer.log`.
+
+The generated copy redirects system, locale and settings destinations into
+one dedicated RAM drawer, omits resident shutdown and does not start installed
+applications. It exercises installer file operations; use the production
+installer separately for application startup/shutdown and arbitrary destinations.
+`CHECK` runs the native file checker from Shell without opening the menu.

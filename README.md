@@ -1,4 +1,6 @@
-# Beam68 0.1
+# Beam68 0.2
+
+Version 0.2 is in development. Published releases are available on the website.
 
 A keyboard-driven application launcher for classic AmigaOS, with a resident
 Commodities hotkey and a separate native Preferences application.
@@ -18,12 +20,14 @@ Commodities hotkey and a separate native Preferences application.
   refresh the index after filesystem changes.
 - Launch Workbench tools, projects and WHDLoad games; cycle result actions to
   open a drawer, supply arguments, show information or copy a path.
-- Use 13 bundled plugins for calculations, files, clipboard, dates, memory,
-  system tools, ARexx macros and music-player controls.
+- Use 14 bundled plugins for calculations, files, clipboard, dates, memory,
+  system tools, ARexx macros, music-player controls and Aminet package browsing.
 - Choose fonts, spacing, compact layouts and themes, including a custom
   five-color palette and four portable theme files.
 - Configure applications, indexing, favorites, plugins and appearance in
   Beam68Prefs, with temporary **Use**, permanent **Save** and live reload.
+- Open **About...** in Preferences (F2) to see both Preferences and running
+  launcher versions.
 - Automate through ARexx and the `Beam68Ctl` Shell utility.
 - Use English, German or Swedish interfaces, with AmigaGuide help.
 
@@ -35,14 +39,22 @@ depends on the index size and enabled plugins.
 
 Opening drawers through Workbench requires workbench.library V44 or later.
 Optional integrations require their corresponding applications, such as
-WHDLoad, OpenURL, Directory Opus or a supported music player. See
+WHDLoad, OpenURL, Directory Opus or a supported music player. Aminet Browser
+requires an active TCP/IP stack; its installation action opens downloaded archives
+with your archive handler so you can follow the package's own installer. See
 [build status](BUILD_STATUS.md) for testing coverage and outstanding hardware checks.
+
+For Aminet commands, configuration and installation behavior, see
+[Aminet Browser](docs/AMINET_BROWSER.md).
 
 ## Install
 
 1. Download and unpack the Amiga LHA package.
 2. Open **Install** in the Beam68 drawer. Choose a destination, plugins and
-   whether to start Beam68 with Workbench.
+   whether to start Beam68 with Workbench. Novice mode installs all bundled
+   plugins automatically, reuses the existing location and startup setting on
+   updates, and starts Beam68 afterward. New installations use
+   `SYS:Utilities/Beam68` and enable Workbench startup.
 3. Open **SYS:Prefs/Beam68Prefs** to choose the drawers to index and your shortcut.
 4. Start Beam68 and press **Ctrl+Alt+Space** to show the launcher.
 
@@ -50,12 +62,18 @@ The default installation is `SYS:Utilities/Beam68`. Preferences is installed
 in `SYS:Prefs`; persistent settings are kept in `ENVARC:Beam68`. The installer
 also provides update and uninstall options. Stop a running launcher before a
 manual reinstall. For a Shell installation, run `Execute scripts/Install-Beam68`
-from the unpacked project drawer.
+from the unpacked project drawer. The Shell installer reuses the remembered
+installation location, stops the resident launcher before copying, preserves
+settings and starts and verifies the installed version. To choose another
+location, use `Execute scripts/Install-Beam68 DEST "SYS:Utilities/Beam68"`.
 
 The graphical installer uses the standard AmigaOS Installer utility. It is
 included with AmigaOS 3.1 and later; AmigaOS 3.0 users need to supply it separately.
 
 ## Everyday use
+
+System Commands is enabled by default. Aminet Browser is installed but starts
+disabled; enable it in Preferences when needed.
 
 Type a name and press Enter. Try `prefs:`, `fav:games`, `find:readme`,
 `=12*(3+4)`, `@` for the clock or `?` for available memory. Press F1 to explore

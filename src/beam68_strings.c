@@ -168,7 +168,7 @@ const char *const beam68_strings[BEAM68_STRING_COUNT]={
     "hidden: lists results hidden with Shift+Del", /* MSG_HELP_HIDDEN */
     "Show in Directory Opus", /* MSG_ACTION_DOPUS */
     "Directory Opus did not answer", /* MSG_DOPUS_FAILED */
-    "Usage: Beam68Ctl RELOAD|RELOADPLUGINS|REINDEX|SHOW|HIDE|QUIT|QUITWAIT|STATUS\n", /* MSG_CTL_USAGE */
+    "Usage: Beam68Ctl RELOAD|RELOADPLUGINS|REINDEX|SHOW|HIDE|QUIT|QUITWAIT|STATUS|VERSION\n", /* MSG_CTL_USAGE */
     "Beam68 launcher is not running.\n", /* MSG_CTL_NOT_RUNNING */
     "ARexx is not running (start RexxMast)", /* MSG_REXX_NOT_RUNNING */
     "MOD  ", /* MSG_BADGE_MODULE */
@@ -190,4 +190,5 @@ const char *const beam68_strings[BEAM68_STRING_COUNT]={
     "prefs:<text> lists the SYS:Prefs programs", /* MSG_HELP_PREFS */
     "Usage statistics", /* MSG_HELP_STATS_TITLE */
     "stats: lists your most-launched items", /* MSG_HELP_STATS */
+    "Plugin request limit reached; waiting for older requests to finish.", /* MSG_PLUGIN_REQUEST_LIMIT */
 };

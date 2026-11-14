@@ -1,4 +1,4 @@
-## version $VER: Beam68.catalog 0.1 (27.10.2026)
+## version $VER: Beam68.catalog 0.2 (14.11.2026)
 ## language deutsch
 ## codeset 0
 ;
@@ -498,8 +498,8 @@ MSG_DOPUS_FAILED
 Directory Opus antwortet nicht
 ;Directory Opus did not answer
 MSG_CTL_USAGE
-Aufruf: Beam68Ctl RELOAD|RELOADPLUGINS|REINDEX|SHOW|HIDE|QUIT|QUITWAIT|STATUS\n
-;Usage: Beam68Ctl RELOAD|RELOADPLUGINS|REINDEX|SHOW|HIDE|QUIT|QUITWAIT|STATUS\n
+Aufruf: Beam68Ctl RELOAD|RELOADPLUGINS|REINDEX|SHOW|HIDE|QUIT|QUITWAIT|STATUS|VERSION\n
+;Usage: Beam68Ctl RELOAD|RELOADPLUGINS|REINDEX|SHOW|HIDE|QUIT|QUITWAIT|STATUS|VERSION\n
 MSG_CTL_NOT_RUNNING
 Der Beam68-Starter läuft nicht.\n
 ;Beam68 launcher is not running.\n
@@ -563,3 +563,6 @@ Nutzungsstatistik
 MSG_HELP_STATS
 stats: zeigt die meistgestarteten Einträge
 ;stats: lists your most-launched items
+
+MSG_PLUGIN_REQUEST_LIMIT
+Plugin-Anfragelimit erreicht; aeltere Anfragen muessen erst enden.
