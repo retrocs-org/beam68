@@ -44,14 +44,18 @@ def readme(author, uploader, archive_name):
     intro = re.sub(r"^# .*\n", "", intro).strip()
     intro = re.sub(r"[*`]", "", intro)
     intro = "\n\n".join(textwrap.fill(" ".join(p.split()), 76) for p in intro.split("\n\n"))
-    changes = "\n".join(l for l in changelog.splitlines()[2:60] if not l.startswith("## Unreleased —"))
+    section = re.search(r"^## " + re.escape(VERSION) + r"(?:[^\n]*)\n(.*?)(?=^## |\Z)",
+                        changelog, re.M | re.S)
+    if not section:
+        raise ValueError("Missing changelog section for " + VERSION)
+    changes = "## " + VERSION + "\n" + section.group(1).strip()
     header = [
         "Short:        Keyboard application launcher for OS 3.x",
         "Author:       %s" % author,
         "Uploader:     %s" % uploader,
         "Type:         util/wb",
         "Version:      %s" % VERSION,
-        "Replaces:     util/wb/Beam68.lha",
+        "Replaces:     util/wb/%s" % archive_name,
         "Architecture: m68k-amigaos >= 3.0.0",
         "Distribution: Aminet",
         "Kurz:         Programmstarter per Tastatur fuer OS 3.x",

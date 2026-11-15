@@ -37,8 +37,9 @@ Direct requests to the shared include return 404. The stylesheet uses system
 fonts, responsive layouts and reduced-motion preferences. Navigation and gallery
 links work without scripting; extra reference images use native details controls.
 
-The gallery contains nine version 0.1 views and eight labelled reference
-views. Every image is cropped to the app window. images/screenshots.json records
+The gallery leads with six version 0.2 views captured from the released apps,
+including live Aminet search and package details, Preferences and About. Nine
+version 0.1 views and eight labelled reference views remain in a collapsed archive. Every image is cropped to the app window. images/screenshots.json records
 captions, dimensions and capture notes. New captures retain build hashes.
 
 Run python3 tests/test_public_web.py with PHP on PATH (or set BEAM68_PHP to its

@@ -1,52 +1,24 @@
 {
   "plugins": [
     {
+      "NAME": "Aminet Browser",
+      "DESCRIPTION": "Search Aminet, read package details and readmes, then confirm downloads. Open downloaded archives with your archive handler and follow the included installer.",
+      "PREFIX": "AMINET:",
+      "TRIGGER": "]",
+      "EXAMPLE": "aminet:search tracker",
+      "path": "Plugins/AminetBrowser",
+      "introduced": "0.2",
+      "default_enabled": false
+    },
+    {
       "NAME": "ARexx Runner",
       "DESCRIPTION": "Run configured ARexx macros by name; query text cannot supply arbitrary script paths.",
       "PREFIX": "REXX:",
       "TRIGGER": "%",
       "EXAMPLE": "rexx:list",
-      "path": "Plugins/ARexxRunner"
-    },
-    {
-      "NAME": "Calculator",
-      "DESCRIPTION": "Type = 2*(5+3), then press Enter. Integer, no FPU needed.",
-      "PREFIX": "",
-      "TRIGGER": "=",
-      "EXAMPLE": "=12*(3+4)",
-      "path": "Plugins/Calc"
-    },
-    {
-      "NAME": "Clipboard Tools",
-      "DESCRIPTION": "show, set:text, clear, upper, lower, or save:path.",
-      "PREFIX": "CLIP:",
-      "TRIGGER": "&",
-      "EXAMPLE": "clip:show",
-      "path": "Plugins/ClipboardTools"
-    },
-    {
-      "NAME": "Clock",
-      "DESCRIPTION": "Press Enter for AmigaDOS local time.",
-      "PREFIX": "",
-      "TRIGGER": "@",
-      "EXAMPLE": "@",
-      "path": "Plugins/Clock"
-    },
-    {
-      "NAME": "Date Utilities",
-      "DESCRIPTION": "today, add:N, weekday:YYYY-MM-DD, or timestamp.",
-      "PREFIX": "DATE:",
-      "TRIGGER": ":",
-      "EXAMPLE": "date:today",
-      "path": "Plugins/DateUtilities"
-    },
-    {
-      "NAME": "Developer Tools",
-      "DESCRIPTION": "hex:N, dec:$FF, ascii:N, mask:0,3,7, or prot:RWED.",
-      "PREFIX": "DEV:",
-      "TRIGGER": "$",
-      "EXAMPLE": "dev:hex:255",
-      "path": "Plugins/DeveloperTools"
+      "path": "Plugins/ARexxRunner",
+      "introduced": "0.1",
+      "default_enabled": true
     },
     {
       "NAME": "Assigns and Volumes",
@@ -54,7 +26,59 @@
       "PREFIX": "DOS:",
       "TRIGGER": "#",
       "EXAMPLE": "open:RAM:",
-      "path": "Plugins/DosTools"
+      "path": "Plugins/DosTools",
+      "introduced": "0.1",
+      "default_enabled": true
+    },
+    {
+      "NAME": "Calculator",
+      "DESCRIPTION": "Type = 2*(5+3), then press Enter. Integer, no FPU needed.",
+      "PREFIX": "",
+      "TRIGGER": "=",
+      "EXAMPLE": "=12*(3+4)",
+      "path": "Plugins/Calc",
+      "introduced": "0.1",
+      "default_enabled": true
+    },
+    {
+      "NAME": "Clipboard Tools",
+      "DESCRIPTION": "show, set:text, clear, upper, lower, or save:path.",
+      "PREFIX": "CLIP:",
+      "TRIGGER": "&",
+      "EXAMPLE": "clip:show",
+      "path": "Plugins/ClipboardTools",
+      "introduced": "0.1",
+      "default_enabled": true
+    },
+    {
+      "NAME": "Clock",
+      "DESCRIPTION": "Press Enter for AmigaDOS local time.",
+      "PREFIX": "",
+      "TRIGGER": "@",
+      "EXAMPLE": "@",
+      "path": "Plugins/Clock",
+      "introduced": "0.1",
+      "default_enabled": true
+    },
+    {
+      "NAME": "Date Utilities",
+      "DESCRIPTION": "today, add:N, weekday:YYYY-MM-DD, or timestamp.",
+      "PREFIX": "DATE:",
+      "TRIGGER": ":",
+      "EXAMPLE": "date:today",
+      "path": "Plugins/DateUtilities",
+      "introduced": "0.1",
+      "default_enabled": true
+    },
+    {
+      "NAME": "Developer Tools",
+      "DESCRIPTION": "hex:N, dec:$FF, ascii:N, mask:0,3,7, or prot:RWED.",
+      "PREFIX": "DEV:",
+      "TRIGGER": "$",
+      "EXAMPLE": "dev:hex:255",
+      "path": "Plugins/DeveloperTools",
+      "introduced": "0.1",
+      "default_enabled": true
     },
     {
       "NAME": "File Finder",
@@ -62,7 +86,9 @@
       "PREFIX": "FIND:",
       "TRIGGER": "/",
       "EXAMPLE": "find:screenmode",
-      "path": "Plugins/FileFinder"
+      "path": "Plugins/FileFinder",
+      "introduced": "0.1",
+      "default_enabled": true
     },
     {
       "NAME": "Memory",
@@ -70,7 +96,9 @@
       "PREFIX": "",
       "TRIGGER": "?",
       "EXAMPLE": "?",
-      "path": "Plugins/Memory"
+      "path": "Plugins/Memory",
+      "introduced": "0.1",
+      "default_enabled": true
     },
     {
       "NAME": "Music Controls",
@@ -78,7 +106,9 @@
       "PREFIX": "MUSIC:",
       "TRIGGER": "|",
       "EXAMPLE": "music:status",
-      "path": "Plugins/MusicControls"
+      "path": "Plugins/MusicControls",
+      "introduced": "0.1",
+      "default_enabled": true
     },
     {
       "NAME": "System Commands",
@@ -86,7 +116,9 @@
       "PREFIX": "SYSTEM:",
       "TRIGGER": "!",
       "EXAMPLE": "system:version",
-      "path": "Plugins/SystemCommands"
+      "path": "Plugins/SystemCommands",
+      "introduced": "0.1",
+      "default_enabled": true
     },
     {
       "NAME": "Task Manager",
@@ -94,7 +126,9 @@
       "PREFIX": "TASK:",
       "TRIGGER": "^",
       "EXAMPLE": "task:tasks",
-      "path": "Plugins/TaskManager"
+      "path": "Plugins/TaskManager",
+      "introduced": "0.1",
+      "default_enabled": true
     },
     {
       "NAME": "Workbench Windows",
@@ -102,7 +136,9 @@
       "PREFIX": "WINDOW:",
       "TRIGGER": "~",
       "EXAMPLE": "window:windows",
-      "path": "Plugins/WindowSwitcher"
+      "path": "Plugins/WindowSwitcher",
+      "introduced": "0.1",
+      "default_enabled": true
     }
   ],
   "themes": [

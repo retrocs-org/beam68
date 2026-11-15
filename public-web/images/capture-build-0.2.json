@@ -1,0 +1,8 @@
+{
+  "version": "0.2",
+  "archive_sha256": "1dd60028edb8516c7c34d01307af0a1f7072edd4905813acd5a354948e3fa899",
+  "binaries": {
+    "Beam68": "e5b8873f97c4fc8c9383ab9cd427e9680ab6eab271fc70f4c0f88c406df41de2",
+    "Beam68Prefs": "59043507016b4d25750d7b7ada07caecb4943db0ce7935fa68bf23aba55a7959"
+  }
+}

@@ -70,7 +70,9 @@ for shot in json.loads((WEB/'images/screenshots.json').read_text()):
     assert struct.unpack('>II',data[16:24])==(shot['width'],shot['height'])
     assert shot['provenance']
     if shot.get('build_sha256'):
-        record=json.loads((WEB/'images/capture-build.json').read_text())
+        record_file=shot.get('build_record','capture-build.json')
+        assert record_file in ('capture-build.json','capture-build-0.2.json')
+        record=json.loads((WEB/'images'/record_file).read_text())
         assert record['binaries'][shot['app']]==shot['build_sha256']
 # Captions and other inventory text are escaped at the shared output boundary.
 include=json.dumps(str(WEB/'includes/site.php'))
@@ -97,8 +99,14 @@ assert b'/blob/main/sdk/README.md' in rendered['developers.php']
 assert b'Release status' not in rendered['index.php']
 assert b'class="nav-source"' not in rendered['get.php']
 catalog=json.loads((WEB/'includes/marketplace.json').read_text())
-assert len(catalog['plugins'])==13 and len(catalog['themes'])==4
+assert len(catalog['plugins'])==14 and len(catalog['themes'])==4
 for item in catalog['plugins']+catalog['themes']:
     assert (ROOT/item['path']).exists()
+assert {x['path'] for x in catalog['plugins']}=={str(p.parent.relative_to(ROOT)) for p in (ROOT/'Plugins').glob('*/*.plugin')}
+aminet=next(x for x in catalog['plugins'] if x['NAME']=='Aminet Browser')
+assert aminet['default_enabled'] is False and aminet['introduced']=='0.2'
+assert b'0.2' in rendered['index.php'] and b'14' in rendered['index.php']
+assert b'NEW IN 0.2' in rendered['marketplace.php']
+assert b'No. It searches packages' in rendered['index.php']
 assert (ROOT/'VERSION').read_text('ascii').strip()=='0.2'
 print('PASS: PHP syntax/rendering, escaping, navigation, local CSS and screenshot metadata')

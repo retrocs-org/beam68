@@ -4,6 +4,14 @@ if (!defined('BEAM68_PAGE')) {
     http_response_code(404);
     exit;
 }
+const BEAM68_SITE_VERSION = '0.2';
+function marketplace_catalog(): array {
+    static $catalog;
+    if ($catalog === null) {
+        $catalog = json_decode(file_get_contents(__DIR__ . '/marketplace.json'), true, 512, JSON_THROW_ON_ERROR);
+    }
+    return $catalog;
+}
 function escape(string $value): string {
     return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
@@ -36,7 +44,11 @@ function page_start(string $title, string $description, string $page): void {
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="<?= escape($description) ?>">
-<meta name="theme-color" content="#1e1917">
+<meta name="theme-color" content="#171412">
+<meta property="og:type" content="website">
+<meta property="og:title" content="<?= escape($title) ?>">
+<meta property="og:description" content="<?= escape($description) ?>">
+<meta property="og:url" content="<?= escape($canonical) ?>">
 <title><?= escape($title) ?></title>
 <link rel="canonical" href="<?= escape($canonical) ?>">
 <link rel="stylesheet" href="site.css">
@@ -60,13 +72,13 @@ function page_end(): void { ?>
 <footer class="site-footer wrap">
 <div><a class="brand" href="index.php"><span class="brand-mark" aria-hidden="true"></span>beam<span>68</span></a><p>A little less searching.<br>A little more Amiga.</p></div>
 <div class="footer-links"><a href="get.php">Get Beam68</a><a href="developers.php">Developers</a><a href="source.php">Source</a><a href="marketplace.php">Marketplace</a></div>
-<div class="footer-note"><span class="version-dot"></span> Version 0.1 · MIT License<p>No cookies. No trackers.<br>Made for classic AmigaOS.</p><a href="#top">Back to top ↑</a></div>
+<div class="footer-note"><span class="version-dot"></span> Version <?= escape(BEAM68_SITE_VERSION) ?> · MIT License<p>No cookies. No trackers.<br>Made for classic AmigaOS.</p><a href="#top">Back to top ↑</a></div>
 </footer>
 </body></html>
 <?php }
 function screenshot_card(array $item): void { ?>
 <figure class="shot-card">
 <a class="shot-image" href="images/<?= escape($item['file']) ?>" aria-label="Open full image: <?= escape($item['title']) ?>"><?php screenshot_image($item['file']); ?></a>
-<figcaption><span class="eyebrow"><?= isset($item['app']) ? escape($item['app']) : 'Reference view' ?></span><h3><?= escape($item['title']) ?></h3><p><?= escape($item['description']) ?></p></figcaption>
+<figcaption><span class="eyebrow"><?= isset($item['app']) ? escape($item['app']) . ' · ' . escape($item['version'] ?? '0.1') : 'Reference view' ?></span><h3><?= escape($item['title']) ?></h3><p><?= escape($item['description']) ?></p></figcaption>
 </figure>
 <?php }

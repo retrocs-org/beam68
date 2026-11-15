@@ -104,7 +104,7 @@ class ReleaseTests(unittest.TestCase):
         self.root = Path(self.tmp.name) / 'project'
         self.root.mkdir()
         contents = {'VERSION': '0.1\n', 'LICENSE': 'MIT\n', 'README.md': '# Beam68\nLauncher.\n',
-                    'CHANGELOG.md': '# Changes\n\nInitial release.\n', 'Makefile': 'all:\n',
+                    'CHANGELOG.md': '# Changelog\n\n## 0.1\n\nInitial release.\n', 'Makefile': 'all:\n',
                     'src/main.c': 'int main(void){return 0;}\n', 'scripts/release.py': '# release\n',
                     'public-web/index.php': '<?php echo "Beam68";\n', 'sdk/README.md': 'Protocol 1\n',
                     'sdk/include/beam68plugin.h':'/* API */\n',
@@ -164,6 +164,18 @@ class ReleaseTests(unittest.TestCase):
                     'current': None, 'completed': ['github']})
         self.config.update(aminet=True, uploader='maintainer@example.net')
         return m
+
+    def test_aminet_readme_has_full_current_release_without_older_sections(self):
+        mod=rel.module(ROOT,'make-aminet-release')
+        (self.root/'VERSION').write_text('0.2\n')
+        (self.root/'README.md').write_text('# Beam68 0.2\n\nReleased version.\n')
+        changes='# Changelog\n\n## 0.2\n\n### Features\n'+('- Added feature.\n'*80)+'\n### Enhancements\n- Faster typing.\n\n### Bugs\n- Last bug fix.\n\n## 0.1\n- Older release entry.\n'
+        (self.root/'CHANGELOG.md').write_text(changes)
+        with patch.object(mod,'ROOT',self.root),patch.object(mod,'VERSION','0.2'):
+            text=mod.readme('Author','maintainer@example.net','Beam68-0.2.lha').decode('latin-1')
+        self.assertIn('Last bug fix.',text)
+        self.assertNotIn('Older release entry.',text)
+        self.assertIn('Replaces:     util/wb/Beam68-0.2.lha',text)
 
     def test_existing_aminet_uses_published_bytes_and_tagged_docs(self):
         m = self.existing_aminet_fixture()

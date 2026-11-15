@@ -1,6 +1,6 @@
 # Beam68 0.2
 
-Version 0.2 is in development. Published releases are available on the website.
+Beam68 0.2 is a released version. Downloads are available on the website.
 
 A keyboard-driven application launcher for classic AmigaOS, with a resident
 Commodities hotkey and a separate native Preferences application.
