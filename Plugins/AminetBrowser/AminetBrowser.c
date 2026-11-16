@@ -5,6 +5,9 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
+#include <proto/graphics.h>
+#include <graphics/gfxbase.h>
+#include <intuition/screens.h>
 #include <proto/wb.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,33 +16,74 @@
 #include "plugin_common.h"
 #include "aminet.h"
 #include "aminet_http.h"
+#include "control.h"
 #include "stack_guard.h"
 struct IntuitionBase *IntuitionBase;
+struct GfxBase *GfxBase;
 struct Library *WorkbenchBase;
 static struct Window *progress_window;
 static char input[121],path[401],temporary[240],error_text[121],text[121],value[240];
 static struct BeamAminetResults results;
 static struct BeamAminetDetails details;
-static unsigned long last_progress;
+static unsigned long last_progress,progress_bytes,progress_total,last_progress_tick,last_progress_total;
+static char progress_name[108];
 static int cancelled;
 static void query_row(const char *label,const char *verb,const char *argument)
 {
     sprintf(value,"aminet:%s%s%s",verb,*argument?" ":"",argument);
     beam68_row(BEAM68_ROW_QUERY,label,value);
 }
-static int progress(unsigned long bytes)
+static void draw_progress(void)
 {
-    struct IntuiMessage *message;
-    if(!progress_window) return 1;
+    struct RastPort *rp;struct DrawInfo *di;
+    unsigned long background=0,foreground=1,fill=3,shadow=1,shine=2;
+    int x=14,right,y,height,percent,n;char label[160];
+    if(!progress_window || !GfxBase)return;
+    rp=progress_window->RPort;right=progress_window->Width-15;
+    di=GetScreenDrawInfo(progress_window->WScreen);
+    if(di) {
+        background=di->dri_Pens[BACKGROUNDPEN];foreground=di->dri_Pens[TEXTPEN];
+        fill=di->dri_Pens[FILLPEN];shadow=di->dri_Pens[SHADOWPEN];shine=di->dri_Pens[SHINEPEN];
+        FreeScreenDrawInfo(progress_window->WScreen,di);
+    }
+    SetDrMd(rp,JAM1);SetAPen(rp,background);
+    RectFill(rp,progress_window->BorderLeft,progress_window->BorderTop,
+        progress_window->Width-progress_window->BorderRight-1,progress_window->Height-progress_window->BorderBottom-1);
+    height=rp->TxHeight;y=progress_window->BorderTop+height+8;
+    n=strlen(progress_name);while(n>0 && TextLength(rp,(STRPTR)progress_name,n)>right-x)n--;
+    SetAPen(rp,foreground);Move(rp,x,y);Text(rp,(STRPTR)progress_name,n);
+    percent=beam_aminet_percent(progress_bytes,progress_total);
+    if(percent<0)strcpy(label,"Connecting to Aminet...");
+    else if(progress_total<1024UL)sprintf(label,"%lu / %lu bytes (%d%%)",progress_bytes,progress_total,percent);
+    else sprintf(label,"%lu / %lu KB (%d%%)",progress_bytes/1024UL,progress_total/1024UL,percent);
+    y+=height+8;Move(rp,x,y);Text(rp,(STRPTR)label,strlen(label));
+    y+=12;
+    SetAPen(rp,shadow);RectFill(rp,x,y,right,y+17);
+    SetAPen(rp,shine);RectFill(rp,x+1,y+1,right-1,y+16);
+    SetAPen(rp,background);RectFill(rp,x+2,y+2,right-2,y+15);
+    if(percent>0){SetAPen(rp,fill);RectFill(rp,x+2,y+2,x+1+(right-x-3)*percent/100,y+15);}
+    SetAPen(rp,foreground);Move(rp,x,y+height+29);
+    Text(rp,(STRPTR)"Close this window to cancel.",27);
+}
+static int progress(unsigned long bytes,unsigned long total)
+{
+    struct IntuiMessage *message;struct DateStamp stamp;unsigned long now;int repaint=0;
+    if(!progress_window)return 1;
+    progress_bytes=bytes;progress_total=total;
     while((message=(struct IntuiMessage *)GetMsg(progress_window->UserPort))) {
         ULONG cls=message->Class;ReplyMsg((struct Message *)message);
-        if(cls==IDCMP_CLOSEWINDOW) cancelled=1;
-        else if(cls==IDCMP_REFRESHWINDOW) { BeginRefresh(progress_window);EndRefresh(progress_window,TRUE); }
+        if(cls==IDCMP_CLOSEWINDOW)cancelled=1;
+        else if(cls==IDCMP_REFRESHWINDOW){BeginRefresh(progress_window);draw_progress();EndRefresh(progress_window,TRUE);}
     }
-    if(bytes/16384UL!=last_progress) {
-        last_progress=bytes/16384UL;
-        sprintf(text,"Aminet download: %lu KB - close to cancel",bytes/1024UL);
-        SetWindowTitles(progress_window,(STRPTR)text,(STRPTR)~0UL);
+    if(bytes/4096UL!=last_progress)repaint=1;
+    if(total && (bytes==total || bytes==0))repaint=1;
+    DateStamp(&stamp);now=(unsigned long)stamp.ds_Days*4320000UL+(unsigned long)stamp.ds_Minute*3000UL+(unsigned long)stamp.ds_Tick;
+    if(repaint && (last_progress==~0UL || now-last_progress_tick>=5UL || total!=last_progress_total || (total && bytes==total))) {
+        int percent=beam_aminet_percent(bytes,total);
+        if(percent>=0)sprintf(text,"Aminet download - %d%%",percent);
+        else strcpy(text,"Aminet download - connecting");
+        last_progress=bytes/4096UL;last_progress_tick=now;last_progress_total=total;
+        SetWindowTitles(progress_window,(STRPTR)text,(STRPTR)~0UL);draw_progress();
     }
     return !cancelled;
 }
@@ -181,6 +225,8 @@ static int download(int argc,char **argv,const char *package,int install)
     if(!added) { DeleteMsgPort(guard);return beam_plugin_error(argc,argv,"An Aminet download is already open. Close it before starting another."); }
     IntuitionBase=(struct IntuitionBase *)OpenLibrary("intuition.library",37);
     if(!IntuitionBase) goto cleanup;
+    GfxBase=(struct GfxBase *)OpenLibrary("graphics.library",37);
+    if(!GfxBase)goto cleanup;
     es.es_StructSize=sizeof(es);es.es_Flags=0;es.es_Title=(STRPTR)"Aminet Browser";
     es.es_TextFormat=(STRPTR)(install?
         "Download %s and open it with your archive handler?\nThen follow the package's own installer or instructions.\nNo installed files are replaced by Beam68.":
@@ -197,7 +243,7 @@ static int download(int argc,char **argv,const char *package,int install)
     if(!reserve_drawer(directory,drawer,sizeof(drawer))) { strcpy(error_text,"Cannot reserve a download staging drawer.");goto cleanup; }
     strcpy(part,drawer);AddPart(part,"archive.part",sizeof(part));
     progress_window=OpenWindowTags(NULL,WA_Title,(ULONG)"Aminet download - close to cancel",
-        WA_Width,440,WA_Height,70,WA_DragBar,TRUE,WA_CloseGadget,TRUE,WA_Activate,TRUE,
+        WA_Width,440,WA_Height,128,WA_DragBar,TRUE,WA_CloseGadget,TRUE,WA_Activate,TRUE,
         WA_IDCMP,IDCMP_CLOSEWINDOW|IDCMP_REFRESHWINDOW,TAG_DONE);
     if(!progress_window) { strcpy(error_text,"Cannot open the download window.");DeleteFile((STRPTR)drawer);goto cleanup; }
     /* The visible, individually cancellable transfer owns its lifecycle after
@@ -205,7 +251,11 @@ static int download(int argc,char **argv,const char *package,int install)
     if(beam_plugin_text(argc,argv,"Aminet download started. Close its window to cancel.")!=0) {
         strcpy(error_text,"Cannot acknowledge the download request.");DeleteFile((STRPTR)drawer);goto cleanup;
     }
-    delivered=1;cancelled=0;last_progress=~0UL;sprintf(path,"/%s",package);
+    delivered=1;cancelled=0;last_progress=~0UL;progress_bytes=progress_total=0;
+    beam_plugin_copy(progress_name,filename,sizeof(progress_name));draw_progress();
+    /* Transfer owns its window now; leave a newer launcher query alone. */
+    if(argc==5)beam_control_plugin_handoff(strtoul(argv[4],NULL,10));
+    sprintf(path,"/%s",package);
     ok=beam_aminet_fetch(path,part,67108864UL,300,1,progress,error_text,sizeof(error_text));
     if(ok && install) {
         unsigned char signature[8];size_t size=0;FILE *archive=fopen(part,"rb");
@@ -228,6 +278,7 @@ static int download(int argc,char **argv,const char *package,int install)
     EasyRequestArgs(progress_window,&es,NULL,args);
 cleanup:
     if(progress_window) { CloseWindow(progress_window);progress_window=NULL; }
+    if(GfxBase){CloseLibrary((struct Library *)GfxBase);GfxBase=NULL;}
     if(IntuitionBase) { CloseLibrary((struct Library *)IntuitionBase);IntuitionBase=NULL; }
     RemPort(guard);DeleteMsgPort(guard);
     if(!delivered) return beam_plugin_error(argc,argv,*error_text?error_text:"Cannot start the Aminet download.");

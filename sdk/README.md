@@ -216,3 +216,21 @@ Send one terminal reply with the supplied serial, or publish the atomic ARexx
 result, even when reporting a failure. Late completions release capacity but
 are not displayed. A plugin that never completes can keep its slot occupied;
 keep work bounded and return promptly after publishing the terminal result.
+
+## Plugin version policy
+
+PLUGIN_VERSION identifies your plugin independently of Beam68 and Protocol 1.
+Start a new plugin at 0.1 and increment it whenever that plugin changes. Keep ID
+stable across upgrades. VERSION=1 is the protocol, and MIN_BEAM68 is the minimum
+compatible launcher version; neither replaces PLUGIN_VERSION. The repository's
+bundled plugins additionally use the checked version workflow in
+[PLUGIN_SDK.md](https://github.com/retrocs-org/beam68/blob/main/docs/PLUGIN_SDK.md).
+
+## Activation and independent versions
+
+Beam68 0.2 enables six essential local plugins on a fresh installation.
+Network and optional integrations start disabled; updates preserve saved choices.
+Plugin versions are independent of the launcher version. Start a new plugin at
+0.1 and increment its version when changing its implementation. The bundled
+version-check script verifies compiled inputs. Import third-party packages in
+Preferences; bundled plugins can be toggled but cannot be removed.

@@ -5,11 +5,11 @@ an AmiGet dependency. It uses Aminet's public web listing and readme files.
 It is not affiliated with the Aminet operators.
 
 - `aminet:search tracker`: six package rows plus navigation.
-- `aminet:info util/wb/Beam68-0.1.lha`: summary, version, architecture,
+- `aminet:info util/wb/Beam68.lha`: summary, version, architecture,
   author, requirements and actions when those fields are available.
 - Select **Read full readme** to browse its text inside Beam68.
-- `aminet:get util/wb/Beam68-0.1.lha`: ask, then download.
-- `aminet:install util/wb/Beam68-0.1.lha`: ask, download and open the archive
+- `aminet:get util/wb/Beam68.lha`: ask, then download.
+- `aminet:install util/wb/Beam68.lha`: ask, download and open the archive
   with the installed Workbench archive handler (workbench.library V44+). The user follows the package's
   own installer or instructions. The plugin does not itself extract archives or
   run their installers. Without a handler, the downloaded file remains available.
@@ -49,3 +49,8 @@ in the unreleased 0.2 source tree.
 
 Archive downloads require a declared size and must match it before commit.
 Installation preparation also checks the archive signature before opening it.
+
+The download window shows filename, transferred size, total size and percentage
+when the server supplies a total, plus a progress bar. Close it to cancel. Once
+the download window opens successfully, Beam68 hides its launcher window while
+remaining resident. A late handoff cannot hide a newer query.

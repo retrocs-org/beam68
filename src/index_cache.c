@@ -36,7 +36,11 @@ static unsigned long fingerprint(const struct BeamConfig *c)
 {
     int i;
     unsigned long h=5381UL;
-    h=hash_number(h,5UL);
+    h=hash_number(h,7UL); /* Plugin-owned sources participate in cache identity. */
+    h=hash_number(h,(unsigned long)c->plugin_file_count);
+    for(i=0;i<c->plugin_file_count;i++)h=hash_string(h,c->plugin_files[i]);
+    h=hash_number(h,(unsigned long)c->disabled_plugin_count);
+    for(i=0;i<c->disabled_plugin_count;i++)h=hash_string(h,c->disabled_plugins[i]);
     h=hash_number(h,(unsigned long)c->dir_count);
     h=hash_number(h,(unsigned long)c->max_items);
     h=hash_number(h,(unsigned long)c->max_depth);

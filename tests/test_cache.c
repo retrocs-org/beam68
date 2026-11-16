@@ -184,6 +184,10 @@ int main(void)
     test_save_rollback();
     test_transactional_reload();
     assert(beam_cache_save(&cfg,&items,cache_file));
+    cfg.disabled_plugin_count=1;strcpy(cfg.disabled_plugins[0],"PROGDIR:Plugins/WHDLoad/WHDLoad.plugin");
+    assert(!beam_cache_load(&cfg,&loaded,cache_file) && loaded.count==7);
+    cfg.disabled_plugin_count=0;
+    cfg.max_depth=-1;assert(!beam_cache_load(&cfg,&loaded,cache_file));
     cfg.max_depth=5; /* stale config fingerprint */
     assert(!beam_cache_load(&cfg,&loaded,cache_file));
     assert(loaded.count==7); /* rejected reload preserves the known-good index */

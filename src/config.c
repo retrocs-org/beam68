@@ -34,6 +34,7 @@ char *beam_trim(char *s)
 }
 void beam_config_defaults(struct BeamConfig *c)
 {
+    int i;
     memset(c,0,sizeof(*c));
     beam_copy(c->hotkey,"rawkey control alt space",sizeof(c->hotkey));
     beam_copy(c->install_dir,"SYS:Utilities/Beam68",sizeof(c->install_dir));
@@ -41,7 +42,7 @@ void beam_config_defaults(struct BeamConfig *c)
     c->index_files=0; c->index_drawers=1; c->visible=6; c->history=1;
     c->index_cache=1; c->plugin_timeout=30; c->icon_preview=0;
     c->window_width=550; c->window_height=0;
-    c->theme=BEAM_THEME_WORKBENCH; c->shell_commands=1;
+    c->theme=BEAM_THEME_MOCHA; c->shell_commands=1;
     beam_copy(c->file_patterns,"*",sizeof(c->file_patterns));
     beam_copy(c->font_name,"topaz.font",sizeof(c->font_name));
     c->font_size=8;c->row_spacing=7;c->high_contrast=0;
@@ -80,10 +81,17 @@ void beam_config_defaults(struct BeamConfig *c)
     beam_copy(c->plugin_files[c->plugin_file_count++],"PROGDIR:Plugins/WindowSwitcher.plugin",BEAM_MAX_PATH);
     beam_copy(c->plugin_files[c->plugin_file_count++],"PROGDIR:Plugins/DeveloperTools.plugin",BEAM_MAX_PATH);
     beam_copy(c->plugin_files[c->plugin_file_count++],"PROGDIR:Plugins/ARexxRunner.plugin",BEAM_MAX_PATH);
+    beam_copy(c->plugin_files[c->plugin_file_count++],"PROGDIR:Plugins/WHDLoad.plugin",BEAM_MAX_PATH);
+    beam_copy(c->plugin_files[c->plugin_file_count++],"PROGDIR:Plugins/DOpus.plugin",BEAM_MAX_PATH);
+    beam_copy(c->plugin_files[c->plugin_file_count++],"PROGDIR:Plugins/MusicLibrary.plugin",BEAM_MAX_PATH);
     beam_copy(c->plugin_files[c->plugin_file_count++],"PROGDIR:Plugins/MusicControls.plugin",BEAM_MAX_PATH);
     beam_copy(c->plugin_files[c->plugin_file_count++],"PROGDIR:Plugins/AminetBrowser/AminetBrowser.plugin",BEAM_MAX_PATH);
-    beam_copy(c->disabled_plugins[c->disabled_plugin_count++],
-        "PROGDIR:Plugins/AminetBrowser/AminetBrowser.plugin",BEAM_MAX_PATH);
+    beam_copy(c->plugin_files[c->plugin_file_count++],"PROGDIR:Plugins/Wikipedia/Wikipedia.plugin",BEAM_MAX_PATH);
+    /* The first six entries are the essential local tools. Optional and
+       network plugins are installed but require explicit activation. */
+    for(i=6;i<c->plugin_file_count;i++)
+        beam_copy(c->disabled_plugins[c->disabled_plugin_count++],c->plugin_files[i],BEAM_MAX_PATH);
+
 }
 
 static int config_theme(const char *name)
@@ -92,7 +100,7 @@ static int config_theme(const char *name)
     if (beam_equal(name,"FRAPPE")) return BEAM_THEME_FRAPPE;
     if (beam_equal(name,"MACCHIATO")) return BEAM_THEME_MACCHIATO;
     if (beam_equal(name,"MOCHA")) return BEAM_THEME_MOCHA;
-    if (beam_equal(name,"CUSTOM")) return BEAM_THEME_CUSTOM;
+    if (beam_equal(name,"CUSTOM") || beam_equal(name,"ROSE")) return BEAM_THEME_CUSTOM;
     return BEAM_THEME_WORKBENCH;
 }
 
@@ -432,6 +440,14 @@ int beam_config_read(struct BeamConfig *c, const char *file)
         else if (beam_equal(key,"HISTORY")) c->history=beam_equal(value,"YES") || beam_equal(value,"TRUE") || beam_equal(value,"1");
         else if (beam_equal(key,"SHELL_COMMANDS")) c->shell_commands=beam_equal(value,"YES") || beam_equal(value,"TRUE") || beam_equal(value,"1");
         else if (beam_equal(key,"THEME")) c->theme=config_theme(value);
+        else if (strncmp(key,"THEME_COLORS_",13)==0 && strlen(key)==14 &&
+                 key[13]>='0' && key[13]<'0'+BEAM_THEME_COUNT) {
+            unsigned long colors[BEAM_THEME_COLOR_COUNT];int role,t=key[13]-'0';
+            if(beam_theme_parse_colors(value,colors)) {
+                for(role=0;role<BEAM_THEME_COLOR_COUNT;role++)c->theme_colors[t][role]=colors[role];
+                c->theme_modified[t]=1;
+            }
+        }
         else if (beam_equal(key,"CUSTOM_COLORS")) {
             unsigned long colors[BEAM_THEME_COLOR_COUNT];
             int i;
@@ -469,7 +485,7 @@ int beam_config_read(struct BeamConfig *c, const char *file)
         } else if (beam_equal(key,"MAX_ITEMS")) {
             n=atoi(value); if (n>=16 && n<=BEAM_MAX_ITEMS_LIMIT) c->max_items=n;
         } else if (beam_equal(key,"MAX_DEPTH")) {
-            n=atoi(value); if (n>=0 && n<=16) c->max_depth=n;
+            n=beam_equal(value,"UNLIMITED")?-1:atoi(value); if (n>=-1 && n<=16) c->max_depth=n;
         } else if (beam_equal(key,"VISIBLE_RESULTS")) {
             n=atoi(value); if (n>=1 && n<=BEAM_MAX_VISIBLE) c->visible=n;
         } else if (beam_equal(key,"FONT_NAME"))
@@ -653,7 +669,7 @@ int beam_config_valid(const struct BeamConfig *c)
         c->plugin_file_count<0 || c->plugin_file_count>BEAM_MAX_PLUGINS ||
         c->excluded_dir_count<0 || c->excluded_dir_count>BEAM_MAX_EXCLUDED_DIRS ||
         c->disabled_plugin_count<0 || c->disabled_plugin_count>BEAM_MAX_PLUGINS ||
-        c->max_depth<0 || c->max_depth>16 || c->max_items<16 ||
+        c->max_depth<-1 || c->max_depth>16 || c->max_items<16 ||
         c->max_items>BEAM_MAX_ITEMS_LIMIT || c->visible<1 ||
         c->visible>BEAM_MAX_VISIBLE || (c->history!=0 && c->history!=1) ||
         (c->index_cache!=0 && c->index_cache!=1) ||
@@ -686,8 +702,12 @@ int beam_config_valid(const struct BeamConfig *c)
         (c->large_gadgets!=0 && c->large_gadgets!=1) ||
         (c->reduced_colors!=0 && c->reduced_colors!=1) ||
         c->compact_mode<BEAM_COMPACT_AUTO || c->compact_mode>BEAM_COMPACT_NEVER) return 0;
-    for (i=0;i<BEAM_THEME_COLOR_COUNT;i++)
+    for (i=0;i<BEAM_THEME_COLOR_COUNT;i++) {
+        int theme;
         if (c->custom_colors[i]>0xffffffUL) return 0;
+        for(theme=0;theme<BEAM_THEME_COUNT;theme++)
+            if(c->theme_modified[theme] && c->theme_colors[theme][i]>0xffffffUL)return 0;
+    }
     for (i=0;i<c->dir_count;i++) if (!safe_setting(c->dirs[i])) return 0;
     for (i=0;i<c->excluded_dir_count;i++)
         if (!safe_setting(c->excluded_dirs[i]) ||
@@ -711,7 +731,7 @@ static int owned_key(char *line)
     char *s=beam_trim(line), *eq=strchr(s,'=');
     if (!eq || *s=='#' || *s==';') return 0;
     *eq=0; s=beam_trim(s);
-    return beam_equal(s,"PLUGIN_PREVIEW_DISABLED") || beam_equal(s,"PLUGIN_PREVIEW_DELAY") || beam_equal(s,"INSTALL_DIR") || beam_equal(s,"PLUGIN_DISABLED") || beam_equal(s,"HOTKEY") || beam_equal(s,"HISTORY") || beam_equal(s,"INDEX_CACHE") || beam_equal(s,"SHELL_COMMANDS") || beam_equal(s,"THEME") || beam_equal(s,"CUSTOM_COLORS") || beam_equal(s,"ICON_PREVIEW") || beam_equal(s,"PLUGIN_TIMEOUT") || beam_equal(s,"DIR") ||
+    return beam_equal(s,"PLUGIN_PREVIEW_DISABLED") || beam_equal(s,"PLUGIN_PREVIEW_DELAY") || beam_equal(s,"INSTALL_DIR") || beam_equal(s,"PLUGIN_DISABLED") || beam_equal(s,"HOTKEY") || beam_equal(s,"HISTORY") || beam_equal(s,"INDEX_CACHE") || beam_equal(s,"SHELL_COMMANDS") || beam_equal(s,"THEME") || beam_equal(s,"CUSTOM_COLORS") || !strncmp(s,"THEME_COLORS_",13) || beam_equal(s,"ICON_PREVIEW") || beam_equal(s,"PLUGIN_TIMEOUT") || beam_equal(s,"DIR") ||
            beam_equal(s,"PLUGIN") || beam_equal(s,"SCAN_ICONS") ||
            beam_equal(s,"SCAN_EXECUTABLES") || beam_equal(s,"MAX_DEPTH") ||
            beam_equal(s,"MAX_ITEMS") || beam_equal(s,"VISIBLE_RESULTS") ||
@@ -803,6 +823,11 @@ int beam_config_write(struct BeamConfig *c, const char *path)
     if (ok) ok=emit_entry(output,"THEME",config_theme_name(c->theme));
     beam_theme_format_colors(c->custom_colors,custom_colors,sizeof(custom_colors));
     if (ok) ok=emit_entry(output,"CUSTOM_COLORS",custom_colors);
+    for(i=0;ok && i<BEAM_THEME_COUNT;i++) if(c->theme_modified[i]) {
+        char key[24];sprintf(key,"THEME_COLORS_%d",i);
+        beam_theme_format_colors(c->theme_colors[i],custom_colors,sizeof(custom_colors));
+        ok=emit_entry(output,key,custom_colors);
+    }
     if (ok) ok=emit_entry(output,"ICON_PREVIEW",c->icon_preview?"YES":"NO");
     if (ok) ok=emit_number(output,"PLUGIN_TIMEOUT",c->plugin_timeout);
     if (ok) ok=emit_entry(output,"SCAN_ICONS",c->scan_icons?"YES":"NO");
@@ -887,4 +912,25 @@ int beam_config_write(struct BeamConfig *c, const char *path)
         DeleteFile((STRPTR)tmp); return 0;
     }
     return 1;
+}
+
+/* Human-readable Commodities expression, without changing its meaning. */
+int beam_hotkey_display(const char *expression,char *out,unsigned int cap)
+{
+    char input[96],*token;unsigned int used=0,i;
+    if(!expression || !out || !cap || strlen(expression)>=sizeof(input))return 0;
+    out[0]=0;strcpy(input,expression);
+    token=strtok(input," \t");
+    while(token) {
+        const char *label=token;
+        if(!beam_equal(token,"rawkey")) {
+            if(beam_equal(token,"control"))label="CTRL";
+            if(used) {if(used+3>=cap)return 0;strcpy(out+used," + ");used+=3;}
+            if(used+strlen(label)>=cap)return 0;
+            for(i=0;label[i];i++)out[used++]=(char)((label[i]>='a' && label[i]<='z')?label[i]-32:label[i]);
+            out[used]=0;
+        }
+        token=strtok(NULL," \t");
+    }
+    return used!=0;
 }

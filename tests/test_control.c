@@ -35,7 +35,12 @@ static void service(void)
  struct Message *m;
  while((m=GetMsg(&launcher))) {
   struct BeamVersionRequest *request=(struct BeamVersionRequest *)m;
-  assert(!m->mn_ReplyPort && request->control.command==BEAM_CTL_QUERY_VERSION);
+  assert(!m->mn_ReplyPort);
+  if(request->control.command==BEAM_CTL_RELOAD_CONFIRMED) {
+   if(mode!=2)beam_control_reply_reload(&request->control,mode==4?-1:mode==5?2:1,mode==4?"Could not change hotkey":"Settings applied");
+   FreeVec(m);continue;
+  }
+  assert(request->control.command==BEAM_CTL_QUERY_VERSION);
   if(mode!=2) { if(mode==3)request->serial++;beam_control_reply_version(&request->control); }
   FreeVec(m);
  }
@@ -45,6 +50,22 @@ static void clean(void){assert(!allocations && !ports && !reply_port && !launche
 int main(void)
 {
  char version[64];struct BeamVersionRequest malformed;
+ {
+  struct BeamPluginHandoffMessage *m;
+  assert(!beam_control_plugin_handoff(0));clean();
+  assert(beam_control_plugin_handoff(42));
+  m=(struct BeamPluginHandoffMessage *)GetMsg(&launcher);
+  assert(m && m->serial==42 && m->control.command==BEAM_CTL_PLUGIN_HANDOFF);
+  assert(m->control.message.mn_Length==sizeof(*m) && !m->control.message.mn_ReplyPort);
+  FreeVec(m);clean();
+  running=0;assert(!beam_control_plugin_handoff(42));clean();running=1;
+  fail_alloc=1;assert(!beam_control_plugin_handoff(42));fail_alloc=0;clean();
+  assert(beam_control_handoff_matches(42,42,"aminet:get foo","aminet:get foo"));
+  assert(!beam_control_handoff_matches(43,42,"same","same"));
+  assert(!beam_control_handoff_matches(42,42,"new search","old search"));
+  assert(!beam_control_handoff_matches(0,0,"same","same"));
+ }
+
  running=0;assert(beam_control_version(version,sizeof(version))==0 && !*version);clean();
  running=1;assert(beam_control_version(version,sizeof(version))==1 && !strcmp(version,BEAM68_VERSION));assert(delays==1);clean();
  reported_version="0.1";assert(beam_control_version(version,sizeof(version))==1 && !strcmp(version,"0.1"));clean();
@@ -55,5 +76,15 @@ int main(void)
  memset(&malformed,0,sizeof(malformed));beam_control_reply_version(&malformed.control);clean();
  malformed.control.message.mn_Length=sizeof(malformed);memset(malformed.reply_port,'x',sizeof(malformed.reply_port));beam_control_reply_version(&malformed.control);clean();
  assert(beam_control_version(NULL,0)==-1);
+ {
+  char result[160];
+  assert(beam_control_reload(result,sizeof(result))==1 && !strcmp(result,"Settings applied"));clean();
+  mode=4;assert(beam_control_reload(result,sizeof(result))==-1 && !strcmp(result,"Could not change hotkey"));clean();
+  mode=5;assert(beam_control_reload(result,sizeof(result))==2);clean();
+  mode=2;assert(beam_control_reload(result,sizeof(result))==-1 && strstr(result,"did not confirm"));assert(delays==250);clean();
+  mode=1;assert(beam_control_reload(result,sizeof(result))==-1);service();clean();
+  running=0;assert(beam_control_reload(result,sizeof(result))==0);running=1;clean();
+ }
+
  puts("Running launcher version: live reply, distinct version, old/busy launcher, timeout cleanup and late reply: PASS");return 0;
 }

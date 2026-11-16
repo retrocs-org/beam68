@@ -13,7 +13,10 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def base_text():
     lines = (ROOT / "Beam68.cfg").read_text(encoding="ascii").splitlines()
-    kept = [line for line in lines if not line.startswith("PLUGIN=")]
+    # The installer writes registry entries and default activation together.
+    # Disabled entries (including example comments) contain the same manifest
+    # names and must not make its existence check skip a new plugin.
+    kept = [line for line in lines if not line.lstrip("# \t").startswith(("PLUGIN=", "PLUGIN_DISABLED="))]
     kept = [line.replace("# Plugin executables are resolved relative to the launcher, NOT Prefs.",
                          "# Plugins chosen in the installer follow (PLUGIN=, one per package).")
             for line in kept]

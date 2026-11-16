@@ -16,4 +16,6 @@ int beam_aminet_details(FILE *file,struct BeamAminetDetails *details);
 void beam_aminet_plain(const char *text,char *out,unsigned int cap);
 /* Validate a complete HTTP header. -1 means no content length. */
 int beam_aminet_http_header(const char *header,unsigned long limit,long *length);
+/* Overflow-safe percentage; -1 when total is unknown. */
+int beam_aminet_percent(unsigned long bytes,unsigned long total);
 #endif

@@ -56,4 +56,10 @@ int beam_preview_reserved(int enabled, int inner_width, int available_height);
 /* Returns false for oversized icons: do not clip onto text/gadgets. */
 int beam_preview_fits(int width, int height);
 
+int beam_theme_config_mode(const struct BeamConfig *c);
+const unsigned long *beam_theme_config_palette(const struct BeamConfig *c);
+void beam_theme_original_palette(int theme,unsigned long *colors);
+void beam_theme_set_palette(struct BeamConfig *c,const unsigned long *colors);
+void beam_theme_reset_palette(struct BeamConfig *c);
+
 #endif

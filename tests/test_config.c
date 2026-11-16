@@ -30,13 +30,20 @@ int main(void)
     assert(c.dir_count==1);
     assert(beam_equal(c.dirs[0],"SYS:Tools"));
     assert(beam_config_valid(&c));
-    assert(c.history==1 && c.index_cache==1 && c.plugin_timeout==30 && c.icon_preview==0 && c.window_width==550 && c.window_height==0 && c.theme==BEAM_THEME_WORKBENCH && c.shell_commands==1);
+    assert(c.history==1 && c.index_cache==1 && c.plugin_timeout==30 && c.icon_preview==0 && c.window_width==550 && c.window_height==0 && c.theme==BEAM_THEME_MOCHA && c.shell_commands==1);
     write_text("build/testsettings/ENVARC/Beam68/Beam68.cfg",
         "# USER COMMENT\nTHIRD_PARTY=hello world\nMAX_ITEMS=128\nDIR=Games:\n");
     beam_config_defaults(&c);
     assert(beam_config_read_active(&c));
     assert(c.max_items==128);
     assert(c.dir_count==1 && beam_equal(c.dirs[0],"Games:"));
+    { char label[96];
+      assert(beam_hotkey_display("rawkey control alt space",label,sizeof(label)));
+      assert(!strcmp(label,"CTRL + ALT + SPACE"));
+      assert(beam_hotkey_display("rawkey shift space",label,sizeof(label)));
+      assert(!strcmp(label,"SHIFT + SPACE"));
+      assert(!beam_hotkey_display("rawkey control alt space",label,4));
+    }
     beam_copy(c.hotkey,"rawkey control alt f10",sizeof(c.hotkey));
     c.max_items=512;
     c.history=0;
@@ -49,6 +56,8 @@ int main(void)
     c.custom_colors[2]=0x778899UL;
     c.custom_colors[3]=0xaabbccUL;
     c.custom_colors[4]=0xddeeffUL;
+    c.theme_modified[BEAM_THEME_MOCHA]=1;
+    memcpy(c.theme_colors[BEAM_THEME_MOCHA],c.custom_colors,sizeof(c.custom_colors));
     c.shell_commands=0;
     c.index_games=0; strcpy(c.whdload_command,"C:WHDLoad");
     c.window_width=640; c.window_height=180;
@@ -69,6 +78,8 @@ int main(void)
     assert(beam_config_read_active(&d));
     assert(d.max_items==512 && beam_equal(d.hotkey,c.hotkey) && d.history==0 && d.index_cache==0 && d.plugin_timeout==45 && d.icon_preview==1 && d.window_width==640 && d.window_height==180 && d.theme==BEAM_THEME_CUSTOM && d.shell_commands==0);
     assert(d.index_games==0 && !strcmp(d.whdload_command,"C:WHDLoad"));
+    assert(d.theme_modified[BEAM_THEME_MOCHA] && !d.theme_modified[BEAM_THEME_LATTE]);
+    assert(d.theme_colors[BEAM_THEME_MOCHA][0]==0x112233UL);
     assert(d.custom_colors[0]==0x112233UL && d.custom_colors[4]==0xddeeffUL);
     assert(d.dir_count==1 && beam_equal(d.dirs[0],"Games:"));
     assert(beam_config_write(&d,BEAM_CONFIG_ENV));
@@ -133,6 +144,18 @@ int main(void)
       assert(recovered.max_items==321);
       assert(beam_equal(recovered.hotkey,"rawkey control alt f9"));
     }
+    beam_config_defaults(&d);d.max_depth=-1;
+    assert(beam_config_valid(&d));
+    assert(beam_config_write(&d,BEAM_CONFIG_SESSION));
+    beam_config_defaults(&c);assert(beam_config_read_active(&c) && c.max_depth==-1);
+    assert(d.plugin_file_count==18 && d.disabled_plugin_count==12);
+    {int i;for(i=0;i<d.plugin_file_count;i++)assert(beam_plugin_enabled(&d,d.plugin_files[i])==(i<6));}
+    assert(beam_plugin_set_enabled(&d,"PROGDIR:Plugins/AminetBrowser/AminetBrowser.plugin",1));
+    assert(beam_config_write(&d,BEAM_CONFIG_SESSION));
+    beam_config_defaults(&c);assert(beam_config_read_active(&c));
+    assert(beam_plugin_enabled(&c,"PROGDIR:Plugins/AminetBrowser/AminetBrowser.plugin"));
+    d.max_depth=-2;assert(!beam_config_valid(&d));
+    d.max_depth=17;assert(!beam_config_valid(&d));
     d.max_items=0;
     assert(!beam_config_valid(&d));
     assert(!beam_config_write(&d,BEAM_CONFIG_ENV));

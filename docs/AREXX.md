@@ -22,7 +22,7 @@ port later: restart Beam68 after correcting an ARexx startup problem.
 | `INDEX` | Returns detailed indexing counters: `scanning`, `roots`, `entries`, `apps`, `unreadable`, `ioerrors`, `overlong`, `capped`, `cached`. |
 | `VERSION` | Returns `0.2`. |
 | `PLUGINS` | Returns configured, loaded, and failed manifest counts. |
-| `PLUGIN 1` | Status of the first configured manifest (1–16). |
+| `PLUGIN 1` | Status of the first configured manifest (1–32). |
 | `REQUESTS` | Outstanding count, limits and whether a preview is waiting. |
 | `REQUEST 1` | Slot 1 details (1-3): plugin name, serial, mode, transport, age, deadline and request state. |
 | `TIMING` | Startup, window-open, complete search and input/result painting durations, maxima, sample counts and index pool bytes. |

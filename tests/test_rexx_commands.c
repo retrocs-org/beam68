@@ -39,8 +39,9 @@ int main(void)
     check("plugins",BEAM_REXX_PLUGINS,-1);
     check("plugin 1",BEAM_REXX_PLUGIN,0);
     check("PLUGIN\t16 ",BEAM_REXX_PLUGIN,15);
+    check("PLUGIN 32",BEAM_REXX_PLUGIN,31);
     bad("");bad(" ");bad("SHOW NOW");bad("SHOW;QUIT");bad("REINDEX 1");
-    bad("PLUGIN");bad("PLUGIN 0");bad("PLUGIN 17");bad("PLUGIN -1");
+    bad("PLUGIN");bad("PLUGIN 0");bad("PLUGIN 33");bad("PLUGIN -1");
     bad("PLUGIN 2x");bad("PLUGIN 99999999999999999");
     bad(" PLUGIN 2 MORE");bad("STATUS\nQUIT");bad("run shell");
     assert(!beam_rexx_parse("SHOW",NULL));

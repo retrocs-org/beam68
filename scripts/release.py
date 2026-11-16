@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build once, review a manifest, then publish the same Beam68 release bytes."""
 import argparse
+from datetime import datetime, timezone
 import ftplib
 import hashlib
 import importlib.util
@@ -28,6 +29,31 @@ SECRET_ENV = ('GITHUB_TOKEN', 'GITLAB_TOKEN')
 def need(condition, message):
     if not condition:
         raise ReleaseError(message)
+
+def validate_release_notes(root, version, text):
+    """Require the shared publication layout and the complete current changelog."""
+    need(text.startswith('# Beam68 '+version+'\n'), 'Release notes title/version differs')
+    need(not re.search(r'\b(in development|unreleased|TODO|TBD)\b', text, re.I),
+         'Release notes contain development placeholders')
+    headings = list(re.finditer(r'^## (.+)$', text, re.M))
+    need([m.group(1) for m in headings] ==
+         ['Features', 'Installation', 'Source and Licence', 'Version Changelog'],
+         'Release notes require Features, Installation, Source and Licence, Version Changelog in order')
+    for index, heading in enumerate(headings):
+        end = headings[index+1].start() if index+1 < len(headings) else len(text)
+        need(text[heading.end():end].strip(), 'Empty release notes section: '+heading.group(1))
+    changes = text[headings[-1].end():].strip()
+    need(changes.startswith('### '+version+'\n'), 'Release notes changelog version differs')
+    changes = changes.split('\n', 1)[1].strip()
+    changelog = (root/'CHANGELOG.md').read_text()
+    match = re.search(r'^## '+re.escape(version)+r'(?:[^\n]*)\n(.*?)(?=^## |\Z)',
+                      changelog, re.M | re.S)
+    need(match is not None, 'Missing current version in CHANGELOG.md')
+    def normalized(value):
+        return ' '.join(re.sub(r'^#{3,4} ', '', value, flags=re.M).split())
+    need(normalized(changes) == normalized(match.group(1)),
+         'Release notes must contain the complete matching CHANGELOG.md section')
+
 
 def load(path):
     need(path.is_file() and not path.is_symlink(), 'Missing or linked metadata: ' + path.name)
@@ -126,7 +152,7 @@ def credential(service, config):
     return token
 
 def release_tag(value, version):
-    tag='v'+version if value is None else value
+    tag=version if value is None else value
     need(isinstance(tag,str) and re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*',tag) and '..' not in tag and not tag.endswith(('.','.lock')), 'Invalid release tag (use a simple name such as v0.1 or 0.1)')
     return tag
 
@@ -432,7 +458,7 @@ class GitHub:
             release = self.api.json(self.base + '/releases', 'POST',
                                     {'tag_name': self.m['tag'], 'target_commitish': self.m['commit'],
                                      'name': self.m['tag'], 'body': self.m['notes'],
-                                     'draft': True, 'prerelease': '-' in self.m['version']})
+                                     'draft': True, 'prerelease': False})
         existing = self.verify(release)
         ident = str(release['id'])
         for name, digest in self.m['files'].items():
@@ -443,11 +469,14 @@ class GitHub:
                      asset.get('size') == (self.directory / name).stat().st_size,
                      'GitHub did not verify uploaded asset: ' + name)
         self.verify(release, True)
-        if release['draft']:
-            self.api.json(self.base + '/releases/' + ident, 'PATCH', {'draft': False})
+        self.api.json(self.base + '/releases/' + ident, 'PATCH',
+                      {'draft': False, 'prerelease': False, 'make_latest': 'true'})
         final = self.release()
-        need(final and not final['draft'], 'GitHub release is still a draft')
+        need(final and not final['draft'] and final.get('prerelease') is False,
+             'GitHub release is not a normal published release')
         self.verify(final, True)
+        latest = self.api.json(self.base + '/releases/latest')
+        need(latest and latest.get('tag_name') == self.m['tag'], 'GitHub release is not latest')
 
 class GitLab:
     def __init__(self, manifest, directory, api=None, token=None):
@@ -505,13 +534,20 @@ class GitLab:
                 need(self.api.download_hash(self.package_url(name), (self.directory / name).stat().st_size) == self.m['files'][name], 'GitLab upload verification failed: ' + name)
         self.packages(True)
         release = self.release()
+        released_at = datetime.now(timezone.utc).isoformat(timespec='seconds')
         if release:
             self.verify(release)
+            self.api.json(self.base + '/releases/' + urllib.parse.quote(self.m['tag'], safe=''),
+                          'PUT', {'released_at': released_at})
         else:
             self.api.json(self.base + '/releases', 'POST', {'tag_name': self.m['tag'],
                           'name': self.m['tag'], 'description': self.m['notes'],
-                          'assets': {'links': self.links()}})
-        self.verify(self.release())
+                          'released_at': released_at, 'assets': {'links': self.links()}})
+        final = self.release()
+        self.verify(final)
+        need(not final.get('upcoming_release', False), 'GitLab release is still upcoming')
+        latest = self.api.json(self.base + '/releases/permalink/latest')
+        need(latest and latest.get('tag_name') == self.m['tag'], 'GitLab release is not latest')
 
 class HashingReader:
     def __init__(self, stream):
@@ -525,7 +561,7 @@ class Aminet:
     def __init__(self, manifest, directory, state, manifest_hash, ftp_factory=ftplib.FTP):
         self.m, self.directory, self.state, self.key = manifest, directory, state, manifest_hash
         self.factory = ftp_factory
-        self.names = ['Beam68-' + manifest['version'] + '.lha', 'Beam68-' + manifest['version'] + '.readme']
+        self.names = ['Beam68.lha', 'Beam68.readme']
         self.files=manifest.get('aminet_files',{})
 
     def prior(self):
@@ -641,12 +677,12 @@ class Release:
         if not self.config['aminet']:
             return {}
         folder=self.state/'aminet'
-        names=['Beam68-'+self.version+'.lha','Beam68-'+self.version+'.readme']
+        names=['Beam68.lha','Beam68.readme']
         need(folder.is_dir() and not folder.is_symlink(),'Missing Aminet preparation')
         need({p.name for p in folder.iterdir()}==set(names),'Unexpected Aminet preparation files')
         for name in names:
             need((folder/name).is_file() and not (folder/name).is_symlink(),'Linked Aminet preparation file')
-        need(sha(folder/names[0])==sha(self.out/names[0]),'Aminet runtime differs')
+        need(sha(folder/names[0])==sha(self.out/('Beam68-'+self.version+'.lha')),'Aminet runtime differs')
         mod=module(self.root,'make-aminet-release')
         need((folder/names[1]).read_bytes()==mod.readme(self.config['author'],self.config['uploader'],names[0]),'Aminet readme changed')
         return {name:sha(folder/name) for name in names}
@@ -675,7 +711,7 @@ class Release:
         print('      OK (%.1fs)'%(time.monotonic()-step_started),flush=True)
         # Tests run before native binaries exist in a source checkout.
         labels=('Checking translation catalogues','Running portable and release tests',
-                'Building all 17 Amiga executables','Verifying native build records')
+                'Building all Amiga executables','Verifying native build records')
         for index,args in enumerate(self.plan()):
             print('[%d/7] %s...'%(index+2,labels[index]),flush=True)
             step_started=time.monotonic()
@@ -712,11 +748,11 @@ class Release:
             folder=self.state/'aminet'
             need(not folder.is_symlink(),'Linked Aminet preparation directory')
             folder.mkdir(exist_ok=True)
-            for name in ('Beam68-'+self.version+'.lha','Beam68-'+self.version+'.readme'):
+            for name in ('Beam68.lha','Beam68.readme'):
                 need(not (folder/name).is_symlink(),'Linked Aminet preparation file')
-            shutil.copyfile(self.out/('Beam68-'+self.version+'.lha'),folder/('Beam68-'+self.version+'.lha'))
+            shutil.copyfile(self.out/('Beam68-'+self.version+'.lha'),folder/'Beam68.lha')
             mod=module(self.root,'make-aminet-release')
-            (folder/('Beam68-'+self.version+'.readme')).write_bytes(mod.readme(self.config['author'],self.config['uploader'],'Beam68-'+self.version+'.lha'))
+            (folder/'Beam68.readme').write_bytes(mod.readme(self.config['author'],self.config['uploader'],'Beam68.lha'))
         record['artifacts']={name:sha(self.out/name) for name in self.names}
         atomic_json(self.record, record)
         print('      OK (%.1fs)'%(time.monotonic()-step_started),flush=True)
@@ -754,6 +790,7 @@ class Release:
         files = self.check()
         text = notes.read_text().strip()
         need(text and len(text.encode()) <= 100000, 'Missing or oversized release notes')
+        validate_release_notes(self.root, self.version, text)
         need(not any(token and token in text for token in (os.environ.get(x) for x in SECRET_ENV)), 'Release notes contain a credential')
         manifest = {'schema': 1, 'version': self.version, 'tag': self.tag, 'source_sha256': fingerprint(self.inputs()),
                     'tag_message': self.tag_message, 'commit': commit(self.root), 'build_sha256': sha(self.record), 'notes': text, 'files': files, 'aminet_files': self.aminet_files(),
@@ -796,6 +833,7 @@ class Release:
         need(all(m.get(k) == v for k, v in self.binding().items()), 'Prepared destinations changed')
         need(m.get('commit') == clean_checkout(self.root, self.inputs()), 'Prepared commit differs; prepare again')
         need(isinstance(m.get('notes'), str) and m['notes'], 'Missing prepared notes')
+        validate_release_notes(self.root, self.version, m['notes'])
         self.prepared_check(m)
         need(m.get('aminet_files',{})==self.aminet_files(),'Prepared Aminet files changed')
         return m
@@ -860,13 +898,13 @@ class Release:
                 (snapshot/name).write_text(git(self.root, 'show', m['commit']+':'+name)+'\n')
             mod.ROOT = snapshot
             mod.VERSION = self.version
-            readme = mod.readme(self.config['author'], self.config['uploader'], archive)
+            readme = mod.readme(self.config['author'], self.config['uploader'], 'Beam68.lha')
         folder = self.state/'aminet-existing'
         need(not folder.is_symlink(), 'Linked Aminet preparation directory')
         folder.mkdir(exist_ok=True)
         prepared = dict(m, aminet=True, author=self.config['author'], uploader=self.config['uploader'])
-        prepared['aminet_files'] = {archive: sha(stage/archive),
-                                  archive[:-4]+'.readme': hashlib.sha256(readme).hexdigest()}
+        prepared['aminet_files'] = {'Beam68.lha': sha(stage/archive),
+                                  'Beam68.readme': hashlib.sha256(readme).hexdigest()}
         metadata = self.state/'aminet-existing.json'
         if metadata.exists():
             need(load(metadata) == prepared, 'Existing Aminet preparation differs; preserve its metadata and receipt')
@@ -879,8 +917,8 @@ class Release:
             for name in prepared['aminet_files']:
                 need(not (folder/name).exists() and not (folder/name).is_symlink(),
                      'Existing Aminet preparation file; inspect before recovery')
-            shutil.copyfile(stage/archive, folder/archive)
-            (folder/(archive[:-4]+'.readme')).write_bytes(readme)
+            shutil.copyfile(stage/archive, folder/'Beam68.lha')
+            (folder/'Beam68.readme').write_bytes(readme)
             atomic_json(metadata, prepared)
         print('Verified published runtime; Aminet files: '+str(folder)+'/', flush=True)
         return prepared, folder, sha(metadata)

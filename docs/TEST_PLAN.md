@@ -1,12 +1,29 @@
-# Beam68 0.1 validation checklist
+# Beam68 validation checklist
 
 Use an isolated AmigaOS test installation and independent copies of settings.
 Record the tested build, OS version, screen mode and available memory.
 See BUILD_STATUS.md for completed checks and outstanding coverage.
 
+## Current 0.2 regression checks
+
+- Novice uninstall with Remove settings, then Novice install: only Calculator,
+  Clock, Memory, File Finder, System Commands, and Assigns and Volumes are ON.
+  Repeat with an existing temporary Use configuration and its backup.
+- A settings-preserving update retains explicit plugin choices.
+- Use and Save apply plugin changes to the running launcher; failures leave
+  Preferences open with feedback.
+- Check all six Preferences sections, General/Appearance subpages, Application
+  shortcuts explanation, and separate plugin settings Save/Cancel.
+- Check finite and unlimited index depth, WHDLoad enable/disable and shared roots.
+- Check editable/restorable palettes, default Mocha and Rose.
+- Enable Wikipedia explicitly, test search, summary, language, HTTPS failure and
+  OpenURL. Test Aminet progress, cancel and launcher-window handoff.
+- Follow the earlier feature-specific checks below where applicable; historical
+  0.1 headings record when those checks were added.
+
 ## Custom theme, recovery and no-results checks
 
-1. In Appearance, select Custom and enter five comma-separated `RRGGBB`
+1. In Appearance, select Rose and enter five comma-separated `RRGGBB`
    values. Confirm the preview changes immediately, Save persists
    `THEME=CUSTOM` plus `CUSTOM_COLORS`, and malformed or incomplete colors
    keep Preferences open with a clear error.
@@ -445,7 +462,7 @@ Run each with Installer 42.x (OS 3.1/3.2) and, if available, Installer 43.3:
 5. Install the HelloRexx example (RexxMast running): `;Amiga` answers, the
    preview appears while typing; with RexxMast stopped a clear message.
 6. `dev:hex:255` shows its answer before Enter.
-7. Export a preset, change settings, import it: everything returns.
+7. Import a plugin archive on Plugins; verify its settings and metadata are available.
 8. Edit colours: sliders move the swatch; OK updates the custom palette.
 9. Catalogue: build with `make catalogue`, serve the files over HTTP,
    install wget, Load the index URL, install a plugin and a theme. Without
@@ -647,7 +664,7 @@ limits and preview-delay parsing. A failed check reports its line and returns
 retained in the reserved drawer for inspection.
 
 Beam68RexxProbe can query STATUS, VERSION, HELP, INDEX, TIMING, PLUGINS,
-PLUGIN 1..16, REQUESTS or REQUEST 1..3 on a running launcher without RexxMast.
+PLUGIN 1..32, REQUESTS or REQUEST 1..3 on a running launcher without RexxMast.
 It rejects state-changing commands before sending them. Compile success is
 not a native runtime pass. The direct-entry dialog still requires interactive
 checks of focus, Return, Tab, Escape, Cancel and invalid-value feedback.

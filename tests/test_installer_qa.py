@@ -26,7 +26,7 @@ for uninstall in (False, True):
     # Every command left after adaptation is file search, append or deletion.
     for match in re.finditer(r"\(run\s+", code):
         call = code[match.start():qa.expression_end(code, match.start())]
-        assert call.startswith(('(run (cat "C:Search ', '(run (cat "Echo >>',
+        assert call.startswith(('(run (cat "C:Echo >>', '(run "C:Echo >', '(run (cat "C:Search ', '(run (cat "Echo >>',
                                 '(run (cat "C:Delete ', '(run "C:Delete ')), call
     depth = 0
     for token in re.findall(r'"(?:\\.|[^"\\])*"|;[^\n]*|[()]', text):
@@ -35,8 +35,8 @@ for uninstall in (False, True):
             depth -= 1
             assert depth >= 0
     assert depth == 0
-    if uninstall: assert "(set #action 1)" in code
-    else: assert "(if #novice 0" in code
+    if uninstall: assert code.rstrip().endswith("(P_UNINSTALL)")
+    else: assert "(user #maintenance-level)" in code
 runner = (ROOT / "tests/native/installer_qa.c").read_text()
 assert 'if(choice==0 || choice==5)break;' in runner
 assert '"AVERAGE"' not in runner

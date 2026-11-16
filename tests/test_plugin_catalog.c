@@ -25,7 +25,31 @@ int main(void)
     char path[BEAM_MAX_PATH];
     int state;
     {
-        static const char *names[]={"Calc","Clock","Memory","FileFinder","SystemCommands","DosTools","TaskManager","ClipboardTools","DateUtilities","WindowSwitcher","DeveloperTools","ARexxRunner","MusicControls","AminetBrowser"};
+        static struct BeamConfig bundled;
+        struct BeamPlugin item;
+        beam_config_defaults(&bundled);memset(&item,0,sizeof(item));
+        assert(beam_catalog_is_bundled(&bundled,0,&item)); /* unreadable bundled path */
+        strcpy(bundled.plugin_files[0],"Work:Extra/Other.plugin");
+        assert(!beam_catalog_is_bundled(&bundled,0,&item));
+        strcpy(item.id,"org.beam68.calc");
+        assert(beam_catalog_is_bundled(&bundled,0,&item)); /* moved bundled identity */
+        strcpy(item.id,"org.thirdparty.calc");strcpy(item.name,"Calculator");
+        assert(!beam_catalog_is_bundled(&bundled,0,&item)); /* names are not identities */
+        assert(!beam_catalog_is_bundled(&bundled,-1,&item));
+    }
+    {
+        char first[96],second[96],small[4];
+        beam_catalog_format_row(first,sizeof(first),40,"1","Calculator","0.1","ON","=");
+        beam_catalog_format_row(second,sizeof(second),40,"12","Assigns and Volumes","0.2","OFF","#");
+        assert(!strncmp(first,"1  ",3) && !strncmp(second,"12 ",3));
+        assert(strstr(first,"0.1")-first==strstr(second,"0.2")-second);
+        assert(strstr(first,"ON")-first==strstr(second,"OFF")-second);
+        assert(strlen(first)==strlen(second) && strlen(first)<=40);
+        beam_catalog_format_row(small,sizeof(small),40,"1","Calculator","0.1","ON","=");
+        assert(strlen(small)==3);
+    }
+    {
+        static const char *names[]={"Calc","Clock","Memory","FileFinder","SystemCommands","DosTools","TaskManager","ClipboardTools","DateUtilities","WindowSwitcher","DeveloperTools","ARexxRunner","MusicControls","AminetBrowser","MusicLibrary","WHDLoad","DOpus","Wikipedia"};
         unsigned int n;
         for (n=0;n<sizeof(names)/sizeof(names[0]);n++) {
             char cmd[512],spec[160];
@@ -143,6 +167,32 @@ int main(void)
     beam_config_defaults(&cfg);
     assert(beam_config_read_active(&cfg));
     assert(!strcmp(cfg.install_dir,"PROGDIR:"));
+    memset(&plugin,0,sizeof(plugin));
+    assert(!beam_catalog_can_preview(&plugin));
+    assert(!beam_catalog_has_settings(&plugin));
+    plugin.preview=1;assert(beam_catalog_can_preview(&plugin));
+    strcpy(plugin.capabilities,"FILES,SYSTEM");assert(!beam_catalog_can_preview(&plugin));
+    strcpy(plugin.settings,"ENVARC:Beam68/Plugins/Test.cfg");assert(beam_catalog_has_settings(&plugin));
+    assert(!beam_catalog_can_preview(NULL) && !beam_catalog_has_settings(NULL));
+    {
+        struct BeamPluginSetting setting;char value[64];
+        memset(&setting,0,sizeof(setting));
+        setting.type=BEAM_PLUGIN_SETTING_BOOL;
+        assert(beam_catalog_setting_value(&setting," true ",value,sizeof(value)) && !strcmp(value,"YES"));
+        assert(!beam_catalog_setting_value(&setting,"maybe",value,sizeof(value)));
+        setting.type=BEAM_PLUGIN_SETTING_NUMBER;
+        assert(beam_catalog_setting_value(&setting,"-12",value,sizeof(value)) && !strcmp(value,"-12"));
+        assert(!beam_catalog_setting_value(&setting,"+",value,sizeof(value)));
+        assert(!beam_catalog_setting_value(&setting,"12x",value,sizeof(value)));
+        setting.type=BEAM_PLUGIN_SETTING_CHOICE;strcpy(setting.choices,"Auto,HippoPlayer");
+        assert(beam_catalog_setting_value(&setting,"hippoplayer",value,sizeof(value)) && !strcmp(value,"HippoPlayer"));
+        assert(!beam_catalog_setting_value(&setting,"Unknown",value,sizeof(value)));
+        setting.type=BEAM_PLUGIN_SETTING_TEXT;
+        assert(beam_catalog_setting_value(&setting,"",value,sizeof(value)) && !value[0]);
+        assert(!beam_catalog_setting_value(&setting,"x\nBAD=YES",value,sizeof(value)));
+        strcpy(value,"unchanged");
+        assert(!beam_catalog_setting_value(&setting,"long",value,2) && !strcmp(value,"unchanged"));
+    }
     puts("Plugin details, triggers, disabled, missing files, bundled discovery, safe settings path, install dir: PASS");
     return 0;
 }

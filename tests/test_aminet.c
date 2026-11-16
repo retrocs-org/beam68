@@ -11,6 +11,12 @@ static void row(FILE *f,int n,const char *package)
 int main(void)
 {
     char out[400],package[100];long length;FILE *f;struct BeamAminetResults r;struct BeamAminetDetails d;int i;
+    assert(beam_aminet_percent(0,0)==-1);
+    assert(beam_aminet_percent(0,100)==0 && beam_aminet_percent(1,3)==33);
+    assert(beam_aminet_percent(2,3)==66 && beam_aminet_percent(3,3)==100);
+    assert(beam_aminet_percent(67108863UL,67108864UL)==99);
+    assert(beam_aminet_percent(2147483647UL,4294967295UL)==49);
+    assert(beam_aminet_percent(4294967295UL,4294967295UL)==100);
     assert(beam_aminet_path_valid("util/wb/Beam68-0.1.lha"));
     assert(beam_aminet_path_valid("mods/pro/a+b_1992.mod"));
     assert(!beam_aminet_path_valid("../wb/package.lha"));

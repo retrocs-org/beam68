@@ -44,7 +44,7 @@ function page_start(string $title, string $description, string $page): void {
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="<?= escape($description) ?>">
-<meta name="theme-color" content="#171412">
+<meta name="theme-color" content="#121416">
 <meta property="og:type" content="website">
 <meta property="og:title" content="<?= escape($title) ?>">
 <meta property="og:description" content="<?= escape($description) ?>">
@@ -55,7 +55,7 @@ function page_start(string $title, string $description, string $page): void {
 </head><body id="top">
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="site-header wrap">
-<a class="brand" href="index.php" aria-label="Beam68 home"><span class="brand-mark" aria-hidden="true"></span>beam<span>68</span></a>
+<a class="brand" href="index.php" aria-label="Beam68 home">Beam68</a>
 <nav aria-label="Main navigation">
 <a href="index.php"<?= $page === 'home' ? ' aria-current="page"' : '' ?>>Overview</a>
 <a href="screenshots.php"<?= $page === 'screenshots' ? ' aria-current="page"' : '' ?>>Screenshots</a>
@@ -69,16 +69,12 @@ function page_start(string $title, string $description, string $page): void {
 <?php }
 function page_end(): void { ?>
 </main>
-<footer class="site-footer wrap">
-<div><a class="brand" href="index.php"><span class="brand-mark" aria-hidden="true"></span>beam<span>68</span></a><p>A little less searching.<br>A little more Amiga.</p></div>
-<div class="footer-links"><a href="get.php">Get Beam68</a><a href="developers.php">Developers</a><a href="source.php">Source</a><a href="marketplace.php">Marketplace</a></div>
-<div class="footer-note"><span class="version-dot"></span> Version <?= escape(BEAM68_SITE_VERSION) ?> · MIT License<p>No cookies. No trackers.<br>Made for classic AmigaOS.</p><a href="#top">Back to top ↑</a></div>
-</footer>
+<footer class="site-footer wrap"><span>Beam68 <?= escape(BEAM68_SITE_VERSION) ?> · Classic AmigaOS</span><span>Open source · MIT License</span><a href="#top">Back to top ↑</a></footer>
 </body></html>
 <?php }
 function screenshot_card(array $item): void { ?>
 <figure class="shot-card">
 <a class="shot-image" href="images/<?= escape($item['file']) ?>" aria-label="Open full image: <?= escape($item['title']) ?>"><?php screenshot_image($item['file']); ?></a>
-<figcaption><span class="eyebrow"><?= isset($item['app']) ? escape($item['app']) . ' · ' . escape($item['version'] ?? '0.1') : 'Reference view' ?></span><h3><?= escape($item['title']) ?></h3><p><?= escape($item['description']) ?></p></figcaption>
+<figcaption><h3><?= escape($item['title']) ?></h3><p><?= escape($item['description']) ?></p></figcaption>
 </figure>
 <?php }

@@ -15,23 +15,25 @@
 (set #default-parent "SYS:Utilities")
 (set #default-dest "SYS:Utilities/Beam68")
 (set #startup "SYS:WBStartup/Beam68Start")
-(set #plugin-count 14)
-(set #plugin-mask 16383)
+(set #plugin-count 18)
+(set #plugin-mask 262143)
+(set #default-enabled-mask 63)
 (set #pluginlines "")
-(set #ctl "Beam68Ctl")
+(set #ctl (expandpath "Beam68Ctl"))
 
 ; ------------------------------------------------------------- texts
 ; English defaults; @language (from the Locale preferences) selects a
 ; translation.  Keep the three lists in the same order.
 (set #t_stopping "Stopping a running Beam68 launcher...")
 (set #t_still_running "Beam68 is still running.  Quit it (F4 or Exchange) and start the installer again.")
+(set #t_start_failed "Beam68 files were installed, but the launcher did not start or open. Check available memory and try starting Beam68 manually.")
 (set #t_needs_os "Beam68 needs AmigaOS 3.0 (Kickstart 39) or newer.")
 (set #t_no_binary "This drawer contains no built Beam68 program.\n\nUse a release archive, or build it first with scripts/build-amiga.sh.")
 (set #t_ask_dir "Choose the drawer in which the \"Beam68\" drawer is created.\n\nBeam68Prefs is always installed in SYS:Prefs.")
 (set #t_help_dir "Beam68, Beam68Ctl and all plugins live in one drawer named Beam68.\nThe default is SYS:Utilities.  If you install it elsewhere, the installer\nrecords the location (INSTALL_DIR) so Beam68Prefs can find it.\n\n")
-(set #t_ask_plugins_update "Choose the plugins to install or update.\n\nPlugins you deselect are left as they are.  Third-party plugins are not touched.")
-(set #t_ask_plugins_new "Choose the plugins to install.\n\nEach plugin is a separate package: you can add or remove plugins later in Beam68Prefs.")
-(set #t_help_plugins "Every plugin is started only when you type its trigger or prefix and press Enter.\nPlugins marked SYSTEM (System Commands, Task Manager) ask for a second Enter.\n\n")
+
+
+
 (set #t_ask_autostart "Start Beam68 automatically when Workbench starts?\n\nIt then waits in the background for its hotkey\n(Ctrl+Alt+Space by default).")
 (set #t_help_autostart "Adds the project icon SYS:WBStartup/Beam68Start.  Choosing No removes an existing one.\n\n")
 (set #t_yes "Yes")
@@ -50,6 +52,8 @@
 (set #t_start "Start Beam68")
 (set #t_not_now "Not now")
 (set #t_ready "Beam68 is ready.")
+(set #t_open_shortcut "\n\nOpen Beam68 with: ")
+(set #t_open_prefs "\n\nChange the shortcut in SYS:Prefs/Beam68Prefs.\nThe search window does not open automatically.")
 (set #t_which_remove "Which Beam68 drawer should be removed?")
 (set #t_not_contain "\ndoes not contain Beam68.  Nothing was removed.")
 (set #t_remove_q "Remove Beam68 completely?\n\n")
@@ -66,20 +70,21 @@
 (set #t_not_installed "Beam68 is not installed.\n\nWhat would you like to do?")
 (set #t_installed_in "Beam68 is installed in\n")
 (set #t_what_do "\n\nWhat would you like to do?")
-(set #t_help_main "Install or update: copies Beam68, Beam68Prefs and the chosen plugins.\nYour settings are kept.\n\nUninstall: removes Beam68 and, if you wish, its settings.\n\n")
-(set #t_choice_install "Install or update Beam68")
+(set #t_help_main "Install or update: copies Beam68, Beam68Prefs and all bundled plugins.\nYour settings are kept.\n\nUninstall: removes Beam68 and, if you wish, its settings.\n\n")
+(set #t_choice_install "Update Beam68")
 (set #t_choice_uninstall "Uninstall Beam68")
 (if (= @language "deutsch")
   (
     (set #t_stopping "Laufender Beam68-Starter wird beendet...")
     (set #t_still_running "Beam68 läuft noch.  Beenden (F4 oder Exchange) und das Installationsprogramm neu starten.")
+    (set #t_start_failed "Die Dateien wurden installiert, aber Beam68 konnte nicht gestartet werden. Bitte Speicher pruefen und Beam68 manuell starten.")
     (set #t_needs_os "Beam68 benötigt AmigaOS 3.0 (Kickstart 39) oder neuer.")
     (set #t_no_binary "Diese Schublade enthält kein fertiges Beam68-Programm.\n\nEin Release-Archiv verwenden oder zuerst mit scripts/build-amiga.sh bauen.")
     (set #t_ask_dir "Schublade wählen, in der die Schublade \"Beam68\" angelegt wird.\n\nBeam68Prefs kommt immer nach SYS:Prefs.")
     (set #t_help_dir "Beam68, Beam68Ctl und alle Plugins liegen in einer Schublade namens Beam68.\nVorgabe ist SYS:Utilities.  Bei einem anderen Ort wird er (INSTALL_DIR)\ngespeichert, damit Beam68Prefs ihn findet.\n\n")
-    (set #t_ask_plugins_update "Plugins zum Installieren oder Aktualisieren wählen.\n\nNicht gewählte Plugins bleiben unverändert.  Fremde Plugins werden nicht angefasst.")
-    (set #t_ask_plugins_new "Zu installierende Plugins wählen.\n\nJedes Plugin ist ein eigenes Paket: später in Beam68Prefs hinzufügen oder entfernen.")
-    (set #t_help_plugins "Ein Plugin startet nur, wenn man seinen Auslöser oder sein Präfix tippt und Enter drückt.\nSYSTEM-Plugins (System Commands, Task Manager) fragen nach einem zweiten Enter.\n\n")
+
+
+
     (set #t_ask_autostart "Beam68 automatisch mit der Workbench starten?\n\nEs wartet dann im Hintergrund auf sein Tastenkürzel\n(Vorgabe Ctrl+Alt+Space).")
     (set #t_help_autostart "Legt das Projekt-Piktogramm SYS:WBStartup/Beam68Start an.  Nein entfernt ein vorhandenes.\n\n")
     (set #t_yes "Ja")
@@ -98,6 +103,8 @@
     (set #t_start "Beam68 starten")
     (set #t_not_now "Nicht jetzt")
     (set #t_ready "Beam68 ist bereit.")
+    (set #t_open_shortcut "\n\nBeam68 oeffnen mit: ")
+    (set #t_open_prefs "\n\nTastenkombination in SYS:Prefs/Beam68Prefs aendern.\nBeam68 bleibt im Hintergrund.")
     (set #t_which_remove "Welche Beam68-Schublade soll entfernt werden?")
     (set #t_not_contain "\nenthält kein Beam68.  Nichts wurde entfernt.")
     (set #t_remove_q "Beam68 vollständig entfernen?\n\n")
@@ -114,8 +121,8 @@
     (set #t_not_installed "Beam68 ist nicht installiert.\n\nWas möchtest du tun?")
     (set #t_installed_in "Beam68 ist installiert in\n")
     (set #t_what_do "\n\nWas möchtest du tun?")
-    (set #t_help_main "Installieren/aktualisieren: kopiert Beam68, Beam68Prefs und die gewählten Plugins.\nEinstellungen bleiben erhalten.\n\nEntfernen: löscht Beam68 und auf Wunsch die Einstellungen.\n\n")
-    (set #t_choice_install "Beam68 installieren oder aktualisieren")
+    (set #t_help_main "Installieren/aktualisieren: kopiert Beam68, Beam68Prefs und alle mitgelieferten Plugins.\nEinstellungen bleiben erhalten.\n\nEntfernen: löscht Beam68 und auf Wunsch die Einstellungen.\n\n")
+    (set #t_choice_install "Beam68 aktualisieren")
     (set #t_choice_uninstall "Beam68 entfernen")
   )
 )
@@ -123,13 +130,14 @@
   (
     (set #t_stopping "Stoppar den körande Beam68-startaren...")
     (set #t_still_running "Beam68 körs fortfarande.  Avsluta den (F4 eller Exchange) och starta installationen igen.")
+    (set #t_start_failed "Filerna installerades men Beam68 kunde inte startas. Kontrollera ledigt minne och starta Beam68 manuellt.")
     (set #t_needs_os "Beam68 kräver AmigaOS 3.0 (Kickstart 39) eller nyare.")
     (set #t_no_binary "Den här lådan innehåller inget färdigt Beam68-program.\n\nAnvänd ett releasearkiv eller bygg först med scripts/build-amiga.sh.")
     (set #t_ask_dir "Välj lådan där lådan \"Beam68\" skapas.\n\nBeam68Prefs installeras alltid i SYS:Prefs.")
     (set #t_help_dir "Beam68, Beam68Ctl och alla tillägg ligger i en låda som heter Beam68.\nStandard är SYS:Utilities.  Installeras den någon annanstans sparas\nplatsen (INSTALL_DIR) så att Beam68Prefs hittar den.\n\n")
-    (set #t_ask_plugins_update "Välj tilläggen som ska installeras eller uppdateras.\n\nTillägg du inte väljer lämnas orörda, liksom tredjepartstillägg.")
-    (set #t_ask_plugins_new "Välj tilläggen som ska installeras.\n\nVarje tillägg är ett eget paket: lägg till eller ta bort senare i Beam68Prefs.")
-    (set #t_help_plugins "Ett tillägg startar bara när du skriver dess utlösare eller prefix och trycker Enter.\nSYSTEM-tillägg (System Commands, Task Manager) kräver ett andra Enter.\n\n")
+
+
+
     (set #t_ask_autostart "Starta Beam68 automatiskt med Workbench?\n\nDen väntar då i bakgrunden på sin snabbtangent\n(standard Ctrl+Alt+Space).")
     (set #t_help_autostart "Lägger till projektikonen SYS:WBStartup/Beam68Start.  Nej tar bort en befintlig.\n\n")
     (set #t_yes "Ja")
@@ -148,6 +156,8 @@
     (set #t_start "Starta Beam68")
     (set #t_not_now "Inte nu")
     (set #t_ready "Beam68 är klart.")
+    (set #t_open_shortcut "\n\nOeppna Beam68 med: ")
+    (set #t_open_prefs "\n\nAendra kortkommandot i SYS:Prefs/Beam68Prefs.\nBeam68 ligger kvar i bakgrunden.")
     (set #t_which_remove "Vilken Beam68-låda ska tas bort?")
     (set #t_not_contain "\ninnehåller inte Beam68.  Inget togs bort.")
     (set #t_remove_q "Ta bort Beam68 helt?\n\n")
@@ -164,21 +174,21 @@
     (set #t_not_installed "Beam68 är inte installerat.\n\nVad vill du göra?")
     (set #t_installed_in "Beam68 är installerat i\n")
     (set #t_what_do "\n\nVad vill du göra?")
-    (set #t_help_main "Installera/uppdatera: kopierar Beam68, Beam68Prefs och valda tillägg.\nInställningarna behålls.\n\nAvinstallera: tar bort Beam68 och, om du vill, inställningarna.\n\n")
-    (set #t_choice_install "Installera eller uppdatera Beam68")
+    (set #t_help_main "Installera/uppdatera: kopierar Beam68, Beam68Prefs och alla medföljande tillägg.\nInställningarna behålls.\n\nAvinstallera: tar bort Beam68 och, om du vill, inställningarna.\n\n")
+    (set #t_choice_install "Uppdatera Beam68")
     (set #t_choice_uninstall "Avinstallera Beam68")
   )
 )
 
 ; ---------------------------------------------------------------- helpers
 
-; Plugin drawer name for index #i.  Same order as the askoptions list.
+; Plugin drawer name for index #i.  All bundled packages.
 (procedure P_PLUGIN_NAME
   (set #plugin
     (select #i "Calc" "Clock" "Memory" "FileFinder" "SystemCommands"
                "DosTools" "TaskManager" "ClipboardTools" "DateUtilities"
                "WindowSwitcher" "DeveloperTools" "ARexxRunner"
-               "MusicControls" "AminetBrowser"))
+               "MusicControls" "AminetBrowser" "MusicLibrary" "WHDLoad" "DOpus" "Wikipedia"))
 )
 
 ; Ask a running launcher to quit and wait until it has gone: QUITWAIT
@@ -193,7 +203,20 @@
         (abort #t_still_running)
       )
     )
+    (abort #t_no_binary)
   )
+)
+
+(procedure P_START_LAUNCHER
+  (if (<> (run (cat "C:Run >NIL: <NIL: \"" (tackon #dest "Beam68") "\"")) 0)
+    (abort #t_start_failed))
+  (if (<> (run (cat "\"" #ctl "\" >NIL: WAITREADY")) 0)
+    (abort #t_start_failed))
+)
+
+; Kept outside the settings drawer so Remove settings retains diagnostics.
+(procedure P_UNINSTALL_TRACE
+  (run (cat "C:Echo >>ENVARC:Beam68-Uninstall.log \"" #stage "\""))
 )
 
 (procedure P_MAKEDIR
@@ -239,6 +262,14 @@
   )
 )
 
+; Temporary Use settings take precedence over ENV:/ENVARC:. Remove only
+; configuration files, leaving active worker files and drawer locks alone.
+(procedure P_CLEAR_SESSION_CONFIG
+  (set #file "T:Beam68/Beam68.cfg") (P_DELETE_FILE)
+  (set #file "T:Beam68/Beam68.cfg.bak") (P_DELETE_FILE)
+  (set #file "T:Beam68/Beam68.cfg.new") (P_DELETE_FILE)
+)
+
 ; Updates keep the user's configuration file #cfg, but add a PLUGIN= line
 ; for every chosen plugin it does not mention yet, and record a non-default
 ; install drawer.  C:Search returns 5 (WARN) when the text is absent.
@@ -250,8 +281,8 @@
       (if (= (run (cat "C:Search FROM \"" #cfg "\" SEARCH \"" #plugin ".plugin\" QUIET")) 5)
         (
         (run (cat "Echo >>\"" #cfg "\" \"PLUGIN=PROGDIR:Plugins/" #plugin "/" #plugin ".plugin\""))
-          (if (= #plugin "AminetBrowser")
-            (run (cat "Echo >>\"" #cfg "\" \"PLUGIN_DISABLED=PROGDIR:Plugins/AminetBrowser/AminetBrowser.plugin\""))
+          (if (= (IN #default-enabled-mask #i) 0)
+            (run (cat "Echo >>\"" #cfg "\" \"PLUGIN_DISABLED=PROGDIR:Plugins/" #plugin "/" #plugin ".plugin\""))
           )
         )
       )
@@ -291,31 +322,9 @@
   (set #update (= (exists (tackon #dest "Beam68") (noreq)) 1))
   (set #portable-settings (= (exists (tackon #dest "Beam68.cfg") (noreq)) 1))
 
-  (set #plugins
-    (if #novice #plugin-mask
-    (askoptions
-      (prompt (if #update
-        #t_ask_plugins_update
-        #t_ask_plugins_new))
-      (help #t_help_plugins @askoptions-help)
-      (choices
-        "Calculator             =  (integer maths)"
-        "Clock                  @  (date and time)"
-        "Memory                 ?  (free memory)"
-        "File Finder            /  find:"
-        "System Commands        !  system:"
-        "Assigns and Volumes    #  dos:"
-        "Task Manager           ^  task:"
-        "Clipboard Tools        &  clip:"
-        "Date Utilities         :  date:"
-        "Workbench Windows      ~  window:"
-        "Developer Tools        $  dev:"
-        "ARexx Runner           %  rexx:"
-        "Music Controls         |  music:"
-        "Aminet Browser         ]  aminet:")
-      (default #plugin-mask)
-    ))
-  )
+  ; Every user level installs the full bundled set. Preferences manages
+  ; enable/disable choices; updates retain existing plugin settings.
+  (set #plugins #plugin-mask)
 
   (set #autostart
     (if #novice (if #update (exists #startup (noreq)) 1)
@@ -421,6 +430,10 @@
         )
         (set #pluginlines
           (cat #pluginlines "PLUGIN=PROGDIR:Plugins/" #plugin "/" #plugin ".plugin\n"))
+        (if (= (IN #default-enabled-mask #i) 0)
+          (set #pluginlines
+            (cat #pluginlines "PLUGIN_DISABLED=PROGDIR:Plugins/" #plugin "/" #plugin ".plugin\n"))
+        )
       )
     )
     (set #i (+ #i 1))
@@ -430,6 +443,7 @@
   ; -- configuration: written once, afterwards only extended
   (if (= (exists "ENVARC:Beam68/Beam68.cfg" (noreq)) 0)
     (
+      (P_CLEAR_SESSION_CONFIG)
       (set #cfgextra "")
       (if (<> #dest #default-dest)
         (set #cfgextra (cat "INSTALL_DIR=" #dest "\n"))
@@ -514,8 +528,15 @@
         (help @askbool-help)
         (default 1)
         (choices #t_start #t_not_now)))
-    (run (cat "Run >NIL: \"" (tackon #dest "Beam68") "\""))
+    (P_START_LAUNCHER)
   )
+  ; Read the same active configuration as the launcher (including preserved
+  ; session/update settings); never assume the shipped shortcut.
+  (if (<> (run (cat "\"" #ctl "\" >NIL: INSTALLINFO")) 0)
+    (abort #t_start_failed))
+  (set #shortcut (getenv "Beam68-InstallerShortcut"))
+  (run "C:UnsetEnv Beam68-InstallerShortcut")
+  (set #t_ready (cat #t_ready #t_open_shortcut #shortcut #t_open_prefs))
   (exit #t_ready)
 )
 
@@ -533,13 +554,26 @@
   (if (<> (exists (tackon #dest "Beam68") (noreq)) 1)
     (abort (cat #dest #t_not_contain))
   )
-  (if (= 0 (if #novice 1 (askbool
+  (set #remove-level @user-level)
+  (if #novice (user 1))
+  (if (= 0 (askbool
         (prompt (cat #t_remove_q #dest #t_remove_list))
         (help @askbool-help)
         (default 0)
-        (choices #t_remove #t_cancel))))
-    (exit #t_nothing_removed (quiet))
+        (choices #t_remove #t_cancel)))
+    ((user #remove-level) (exit #t_nothing_removed (quiet)))
   )
+
+  (set #keep-settings (askbool
+    (prompt #t_keep_q)
+    (help @askbool-help)
+    (default 1)
+    (choices #t_keep #t_delete)))
+  (user #remove-level)
+  ; Never let Installer write a transcript into a removed application drawer.
+  (set @default-dest "T:")
+  (run "C:Echo >ENVARC:Beam68-Uninstall.log Beam68-uninstall-begin")
+  (set #stage "Stopping launcher") (P_UNINSTALL_TRACE)
 
   ; Prefer this archive's Beam68Ctl (it knows QUITWAIT); fall back to the
   ; installed one.
@@ -547,10 +581,15 @@
     (set #ctl (tackon #dest "Beam68Ctl"))
   )
   (P_STOP_LAUNCHER)
+  (set #stage "Launcher stopped") (P_UNINSTALL_TRACE)
   (complete 20)
 
   (working (cat #t_removing #dest))
+  (set #stage "Removing program drawer") (P_UNINSTALL_TRACE)
   (run (cat "C:Delete \"" #dest "\" ALL QUIET FORCE"))
+  (if (exists (tackon #dest "Beam68") (noreq))
+    (abort #t_still_running))
+  (set #stage "Program drawer removed") (P_UNINSTALL_TRACE)
   (set #file (cat #dest ".info")) (P_DELETE_FILE)
   (set #file "SYS:Prefs/Beam68Prefs") (P_DELETE_FILE)
   (set #file "SYS:Prefs/Beam68Prefs.info") (P_DELETE_FILE)
@@ -562,21 +601,35 @@
   (set #file (cat #startup ".info")) (P_DELETE_FILE)
   (complete 70)
 
-  (if (if #novice 1 (askbool
-        (prompt #t_keep_q)
-        (help @askbool-help)
-        (default 1)
-        (choices #t_keep #t_delete)))
+  (set #stage "Program and startup cleanup complete") (P_UNINSTALL_TRACE)
+  (if #keep-settings
     (
       (set #file "ENVARC:Beam68/InstallDir") (P_DELETE_FILE)
       (set #file "ENV:Beam68/InstallDir") (P_DELETE_FILE)
     )
     (
+      ; ENV: may be a link or a live environment handler over ENVARC:.
+      ; Delete files while the saved tree still exists. Never recursively
+      ; delete the live ENV: drawer (the handler can corrupt its lists).
+      (set #stage "Removing live settings files") (P_UNINSTALL_TRACE)
+      (P_CLEAR_SESSION_CONFIG)
+      (if (exists "ENV:Beam68/Plugins" (noreq))
+        (foreach "ENV:Beam68/Plugins" "#?"
+          ((set #file (tackon "ENV:Beam68/Plugins" @each-name)) (P_DELETE_FILE))))
+      (if (exists "ENV:Beam68" (noreq))
+        (foreach "ENV:Beam68" "#?"
+          ((set #file (tackon "ENV:Beam68" @each-name)) (P_DELETE_FILE))))
+      (set #file "ENV:Beam68.cfg") (P_DELETE_FILE)
+      (set #file "ENV:Beam68.cfg.bak") (P_DELETE_FILE)
+      (set #stage "Live settings files removed; removing permanent settings") (P_UNINSTALL_TRACE)
       (run "C:Delete ENVARC:Beam68 ALL QUIET FORCE")
-      (run "C:Delete ENV:Beam68 ALL QUIET FORCE")
+      (set #file "ENVARC:Beam68.cfg") (P_DELETE_FILE)
+      (set #file "ENVARC:Beam68.cfg.bak") (P_DELETE_FILE)
+      (set #stage "Permanent settings removed; live directory retained") (P_UNINSTALL_TRACE)
     )
   )
   (complete 100)
+  (set #stage "Uninstall complete; returning from Installer") (P_UNINSTALL_TRACE)
   (exit #t_removed)
 )
 
@@ -597,19 +650,22 @@
 (welcome #t_welcome)
 (set #novice (= @user-level 0))
 
-(set #action
-  (if #novice 0
-    (askchoice
-    (prompt (if (= #existing "")
-      #t_not_installed
-      (cat #t_installed_in #existing #t_what_do)))
-    (help #t_help_main @askchoice-help)
-    (choices #t_choice_install #t_choice_uninstall)
-    (default 0)
-  ))
-)
-
-(if (= #action 0)
+(if (<> #existing "")
+  (
+    ; Installer suppresses questions at Novice level. Raise the level only
+    ; for the maintenance menu, then restore the selected automatic behavior.
+    (set #maintenance-level @user-level)
+    (if #novice (user 1))
+    (set #action
+      (askchoice
+        (prompt (cat #t_installed_in #existing #t_what_do))
+        (help #t_help_main @askchoice-help)
+        (choices #t_choice_install #t_choice_uninstall)
+        (default 0)))
+    (user #maintenance-level)
+    (if (= #action 0)
+      (P_INSTALL)
+      (P_UNINSTALL))
+  )
   (P_INSTALL)
-  (P_UNINSTALL)
 )

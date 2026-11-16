@@ -45,7 +45,7 @@ int beam_rexx_parse(const char *input, struct BeamRexxCommand *out)
             number=number*10+(*p++-'0');
         }
         while (*p==' ' || *p=='\t') p++;
-        if (*p || !digits || number<1 || number>(action==BEAM_REXX_REQUEST?3:16)) return 0;
+        if (*p || !digits || number<1 || number>(action==BEAM_REXX_REQUEST?3:32)) return 0;
         out->plugin_index=number-1;
     } else if (action==BEAM_REXX_TIMING && *p) {
         start=p;len=0;

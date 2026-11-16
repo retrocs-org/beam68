@@ -30,7 +30,7 @@ def check(path, required=()):
 prefs = (root / "src/prefs.c").read_text()
 wanted = re.search(r"static const char \*nodes\[\]=\{([^}]*)\}", prefs).group(1)
 wanted = re.findall(r'"([A-Z_]+)"', wanted)
-assert len(wanted) == 9
+assert len(wanted) == 10
 check(root / "Beam68.guide", wanted + ["WHDLOAD", "LANGUAGES", "PACKAGES"])
 check(root / "sdk/Beam68PluginSDK.guide", ["PROTOCOL", "MANIFEST"])
 print("AmigaGuide manuals: nodes, links, Preferences help nodes: PASS")

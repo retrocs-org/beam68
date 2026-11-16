@@ -2,6 +2,7 @@
 # Native 68000 build with either a configured GCC or vbcc/NDK toolchain.
 set -eu
 project_root=$(CDPATH= cd "$(dirname "$0")/.." && pwd)
+python3 "$project_root/scripts/plugin-versions.py" --check
 if [ -n "${BEAM68_CC:-}" ]; then
     make -B -C "$project_root" CC="$BEAM68_CC" "$@"
     compiler=$BEAM68_CC

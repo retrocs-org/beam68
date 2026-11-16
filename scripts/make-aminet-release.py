@@ -40,32 +40,76 @@ def runtime_files():
 
 def readme(author, uploader, archive_name):
     changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
-    intro = (ROOT / "README.md").read_text(encoding="utf-8").split("\n## ")[0]
-    intro = re.sub(r"^# .*\n", "", intro).strip()
-    intro = re.sub(r"[*`]", "", intro)
-    intro = "\n\n".join(textwrap.fill(" ".join(p.split()), 76) for p in intro.split("\n\n"))
     section = re.search(r"^## " + re.escape(VERSION) + r"(?:[^\n]*)\n(.*?)(?=^## |\Z)",
                         changelog, re.M | re.S)
     if not section:
         raise ValueError("Missing changelog section for " + VERSION)
-    changes = "## " + VERSION + "\n" + section.group(1).strip()
+    changes = [VERSION]
+    paragraph = []
+    def flush():
+        if paragraph:
+            changes.append(textwrap.fill(" ".join(paragraph), 76,
+                           initial_indent="        - ", subsequent_indent="          "))
+            paragraph.clear()
+    for line in section.group(1).splitlines():
+        if line.startswith("### "):
+            flush()
+            changes.extend(["", "    " + line[4:].strip()])
+        elif line.startswith("- "):
+            flush()
+            paragraph.append(line[2:].strip().replace("`", ""))
+        elif line.strip():
+            paragraph.append(line.strip().replace("`", ""))
+        else:
+            flush()
+    flush()
     header = [
         "Short:        Keyboard application launcher for OS 3.x",
         "Author:       %s" % author,
         "Uploader:     %s" % uploader,
         "Type:         util/wb",
         "Version:      %s" % VERSION,
-        "Replaces:     util/wb/%s" % archive_name,
         "Architecture: m68k-amigaos >= 3.0.0",
+        "Requires:     AmigaOS 3.0+, 68000+; TCP/IP for Aminet Browser",
         "Distribution: Aminet",
-        "Kurz:         Programmstarter per Tastatur fuer OS 3.x",
+        "URL:          https://beam68.retrocs.org/",
         "",
     ]
-    body = [intro, "", "Installation: unpack %s anywhere, open the Beam68 drawer" % archive_name,
-            "and double-click Install (AmigaOS Installer).  The manual is",
-            "Beam68.guide.", "", "Changes:", "", re.sub(r"[*`]", "", changes).strip(), ""]
-    text = "\n".join(header + body)
-    return text.encode("latin-1", "replace")
+    body = """Beam68 is a keyboard-driven application launcher for classic AmigaOS,
+with a global hotkey and a separate native Preferences application.
+
+FEATURES
+
+- Find applications, files, drawers and WHDLoad games from the keyboard.
+- Use favorites, aliases, recent items and searchable command help.
+- Use 18 bundled plugins, including opt-in Aminet and Wikipedia searches.
+- Start with six local tools; network and optional plugins are off.
+- Adjust indexed drawers, shortcuts, fonts, colors and portable themes.
+
+INSTALLATION
+
+Unpack %s, open the Beam68 drawer and double-click Install.
+Choose Novice for automatic setup, or Intermediate/Expert to customize it.
+Updates preserve saved settings. The launcher starts in the background; the
+installer shows the configured shortcut (Ctrl + Alt + Space by default).
+Uninstall can keep or remove saved and temporary preferences.
+Read Beam68.guide for the full manual.
+
+SOURCE AND LICENCE
+
+Source:  https://github.com/retrocs-org/beam68
+Release: https://github.com/retrocs-org/beam68/releases/tag/%s
+Licence: MIT. See LICENSE in the archive for the full licence text.
+
+VERSION CHANGELOG
+
+%s
+""" % (archive_name, VERSION, "\n".join(changes))
+    text = "\n".join(header) + "\n" + body
+    # Plain ASCII is safe in classic viewers; never emit replacement characters.
+    for old, new in (("\u2014", "-"), ("\u2013", "-"), ("\u2019", "'"), ("\u201c", '"'), ("\u201d", '"')):
+        text = text.replace(old, new)
+    return text.encode("ascii", "strict")
 
 
 def main(argv=None):

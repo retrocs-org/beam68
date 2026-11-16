@@ -1,6 +1,7 @@
 /* Optional nonresident Shell tool. */
 #include <exec/types.h>
 #include <dos/dos.h>
+#include <dos/var.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <string.h>
@@ -40,6 +41,20 @@ static int ctl_main(int argc,char **argv)
     ULONG action=0;
     int found,i;
     char version[64];
+    if (argc==2 && is(argv[1],"INSTALLINFO")) {
+        static struct BeamConfig config;
+        char shortcut[192];
+        DeleteVar((STRPTR)"Beam68-InstallerShortcut",GVF_GLOBAL_ONLY);
+        beam_config_defaults(&config);
+        if(!beam_config_read_active(&config) ||
+           !beam_hotkey_display(config.hotkey,shortcut,sizeof(shortcut)))return 20;
+        return SetVar((STRPTR)"Beam68-InstallerShortcut",(STRPTR)shortcut,-1,GVF_GLOBAL_ONLY)?0:20;
+    }
+    if (argc==2 && is(argv[1],"WAITREADY")) {
+        /* Poll only while absent; do not impose a startup pause on fast CPUs. */
+        for(i=0;i<350 && !beam_control_running();i++)Delay(1);
+        return beam_control_version(version,sizeof(version))==1?0:20;
+    }
     if (argc==2) {
         if(is(argv[1],"VERSION")) {
             found=beam_control_version(version,sizeof(version));

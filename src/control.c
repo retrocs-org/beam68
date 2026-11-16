@@ -45,6 +45,24 @@ int beam_control_send(unsigned long command)
     return queue_message(m);
 }
 
+/* The launcher hides only if this worker still owns the displayed query. */
+int beam_control_plugin_handoff(unsigned long serial)
+{
+    struct BeamPluginHandoffMessage *m;
+    if(!serial)return 0;
+    m=(struct BeamPluginHandoffMessage *)AllocVec(sizeof(*m),MEMF_PUBLIC|MEMF_CLEAR);
+    if(!m)return 0;
+    m->control.message.mn_Node.ln_Type=NT_MESSAGE;
+    m->control.message.mn_Length=(UWORD)sizeof(*m);
+    m->control.magic=BEAM_CONTROL_MAGIC;m->control.version=BEAM_CONTROL_VERSION;
+    m->control.command=BEAM_CTL_PLUGIN_HANDOFF;m->serial=serial;
+    return queue_message(&m->control);
+}
+int beam_control_handoff_matches(unsigned long current_serial,unsigned long serial,const char *query,const char *original)
+{
+    return serial && current_serial==serial && query && original && !strcmp(query,original);
+}
+
 int beam_control_send_theme(unsigned long theme,
                             const unsigned long *custom_colors)
 {
@@ -142,5 +160,67 @@ int beam_control_version(char *out,unsigned int cap)
     }
     Forbid();RemPort(port);Permit();
     while((message=GetMsg(port))) release_version_reply(message);
+    DeleteMsgPort(port);return result;
+}
+
+void beam_control_reply_reload(const struct BeamControlMessage *base,int result,const char *text)
+{
+    const struct BeamVersionRequest *request=(const struct BeamVersionRequest *)base;
+    struct BeamReloadReply *reply;struct MsgPort *port;
+    if(base->message.mn_Length<sizeof(*request) || !request->serial ||
+        !memchr(request->reply_port,0,sizeof(request->reply_port)) ||
+        strncmp(request->reply_port,BEAM_RELOAD_REPLY_PREFIX,strlen(BEAM_RELOAD_REPLY_PREFIX)))return;
+    reply=(struct BeamReloadReply *)AllocVec(sizeof(*reply),MEMF_PUBLIC|MEMF_CLEAR);if(!reply)return;
+    reply->message.mn_Node.ln_Type=NT_MESSAGE;reply->message.mn_Length=sizeof(*reply);
+    reply->magic=BEAM_CONTROL_MAGIC;reply->version=BEAM_CONTROL_VERSION;
+    reply->serial=request->serial;reply->result=result;
+    if(text){strncpy(reply->text,text,sizeof(reply->text)-1);reply->text[sizeof(reply->text)-1]=0;}
+    Forbid();port=FindPort((STRPTR)request->reply_port);
+    if(port)PutMsg(port,(struct Message *)reply);
+    Permit();if(!port)FreeVec(reply);
+}
+static void release_reload_reply(struct Message *message)
+{
+    struct BeamReloadReply *reply=(struct BeamReloadReply *)message;
+    if(message->mn_Length>=sizeof(*reply) && reply->magic==BEAM_CONTROL_MAGIC)FreeVec(message);
+    else if(message->mn_ReplyPort)ReplyMsg(message);
+}
+int beam_control_reload(char *out,unsigned int cap)
+{
+    struct BeamVersionRequest *request;struct BeamReloadReply *reply;struct Message *message;
+    struct MsgPort *port;struct DateStamp stamp;
+    char name[64];ULONG serial;int tick,result=-1,received=0;
+    if(!out || !cap)return -1;
+    out[0]=0;if(!beam_control_running())return 0;
+    strncpy(out,"Settings saved; the running launcher did not confirm applying them.",cap-1);out[cap-1]=0;
+    port=CreateMsgPort();if(!port)return -1;
+    DateStamp(&stamp);serial=(ULONG)stamp.ds_Days*4320000UL+(ULONG)stamp.ds_Minute*3000UL+(ULONG)stamp.ds_Tick;
+    if(!serial)serial=1;
+    sprintf(name,BEAM_RELOAD_REPLY_PREFIX "%08lx.%08lx",(unsigned long)FindTask(NULL),(unsigned long)serial);
+    port->mp_Node.ln_Name=name;
+    Forbid();if(FindPort(name)){Permit();DeleteMsgPort(port);return -1;}AddPort(port);Permit();
+    request=(struct BeamVersionRequest *)AllocVec(sizeof(*request),MEMF_PUBLIC|MEMF_CLEAR);
+    if(request) {
+        request->control.message.mn_Node.ln_Type=NT_MESSAGE;request->control.message.mn_Length=sizeof(*request);
+        request->control.magic=BEAM_CONTROL_MAGIC;request->control.version=BEAM_CONTROL_VERSION;
+        request->control.command=BEAM_CTL_RELOAD_CONFIRMED;request->serial=serial;strcpy(request->reply_port,name);
+        if(queue_message(&request->control)) {
+            for(tick=0;tick<=250 && !received;tick++) {
+                while((message=GetMsg(port))) {
+                    reply=(struct BeamReloadReply *)message;
+                    if(message->mn_Length>=sizeof(*reply) && reply->magic==BEAM_CONTROL_MAGIC &&
+                        reply->version==BEAM_CONTROL_VERSION && reply->serial==serial &&
+                        memchr(reply->text,0,sizeof(reply->text)) &&
+                        (reply->result==-1 || reply->result==1 || reply->result==2)) {
+                        strncpy(out,reply->text,cap-1);out[cap-1]=0;result=(int)reply->result;received=1;
+                    }
+                    release_reload_reply(message);
+                }
+                if(!received && tick<250)Delay(1);
+            }
+        } else result=0;
+    }
+    Forbid();RemPort(port);Permit();
+    while((message=GetMsg(port)))release_reload_reply(message);
     DeleteMsgPort(port);return result;
 }

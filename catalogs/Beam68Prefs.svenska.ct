@@ -21,7 +21,7 @@ PMSG_PAGE_FAVORITES
 Favoriter
 ;Favorites
 PMSG_PAGE_APPLICATIONS
-Program
+Programgenvägar
 ;Applications
 PMSG_PAGE_ACCESSIBILITY
 Tillgänglighet
@@ -135,13 +135,13 @@ PMSG_DETAILS
 Detaljer
 ;Details
 PMSG_TOGGLE
-På/Av
+Växla
 ;Enable/Disable
 PMSG_UP
-Upp
+Prioritet upp
 ;Up
 PMSG_DOWN
-Ned
+Prioritet ned
 ;Down
 PMSG_RELOAD_PLUGINS
 Läs om tillägg
@@ -318,13 +318,13 @@ PMSG_HEALTH_UNAVAILABLE
 Status okänd
 ;Health unavailable
 PMSG_DETAILS1
-Namn: %.64s\nKategori: %.30s\nUtlösare: %c  Prefix: %.20s\nStatus: %s\nPrioritet: %ld av %ld\n
+Namn: %s\nKategori: %s\nUtlösare: %c  Prefix: %s\nStatus: %s\nPrioritet: %ld av %ld\n
 ;Name: %.64s\nCategory: %.30s\nTrigger: %c  Prefix: %.20s\nStatus: %s\nPriority: %ld of %ld\n
 PMSG_DETAILS2
-Hälsa: %.150s\nBehörigheter: %.60s\nBeskrivning: %.90s\nExempel: %.80s\nHjälp: %.110s\n
+Hälsa: %s\nBehörigheter: %s\nBeskrivning: %s\nExempel: %s\nHjälp: %s\n
 ;Health: %.150s\nCapabilities: %.60s\nDescription: %.90s\nExample: %.80s\nHelp: %.110s\n
 PMSG_DETAILS3
-Ikon: %.80s\nProgram: %.80s\nInställningar: %.80s\nManifest: %.80s
+Ikon: %s\nProgram: %s\nInställningar: %s\nManifest: %s
 ;Icon: %.80s\nExecutable: %.80s\nSettings: %.80s\nManifest: %.80s
 PMSG_UNKNOWN
 (okänd)
@@ -627,7 +627,7 @@ PMSG_PKG_BAD_SETTINGS
 SETTINGS måste vara ENVARC:Beam68/Plugins/<fil>
 ;SETTINGS must be ENVARC:Beam68/Plugins/<file>
 PMSG_DETAILS4
-\nProtokoll: %ld  Guide: %.80s
+\nProtokoll: %ld  Guide: %s
 ;\nProtocol: %ld  Guide: %.80s
 PMSG_PAGE_EXTRAS
 Extra
@@ -759,7 +759,7 @@ PMSG_SRC_URL_COMMAND
 PMSG_PREVIEW_TITLE
 Liveforhandsvisning
 PMSG_PREVIEW_BODY
-%.64s\nForhandsvisning: %s\nFordrojning: %ld ms\nValj Anvand eller Spara efter Detaljer.
+Körs automatiskt efter en skrivpaus.\n%.64s\nForhandsvisning: %s\nFordrojning: %ld ms\nValj Anvand eller Spara efter Detaljer.
 PMSG_PREVIEW_BUTTONS
 Vaxla|Snabbare|Langsammare|Tid...|Standard|Klar
 PMSG_PREVIEW_UNAVAILABLE
@@ -784,3 +784,51 @@ PMSG_ABOUT_NOT_RUNNING
 Körs inte
 PMSG_ABOUT_UNAVAILABLE
 Ej tillgänglig (äldre eller upptagen startare)
+
+PMSG_RESTORE_PALETTE
+Återställ originalpalett
+
+PMSG_COL_PLUGIN
+Tillägg
+
+PMSG_COL_VERSION
+Version
+
+PMSG_COL_STATE
+Läge
+
+PMSG_COL_KEY
+Key
+
+PMSG_PLUGIN_VERSION
+Tilläggsversion: %s\n
+
+PMSG_TYPING_PREVIEW
+Skrivförhandsvisning...
+
+PMSG_DETAILS_META
+\nID: %s\nUpphov: %s\nLicens: %s\nLägsta Beam68: %s\nURL: %s
+
+PMSG_DETAILS_CLOSE
+Stäng
+
+PMSG_COL_PRIORITY
+Pri
+
+PMSG_IMPORT_PLUGIN
+Importera...
+
+PMSG_PLUGIN_IMPORT_INVALID
+Välj ett tilläggsarkiv, en paketmapp eller en giltig .plugin-fil.
+
+PMSG_REMOVE_PLUGIN
+Ta bort...
+
+PMSG_BUNDLED_KEEP
+Medföljande tillägg kan inte tas bort. Använd Växla för att stänga av dem.
+
+PMSG_APPLICATION_SHORTCUTS_NAV
+Programgenvägar
+
+PMSG_APPLICATION_SHORTCUTS_HELP
+Extra sökord och egna startkommandon.

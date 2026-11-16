@@ -89,12 +89,13 @@ Double-click the @{b}Install@{ub} icon.  The Installer asks what to do:
 
 @{b}Install or update@{ub}
 
-  Choose the drawer in which the Beam68 drawer is created (default
-  SYS:Utilities), the plugins to install and whether Beam68 starts with
-  Workbench.  Beam68Prefs always goes to SYS:Prefs.
+  All bundled plugins are installed automatically in every user mode.
+  Novice uses automatic defaults. Intermediate and Expert let you choose
+  the destination (default SYS:Utilities) and Workbench autostart.
+  Manage plugins later in Preferences. Beam68Prefs goes to SYS:Prefs.
 
   An update stops a running launcher first, keeps all your settings in
-  ENVARC:Beam68 and your icons, adds newly chosen plugins to your
+  ENVARC:Beam68 and your icons, adds bundled plugins to your
   configuration and leaves third-party plugins alone.
 
 @{b}Uninstall@{ub}
@@ -160,7 +161,7 @@ Start the query with a scope to search only one kind of result:
   @{b}volume:@{ub}   mounted volumes and assigns, read live from DOS
   @{b}doc:@{ub}      documents you opened through Beam68 (last 16)
   @{b}hidden:@{ub}   results you hid with Shift+Del
-  @{b}mod:@{ub}      music modules (INDEX_MODULES=YES)
+  @{b}mod:@{ub}      Music Library plugin
   @{b}web:@{ub}      browser bookmarks (BOOKMARK_FILES)
   @{b}snip:@{ub}     text snippets; Enter copies the text
   @{b}script:@{ub}   ARexx scripts in REXX:
@@ -214,7 +215,7 @@ Press @{b}Tab@{ub} on a result to cycle its action, then Enter:
                   offered while Directory Opus 4/5 or Magellan runs)
   @{b}Information@{ub}     Workbench's Information window
   @{b}Copy path@{ub}       put the path on the clipboard
-  @{b}custom action@{ub}   defined on the Applications page of Beam68Prefs,
+  @{b}custom action@{ub}   defined on the Application shortcuts page of Beam68Prefs,
                   e.g. "Edit" with the command @{i}C:Ed {path}@{ui}
 
 @{b}{path}@{ub} and @{b}{drawer}@{ub} are replaced by the quoted path of the
@@ -256,14 +257,10 @@ the whole computer; both need a second Enter.
 @node SOURCES "More index sources"
 @{b}Modules, bookmarks, snippets and scripts@{ub}
 
-@{b}Music modules@{ub}  With INDEX_MODULES=YES, MOD/MED/XM/S3M/IT/AHX and
-similar files (mod.name or name.mod) in the indexed drawers become MOD
-results.  If the player is already running (its ARexx port, by default
-HIPPOPLAYER, exists) Enter sends it the module with the Player ARexx
-command, by default LOAD "{file}", so no second copy starts.  Otherwise
-MODULE_COMMAND starts the player, by default Run >NIL: HippoPlayer
-"{file}".  For other players set the port and command from their ARexx
-documentation.  Add your music drawer as a directory.
+@{b}Music Library plugin@{ub}  Search with mod:<name> and press Enter.
+Choose a result, then press Enter again to play. Configure its music drawer
+and player command under Plugins -> Music Library -> Settings. Music is
+no longer included in the main application index.
 
 @{b}Bookmarks@{ub}  BOOKMARK_FILES lists hotlist files separated by ';'.
 Any layout is read: HTML with one or several links per line or links
@@ -281,7 +278,7 @@ runs with RX in a console window.
 @{b}Preferences@{ub}  prefs: always lists the programs in SYS:Prefs, read
 directly when you search, even if SYS:Prefs is not an indexed drawer.
 
-All of these are set on the @{"Sources page" link PREFS_SOURCES} of Beam68Prefs.
+Bookmarks and scripts are set on the @{"General -> Sources" link PREFS_SOURCES} of Beam68Prefs.
 
 These sources are read on a full index update: F2 picks up new and
 removed entries; after changing an existing snippet's text or a bookmark's
@@ -308,18 +305,30 @@ says so; press Enter again to start it anyway.  @{b}game:random@{ub} picks a
 game for you.
 
 To use it, add your games drawer (for example Games: or Work:Games) on the
-@{"Indexing page" link PREFS_INDEXING} and keep @{b}WHDLoad games@{ub} ticked.
+@{"Indexing page" link PREFS_INDEXING} and enable the WHDLoad plugin.
 A depth of 3 or 4 covers the usual Games/A/Name/ layout.  Type
 @{b}game:@{ub} to search only games.
 
-Configuration: @{b}INDEX_GAMES=YES|NO@{ub} and @{b}WHDLOAD_COMMAND=@{ub}
-(default "WHDLoad", found through the Shell path; use C:WHDLoad or a full
-path if needed).
+Configure the executable under Plugins -> WHDLoad -> Settings.
+The WHDLoad plugin must be enabled for icon-less slave launch actions.
+You can also search with whd:<name>. INDEX_GAMES retains generic game indexing.
 
 @endnode
 
 @node PLUGINS "Plugins"
 @{b}Plugins@{ub}
+
+Fresh installations enable six essential local tools. Network and optional
+plugins, including music, WHDLoad, DOpus and Wikipedia, start disabled.
+Saved choices are retained on updates. Enable each plugin you want to use.
+
+Wikipedia: wiki:Amiga searches; select an article and press Enter again for
+its native summary window. Settings select the language, HTTPS-capable curl
+and OpenURL executables. Open article opens its full Wikipedia page.
+
+Settings opens a separate window. Save writes only that plugin settings file;
+Cancel, Escape or its close gadget discards the edits. Main Preferences stays
+open with its own pending changes. All plugin fields are shown together.
 
 Plugins are small programs you start from the search field with a
 trigger character or a readable prefix, then Enter:
@@ -384,8 +393,7 @@ Plugins can also be written in ARexx: a package whose COMMAND is a .rexx
 script runs through RX (RexxMast must be running).  Some plugins show
 their answer while you type (live preview), for example dev:hex:255.
 
-The catalogue (Extras page) lists plugins and themes published as a
-simple index file; select one and choose Install.
+Use Import on the Plugins page for an archive or unpacked plugin package.
 
 Writing plugins: see the @{b}Beam68PluginSDK.guide@{ub} in the SDK archive.
 
@@ -401,10 +409,10 @@ Open SYS:Prefs/Beam68Prefs, or press F5 in the launcher.  The pages:
   @{" Plugins       " link PREFS_PLUGINS}
   @{" Appearance    " link PREFS_APPEARANCE}
   @{" Favorites     " link PREFS_FAVORITES}
-  @{" Applications  " link PREFS_APPLICATIONS}
-  @{" Accessibility " link PREFS_ACCESSIBILITY}
-  @{" Extras        " link PREFS_EXTRAS}
-  @{" Sources       " link PREFS_SOURCES}
+  @{" Application shortcuts " link PREFS_APPLICATIONS}
+
+General includes Startup, Behaviour and Sources. Appearance includes Themes,
+Text and readability, and Window layout. Use the cycle at the top to choose.
 
 @{b}Use@{ub} applies the settings until reboot, @{b}Save@{ub} keeps them,
 @{b}Cancel@{ub} discards changes.  F7/F8 or Left/Right switch pages; the
@@ -432,12 +440,15 @@ explicitly; its version is never guessed from the Preferences executable.
 @{b}Indexing@{ub}
 
   @{b}Directories@{ub}   the drawers that are searched (drop drawers here)
-  @{b}Depth@{ub}         how many levels of sub-drawers are searched
+  @{b}Depth@{ub}         levels of sub-drawers; Unlimited removes the numeric limit
+                   while retaining path, memory and exclusion checks
   @{b}Icons@{ub}         index Workbench tools and projects
   @{b}Executables@{ub}   index programs without icons (slower to scan)
   @{b}Files@{ub}         index plain files (uses many index entries)
   @{b}Drawers@{ub}       index drawers
-  @{b}WHDLoad games@{ub} index WHDLoad games, see @{"WHDLoad games" link WHDLOAD}
+
+WHDLoad game discovery is owned by its plugin. Enabling it starts background
+indexing from these same directories, with this depth and exclusions.
   @{b}File patterns@{ub} which files are indexed, e.g. *.guide,*.txt
   @{b}Excluded@{ub}      drawers to skip, separated by ;
 
@@ -451,7 +462,7 @@ Changes to drawers are noticed automatically; F2 rebuilds the whole index.
 
 The list shows every plugin with its trigger.  Select one and use
 @{b}Details@{ub} (what it is and may access), @{b}Settings@{ub},
-@{b}Enable/Disable@{ub}, @{b}Up/Down@{ub} (order) and @{b}Remove@{ub}.
+@{b}Toggle@{ub}, @{b}Up/Down@{ub} (order) and @{b}Remove@{ub}.
 
 Install third-party plugins by dropping their archive on the window - see
 @{"Plugin packages" link PACKAGES}.  With a plugin selected, the Help key
@@ -469,7 +480,8 @@ opens that plugin's own guide if it has one.
 
 Choose the Workbench colours, one of four Catppuccin-inspired themes or
 your own colours.  @{b}Edit colours...@{ub} opens red/green/blue sliders for
-each colour of the custom theme.  More themes are in Beam68/Themes and in
+each colour of the selected theme. Every theme is editable; Restore original
+palette resets only that theme. Mocha is the default and Rose is the reddish theme.  More themes are in Beam68/Themes and in
 the plugin catalogue; load one with Theme file -> Import.  Changes are previewed in the open launcher.  Themes can
 be exported to and imported from .theme files.  On screens with few
 colours Beam68 falls back to the Workbench colours.
@@ -487,8 +499,8 @@ dropping their icons here, or press F6 on a result in the launcher.
 @{"Back to Preferences" link PREFS}
 @endnode
 
-@node PREFS_APPLICATIONS "Preferences: Applications"
-@{b}Applications@{ub}
+@node PREFS_APPLICATIONS "Preferences: Application shortcuts"
+@{b}Application shortcuts@{ub}
 
 Give programs extra search words (aliases), for example "paint graphics"
 for Deluxe Paint, and an optional custom action with a label and a
@@ -497,8 +509,8 @@ command; see @{"Result actions" link ACTIONS}.
 @{"Back to Preferences" link PREFS}
 @endnode
 
-@node PREFS_ACCESSIBILITY "Preferences: Accessibility"
-@{b}Accessibility@{ub}
+@node PREFS_ACCESSIBILITY "Preferences: Appearance - Text and readability"
+@{b}Appearance - Text and readability@{ub}
 
   @{b}Launcher font@{ub}  any font from FONTS: (Choose... opens a requester)
   @{b}Row spacing@{ub}    space between result rows
@@ -510,39 +522,28 @@ command; see @{"Result actions" link ACTIONS}.
 @{"Back to Preferences" link PREFS}
 @endnode
 
-@node PREFS_EXTRAS "Preferences: Extras"
-@{b}Extras@{ub}
+@node PREFS_EXTRAS "Preferences: General - Behaviour"
+@{b}General - Behaviour@{ub}
 
   @{b}Favorite keys@{ub}    qualifiers for global favorite keys, e.g.
                    "control alt" gives Ctrl+Alt+1 ... 9 (empty = off)
-  @{b}WHDLoad command@{ub}  how icon-less .slave files are started
-  @{b}Opus ARexx port@{ub}  Directory Opus port, normally DOPUS.1
-  @{b}Open drawers in Directory Opus@{ub}  while Opus runs
   @{b}Run plugins from a RAM copy@{ub}  faster on floppy or slow CF
   @{b}Results kept@{ub}     8-64 results that can be scrolled
   @{b}Browse entries@{ub}   16-512 entries listed when browsing a drawer
   @{b}Hidden max@{ub}       1-256 results you can hide
   @{b}Recent docs@{ub}      1-64 documents remembered for doc:
-  @{b}Export/Import preset@{ub}  save or load a complete setup (settings,
-                   favorites, aliases, hidden results, plugin settings) as
-                   one .preset file
-  @{b}Plugin catalogue@{ub}  browse and install plugins and themes from a
-                   catalogue index (URL or file).  Downloads use
-                   DOWNLOAD_COMMAND, by default wget from Aminet.
+
+WHDLoad and Directory Opus settings are in their plugin Settings windows.
+WHDLoad uses Indexing directories; no separate games directory list is needed.
 
 @{"Back to Preferences" link PREFS}
 @endnode
 
-@node PREFS_SOURCES "Preferences: Sources"
-@{b}Sources@{ub}
+@node PREFS_SOURCES "Preferences: General - Sources"
+@{b}General - Sources@{ub}
 
-  @{b}Index music modules@{ub}  modules in the indexed drawers (mod:)
-  @{b}Player port@{ub}          ARexx port of a running player (HIPPOPLAYER)
-  @{b}Player ARexx@{ub}         command sent to it, {file} = the module
-  @{b}Start player@{ub}         command when the player is not running
-  @{b}Index ARexx scripts@{ub}  scripts in REXX: (script:)
-  @{b}Bookmark files@{ub}       hotlists, ';'-separated; Browse adds one
-  @{b}Open URL with@{ub}        command for bookmarks, {url} = the address
+  Music searching and player settings are in the Music Library plugin.
+
 
 See @{"More index sources" link SOURCES}.
 
@@ -560,6 +561,7 @@ manual edit press F3 in the launcher.
   DIR=SYS:Tools               (repeat for each drawer)
   EXCLUDE_DIR=SYS:Trashcan    (repeat)
   MAX_DEPTH=4                 MAX_ITEMS=512
+  MAX_DEPTH=-1                ; Unlimited (or MAX_DEPTH=UNLIMITED)
   SCAN_ICONS=YES              SCAN_EXECUTABLES=NO
   INDEX_FILES=NO              INDEX_DRAWERS=YES
   INDEX_GAMES=YES             WHDLOAD_COMMAND=WHDLoad
@@ -568,7 +570,7 @@ manual edit press F3 in the launcher.
   PLUGIN_CACHE=NO             (YES: run plugins from a RAM copy)
   RESULTS_MAX=32  BROWSE_MAX=128  HIDDEN_MAX=32  RECENT_DOCS=16
   CATALOGUE_URL=http://...    DOWNLOAD_COMMAND=wget -q -O "{file}" "{url}"
-  INDEX_REXX=YES  INDEX_MODULES=NO  BOOKMARK_FILES=a.html;b.html
+  INDEX_REXX=YES  BOOKMARK_FILES=a.html;b.html
   MODULE_COMMAND=Run >NIL: HippoPlayer "{file}"   URL_COMMAND=OpenURL "{url}"
   MODULE_PORT=HIPPOPLAYER     MODULE_AREXX=LOAD "{file}"
   FILE_PATTERNS=*             INDEX_CACHE=YES
@@ -666,7 +668,7 @@ Force it with @{b}Beam68 SAFE@{ub} or by creating ENV:Beam68/SafeMode.
 
 @{b}A plugin times out.@{ub}
   Raise the timeout on the Plugins page; after three failures a plugin is
-  quarantined - use Enable/Disable to clear it.
+  quarantined - use Toggle to clear it.
 
 @{b}Installing a plugin archive fails.@{ub}
   Install C:LhA or C:UnZip from Aminet, or unpack the archive and drop the
@@ -684,3 +686,11 @@ Built with vbcc and the AmigaOS 3.2 NDK.  Themes inspired by Catppuccin.
 WHDLoad is by Bert Jahn.
 
 @endnode
+
+; Theme palettes (0.2): Mocha is the default. In Appearance, Edit colours
+; changes only the selected theme. Restore original palette resets that theme.
+; Workbench reset follows system colors. Rose keeps legacy CUSTOM compatibility.
+
+; Plugin UI: the selected row remains highlighted. Priority up/down changes
+; matching order. Details shows the complete document without Next buttons;
+; small screens can scroll. Typing preview controls automatic typing results.

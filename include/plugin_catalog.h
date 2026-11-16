@@ -21,4 +21,11 @@ int beam_catalog_discover_bundled(struct BeamConfig *c);
  * yet.  They are added disabled.  Returns the number added. */
 int beam_catalog_merge_discovered(struct BeamConfig *c,
                                   const char (*specs)[BEAM_MAX_PATH], int count);
+void beam_catalog_format_row(char *out,unsigned int cap,unsigned int columns,
+                            const char *priority,const char *name,const char *version,
+                            const char *state,const char *key);
+int beam_catalog_is_bundled(const struct BeamConfig *c,int index,const struct BeamPlugin *p);
+int beam_catalog_can_preview(const struct BeamPlugin *plugin);
+int beam_catalog_has_settings(const struct BeamPlugin *plugin);
+int beam_catalog_setting_value(const struct BeamPluginSetting *setting, const char *value, char *out, unsigned int cap);
 #endif

@@ -14,4 +14,10 @@ LONG Rename(STRPTR oldname,STRPTR newname);
 LONG DeleteFile(STRPTR name);
 void DateStamp(struct DateStamp *stamp);
 void Delay(unsigned long ticks);
+void *AllocDosObject(ULONG type,void *tags);
+void FreeDosObject(ULONG type,void *object);
+LONG Examine(BPTR lock,struct FileInfoBlock *fib);
+LONG ExNext(BPTR lock,struct FileInfoBlock *fib);
+LONG AddPart(STRPTR path,STRPTR part,LONG size);
+LONG IoErr(void);
 #endif

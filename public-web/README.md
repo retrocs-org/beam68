@@ -37,10 +37,14 @@ Direct requests to the shared include return 404. The stylesheet uses system
 fonts, responsive layouts and reduced-motion preferences. Navigation and gallery
 links work without scripting; extra reference images use native details controls.
 
-The gallery leads with six version 0.2 views captured from the released apps,
-including live Aminet search and package details, Preferences and About. Nine
-version 0.1 views and eight labelled reference views remain in a collapsed archive. Every image is cropped to the app window. images/screenshots.json records
-captions, dimensions and capture notes. New captures retain build hashes.
+The gallery describes features rather than displaying version labels. It includes
+application search, command help, Aminet browsing, launcher settings, and fresh
+Wikipedia search and native article-summary captures, File Finder results and
+Date Utilities weekday lookup, Calculator results and available-memory checks. The About screenshot and
+older-version reference gallery have been removed. Every screenshot is cropped
+to the application window. images/screenshots.json retains internal capture
+provenance and dimensions without adding version labels to public captions.
+Wikipedia text attribution and its licence remain visible in the summary window.
 
 Run python3 tests/test_public_web.py with PHP on PATH (or set BEAM68_PHP to its
 executable) to render and check all pages, local assets, canonical URLs, image
@@ -79,3 +83,17 @@ page links directly to GitHub releases rather than inventing package links.
 Run tests/test_web_releases.py with PHP CLI for offline cache, failure and URL
 validation checks. BEAM68_WEB_RELEASE_FIXTURE is a CLI-only test fixture; it has
 no effect on HTTP requests. Website updates do not replace published packages.
+
+## Design and content
+
+The site uses a neutral charcoal-and-white palette, a compact shared header,
+short overview copy, plain plugin rows and responsive application screenshots.
+The stylesheet is rebuilt from scratch without the earlier decorative layouts. It has no third-party
+fonts or scripts. Main navigation has no external GitHub link. Release downloads
+remain separate from build instructions and SDK documentation. The plugin list shows only names and short descriptions. Independent versions,
+examples and default activation states remain in its internal metadata; keep
+those fields in sync with manifests and the installer.
+
+The overview includes six practical plugin feature summaries and fourteen
+collapsible FAQ answers. Keep examples and dependencies consistent with the
+corresponding plugin manifests and documentation.

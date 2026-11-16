@@ -1,0 +1,17 @@
+VERSION=1
+ID=org.beam68.whdload
+PLUGIN_VERSION=0.5
+MIN_BEAM68=0.2
+AUTHOR=Beam68 contributors
+LICENSE=MIT
+NAME=WHDLoad
+TRIGGER={
+PREFIX=WHD:
+COMMAND=PLUGINDIR:WHDLoad
+SETTINGS=ENVARC:Beam68/Plugins/WHDLoad.cfg
+SETTING=COMMAND|WHDLoad executable|TEXT|WHDLoad
+DESCRIPTION=Find and launch installed WHDLoad games.
+CATEGORY=System
+CAPABILITIES=FILES,SYSTEM
+EXAMPLE=whd:enigma
+HELP=Enter searches games; choose a result, then Enter to play. Set the WHDLoad executable in Settings.

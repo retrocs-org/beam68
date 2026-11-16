@@ -4,7 +4,7 @@
 #define BEAM68_VERSION "0.2"
 #define BEAM68_VERSION_DATE "14.11.2026"
 #define BEAM_MAX_DIRS 16
-#define BEAM_MAX_PLUGINS 16
+#define BEAM_MAX_PLUGINS 32
 #define BEAM_MAX_ITEMS_LIMIT 2048
 #define BEAM_MAX_PATH 240
 #define BEAM_MAX_NAME 64
@@ -95,7 +95,9 @@ struct BeamConfig {
     int window_width;    /* 230..1200, capped to public screen */
     int window_height;   /* 0 = based on results, or 90..900 */
     int theme;           /* Workbench, a bundled palette, or Custom */
-    unsigned long custom_colors[BEAM_THEME_COLOR_COUNT]; /* 0xRRGGBB roles */
+    unsigned long custom_colors[BEAM_THEME_COLOR_COUNT]; /* legacy Rose palette */
+    unsigned long theme_colors[BEAM_THEME_COUNT][BEAM_THEME_COLOR_COUNT];
+    unsigned char theme_modified[BEAM_THEME_COUNT];
     int shell_commands;  /* allow explicit shell:<command> launcher queries */
     char font_name[BEAM_FONT_NAME_LEN];
     int index_games;     /* WHDLoad icons and .slave files as GAME items */
@@ -203,6 +205,7 @@ void beam_plugin_forget_disabled(struct BeamConfig *c, const char *path);
 #define BEAM_SAFE_MODE_ACTIVE "T:Beam68/SafeMode.active"
 
 int beam_config_read_active(struct BeamConfig *c);
+int beam_hotkey_display(const char *expression,char *out,unsigned int cap);
 int beam_config_write(struct BeamConfig *c, const char *path);
 int beam_config_valid(const struct BeamConfig *c);
 #endif

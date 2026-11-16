@@ -1,4 +1,4 @@
-# Beam68 architecture — 0.1
+# Beam68 architecture — 0.2
 
 ```text
 Workbench launch (WBStartup/Beam68Start Project)
@@ -13,10 +13,28 @@ Workbench launch (WBStartup/Beam68Start Project)
                        | versioned Exec control message
                   Beam68Prefs (GadTools UI)
                        |
-                       +-> Use: ENV:Beam68/Beam68.cfg
-                       +-> Save: ENVARC:Beam68/Beam68.cfg + ENV copy
+                       +-> Use: T:Beam68/Beam68.cfg (temporary override)
+                       +-> Save: ENVARC:Beam68/Beam68.cfg + session copies
                        +-> Queries.txt / PluginHealth.txt persistent state
 ```
+
+## Current configuration and plugins
+
+The current Preferences layout and activation policy are documented in
+[PREFERENCES.md](PREFERENCES.md). There are 18 independently versioned bundled
+plugins; only the first six essential local tools start enabled. Network and
+other optional integrations are opt-in. Music Library, WHDLoad and DOpus own
+their respective integrations. WHDLoad uses the shared indexing roots, depth and
+exclusions through a background discovery worker. Unlimited traversal uses
+heap-backed frames and avoids following directory links.
+
+Use/Save request confirmed configuration reload through the control port. An
+unchanged hotkey is retained; new hotkey expressions initialize IX_VERSION.
+The installer removes temporary Use configuration and its backup when removing
+settings or creating a fresh configuration. This prevents stale overrides.
+
+The sections below include implementation history from 0.1; version labels on
+those sections describe their introduction.
 
 ## Separate programs
 
@@ -24,7 +42,7 @@ Beam68 is the only resident process; it holds the index and Commodities broker. 
 
 ## ENV: and ENVARC: behavior
 
-Config load preference: ENV: -> ENVARC: -> PROGDIR: fallback. This follows the AmigaOS preferences Use/Save convention without requiring binary IFF settings. The installer copies the sample into ENV and ENVARC only if missing. A write streams preserved user comments and third-party config keys to a `.new` file and writes owned settings canonically. The original is renamed to `.bak` before `.new` replaces it. If a host-backed filesystem keeps an occupied `.bak` name, the writer selects the first free `.b01` through `.b99` backup instead. If replacement fails, restoration is attempted; the chosen backup remains available for manual recovery. Query history is stored in `ENVARC:Beam68/Queries.txt`; plugin outcome counters are stored in `ENVARC:Beam68/PluginHealth.txt`. The last settings save is not transactionally atomic across separate ENV: and ENVARC: volumes.
+Config load preference: T:Beam68/Beam68.cfg and its backup, then ENV:, ENVARC:, their backups and PROGDIR: fallback. This follows the AmigaOS preferences Use/Save convention without requiring binary IFF settings. The installer copies the sample into ENV and ENVARC only if missing. A write streams preserved user comments and third-party config keys to a `.new` file and writes owned settings canonically. The original is renamed to `.bak` before `.new` replaces it. If a host-backed filesystem keeps an occupied `.bak` name, the writer selects the first free `.b01` through `.b99` backup instead. If replacement fails, restoration is attempted; the chosen backup remains available for manual recovery. Query history is stored in `ENVARC:Beam68/Queries.txt`; plugin outcome counters are stored in `ENVARC:Beam68/PluginHealth.txt`. The last settings save is not transactionally atomic across separate ENV: and ENVARC: volumes.
 
 ## Control protocol
 
@@ -91,7 +109,7 @@ while avoiding an unmanaged console after completion.
 Ctrl+L shares the existing clear-query path. Search feedback includes the
 one-based selected row and total result count.
 
-Appearance keeps the five built-in palette definitions, adds a bounded Custom palette,
+Appearance keeps the five built-in palette definitions, adds a bounded Rose,
 read-only description plus a compact launcher example drawn with the selected
 palette's actual background, text and selection colors. It falls back to the
 public-screen pens if a low-depth screen cannot allocate the full palette.
@@ -160,7 +178,7 @@ The project **application version is 0.2**. Keep it at 0.2 until explicitly requ
 
 Appearance defines five fixed roles: text, shadow, selected-row fill,
 selected-row text and background. Fixed themes remain allocation-free.
-The Custom theme stores the same five roles as strict 24-bit `RRGGBB` values
+The Rose theme stores the same five roles as strict 24-bit `RRGGBB` values
 in `CUSTOM_COLORS`; invalid text is rejected before Use or Save. Preferences
 obtains temporary pens for its launcher example and releases them immediately.
 The resident launcher applies the custom roles through the same palette path
@@ -573,3 +591,25 @@ in configuration files. It rejects signs, fractions, units, out-of-range values
 and overflow before modifying its output. The shared timer still rounds the
 effective wait upward to its 50ms granularity; the exact requested value is
 preserved in preferences.
+
+## Editable theme palettes (0.2)
+
+Mocha is the fresh-install default. Every theme, including Workbench and Rose,
+can be edited in Appearance. Overrides are independent per theme and persisted
+as THEME_COLORS_0 through THEME_COLORS_5, each with five RRGGBB roles. Restore
+original palette clears only the selected override; Workbench resumes following
+the public-screen pens and Rose restores its shipped reddish palette. Use applies
+session settings, Save persists them, and Cancel restores the launcher preview.
+The legacy CUSTOM theme/configuration spelling remains compatible with Rose.
+
+Installer completion starts and verifies the resident without sending SHOW. Its
+final confirmation reads the active hotkey through Beam68Ctl INSTALLINFO and
+formats the configured Commodities expression. A temporary environment variable
+passes the label to Installer and is removed immediately after reading it.
+
+Plugin selection uses GadTools' persistent highlight bar. Priority up/down moves
+plugins in matching order; Toggle changes enabled state. Use/Save applies plugin
+changes without a dedicated Reload button. Details uses one screen-sized wrapped
+document with scrolling on smaller screens; Typing preview controls automatic
+requests after a typing pause. Installer startup uses WAITREADY, which responds
+immediately for a ready resident and only polls while waiting for one to start.

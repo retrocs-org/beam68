@@ -1,144 +1,202 @@
 {
   "plugins": [
     {
-      "NAME": "Aminet Browser",
-      "DESCRIPTION": "Search Aminet, read package details and readmes, then confirm downloads. Open downloaded archives with your archive handler and follow the included installer.",
-      "PREFIX": "AMINET:",
-      "TRIGGER": "]",
-      "EXAMPLE": "aminet:search tracker",
-      "path": "Plugins/AminetBrowser",
-      "introduced": "0.2",
-      "default_enabled": false
-    },
-    {
       "NAME": "ARexx Runner",
-      "DESCRIPTION": "Run configured ARexx macros by name; query text cannot supply arbitrary script paths.",
+      "DESCRIPTION": "Run your configured ARexx macros from the launcher.",
       "PREFIX": "REXX:",
       "TRIGGER": "%",
       "EXAMPLE": "rexx:list",
       "path": "Plugins/ARexxRunner",
       "introduced": "0.1",
-      "default_enabled": true
+      "default_enabled": false,
+      "version": "0.1"
+    },
+    {
+      "NAME": "Aminet Browser",
+      "DESCRIPTION": "Search Aminet, read package information and readmes, and download archives.",
+      "PREFIX": "AMINET:",
+      "TRIGGER": "]",
+      "EXAMPLE": "aminet:search tracker",
+      "path": "Plugins/AminetBrowser",
+      "introduced": "0.2",
+      "default_enabled": false,
+      "version": "0.5"
     },
     {
       "NAME": "Assigns and Volumes",
-      "DESCRIPTION": "volumes, assigns, diskfree:path, or open:path.",
+      "DESCRIPTION": "Explore volumes and assigns, check free disk space, and open drawers.",
       "PREFIX": "DOS:",
       "TRIGGER": "#",
       "EXAMPLE": "open:RAM:",
       "path": "Plugins/DosTools",
       "introduced": "0.1",
-      "default_enabled": true
+      "default_enabled": true,
+      "version": "0.1"
     },
     {
       "NAME": "Calculator",
-      "DESCRIPTION": "Type = 2*(5+3), then press Enter. Integer, no FPU needed.",
+      "DESCRIPTION": "Calculate integer arithmetic with parentheses and decimal, hexadecimal and binary results.",
       "PREFIX": "",
       "TRIGGER": "=",
       "EXAMPLE": "=12*(3+4)",
       "path": "Plugins/Calc",
       "introduced": "0.1",
-      "default_enabled": true
+      "default_enabled": true,
+      "version": "0.1"
     },
     {
       "NAME": "Clipboard Tools",
-      "DESCRIPTION": "show, set:text, clear, upper, lower, or save:path.",
+      "DESCRIPTION": "View, edit, transform and save clipboard text.",
       "PREFIX": "CLIP:",
       "TRIGGER": "&",
       "EXAMPLE": "clip:show",
       "path": "Plugins/ClipboardTools",
       "introduced": "0.1",
-      "default_enabled": true
+      "default_enabled": false,
+      "version": "0.1"
     },
     {
       "NAME": "Clock",
-      "DESCRIPTION": "Press Enter for AmigaDOS local time.",
+      "DESCRIPTION": "Check the local date and time.",
       "PREFIX": "",
       "TRIGGER": "@",
       "EXAMPLE": "@",
       "path": "Plugins/Clock",
       "introduced": "0.1",
-      "default_enabled": true
+      "default_enabled": true,
+      "version": "0.1"
+    },
+    {
+      "NAME": "DOpus",
+      "DESCRIPTION": "Open drawers and reveal files in Directory Opus.",
+      "PREFIX": "DOPUS:",
+      "TRIGGER": "}",
+      "EXAMPLE": "dopus:SYS:Prefs",
+      "path": "Plugins/DOpus",
+      "introduced": "0.2",
+      "default_enabled": false,
+      "version": "0.3"
     },
     {
       "NAME": "Date Utilities",
-      "DESCRIPTION": "today, add:N, weekday:YYYY-MM-DD, or timestamp.",
+      "DESCRIPTION": "Look up weekdays, calculate dates and work with timestamps.",
       "PREFIX": "DATE:",
       "TRIGGER": ":",
       "EXAMPLE": "date:today",
       "path": "Plugins/DateUtilities",
       "introduced": "0.1",
-      "default_enabled": true
+      "default_enabled": false,
+      "version": "0.1"
     },
     {
       "NAME": "Developer Tools",
-      "DESCRIPTION": "hex:N, dec:$FF, ascii:N, mask:0,3,7, or prot:RWED.",
+      "DESCRIPTION": "Convert numbers and inspect character codes and protection flags.",
       "PREFIX": "DEV:",
       "TRIGGER": "$",
       "EXAMPLE": "dev:hex:255",
       "path": "Plugins/DeveloperTools",
       "introduced": "0.1",
-      "default_enabled": true
+      "default_enabled": false,
+      "version": "0.1"
     },
     {
       "NAME": "File Finder",
-      "DESCRIPTION": "find:<name> searches configured drawers for files and folders.",
+      "DESCRIPTION": "Find files across your configured directories.",
       "PREFIX": "FIND:",
       "TRIGGER": "/",
       "EXAMPLE": "find:screenmode",
       "path": "Plugins/FileFinder",
       "introduced": "0.1",
-      "default_enabled": true
+      "default_enabled": true,
+      "version": "0.7"
     },
     {
       "NAME": "Memory",
-      "DESCRIPTION": "Press Enter to display free Chip and Fast RAM.",
+      "DESCRIPTION": "Check available Chip and Fast memory.",
       "PREFIX": "",
       "TRIGGER": "?",
       "EXAMPLE": "?",
       "path": "Plugins/Memory",
       "introduced": "0.1",
-      "default_enabled": true
+      "default_enabled": true,
+      "version": "0.1"
     },
     {
       "NAME": "Music Controls",
-      "DESCRIPTION": "Control HippoPlayer, AmigaAMP or EaglePlayer 2 through their documented ARexx ports.",
+      "DESCRIPTION": "Control supported music players through ARexx.",
       "PREFIX": "MUSIC:",
       "TRIGGER": "|",
       "EXAMPLE": "music:status",
       "path": "Plugins/MusicControls",
       "introduced": "0.1",
-      "default_enabled": true
+      "default_enabled": false,
+      "version": "0.1"
+    },
+    {
+      "NAME": "Music Library",
+      "DESCRIPTION": "Search music modules and send them to your configured player.",
+      "PREFIX": "MOD:",
+      "TRIGGER": ";",
+      "EXAMPLE": "mod:enigma",
+      "path": "Plugins/MusicLibrary",
+      "introduced": "0.2",
+      "default_enabled": false,
+      "version": "0.6"
     },
     {
       "NAME": "System Commands",
-      "DESCRIPTION": "avail, version, flush, reboot confirm, or shutdown confirm.",
+      "DESCRIPTION": "Run system utilities and common system actions.",
       "PREFIX": "SYSTEM:",
       "TRIGGER": "!",
       "EXAMPLE": "system:version",
       "path": "Plugins/SystemCommands",
       "introduced": "0.1",
-      "default_enabled": true
+      "default_enabled": true,
+      "version": "0.1"
     },
     {
       "NAME": "Task Manager",
-      "DESCRIPTION": "tasks lists processes; break:name:confirm sends Ctrl-C.",
+      "DESCRIPTION": "Inspect running tasks and send a break signal when needed.",
       "PREFIX": "TASK:",
       "TRIGGER": "^",
       "EXAMPLE": "task:tasks",
       "path": "Plugins/TaskManager",
       "introduced": "0.1",
-      "default_enabled": true
+      "default_enabled": false,
+      "version": "0.1"
+    },
+    {
+      "NAME": "WHDLoad",
+      "DESCRIPTION": "Find and launch installed WHDLoad games.",
+      "PREFIX": "WHD:",
+      "TRIGGER": "{",
+      "EXAMPLE": "whd:enigma",
+      "path": "Plugins/WHDLoad",
+      "introduced": "0.2",
+      "default_enabled": false,
+      "version": "0.5"
+    },
+    {
+      "NAME": "Wikipedia",
+      "DESCRIPTION": "Search Wikipedia and read article summaries in a native window.",
+      "PREFIX": "WIKI:",
+      "TRIGGER": "\\",
+      "EXAMPLE": "wiki:Amiga",
+      "path": "Plugins/Wikipedia",
+      "introduced": "0.2",
+      "default_enabled": false,
+      "version": "0.1"
     },
     {
       "NAME": "Workbench Windows",
-      "DESCRIPTION": "windows lists titles; window:name or screen:name brings one forward.",
+      "DESCRIPTION": "Find and switch between open Workbench windows.",
       "PREFIX": "WINDOW:",
       "TRIGGER": "~",
       "EXAMPLE": "window:windows",
       "path": "Plugins/WindowSwitcher",
       "introduced": "0.1",
-      "default_enabled": true
+      "default_enabled": false,
+      "version": "0.1"
     }
   ],
   "themes": [

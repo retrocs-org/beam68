@@ -177,3 +177,17 @@ int beam_aminet_archive_header(const char *package,const unsigned char *data,uns
         (data[4]=='h'||data[4]=='z') && data[5]>='0' && data[5]<='9' && data[6]=='-';
     return 0;
 }
+
+int beam_aminet_percent(unsigned long bytes,unsigned long total)
+{
+    unsigned long whole,remainder;int low=0,high=100;
+    if(!total)return -1;
+    if(bytes>=total)return 100;
+    whole=total/100UL;remainder=total%100UL;
+    while(low<high) {
+        int mid=(low+high+1)/2;
+        unsigned long threshold=(unsigned long)mid*whole+((unsigned long)mid*remainder+99UL)/100UL;
+        if(bytes>=threshold)low=mid;else high=mid-1;
+    }
+    return low;
+}

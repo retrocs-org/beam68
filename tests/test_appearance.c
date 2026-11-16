@@ -25,6 +25,9 @@ int main(void)
     assert(!beam_preview_fits(32,49));
     assert(!beam_preview_fits(-1,32));
     assert(!strcmp(beam_theme_name(BEAM_THEME_WORKBENCH),"Workbench"));
+    assert(!strcmp(beam_theme_name(BEAM_THEME_CUSTOM),"Rose"));
+    assert(beam_theme_from_name("Custom")==BEAM_THEME_CUSTOM);
+    assert(beam_theme_from_name("User palette")==BEAM_THEME_CUSTOM);
     assert(!strcmp(beam_theme_description(BEAM_THEME_WORKBENCH),"Workbench system colors"));
     assert(strstr(beam_theme_description(BEAM_THEME_MOCHA),"bright blue")!=NULL);
     assert(beam_theme_from_name("mocha")==BEAM_THEME_MOCHA);
@@ -43,6 +46,27 @@ int main(void)
     memcpy(unchanged,colors,sizeof(colors));
     assert(!beam_theme_parse_colors("112233,bad",colors));
     assert(!memcmp(unchanged,colors,sizeof(colors)));
-    puts("appearance tests passed");
+    {
+        struct BeamConfig c;
+        unsigned long edited[5]={0x010203UL,0x040506UL,0x070809UL,0x101112UL,0x131415UL};
+        int theme;
+        memset(&c,0,sizeof(c));
+        for(theme=0;theme<BEAM_THEME_COUNT;theme++) {
+            c.theme=theme;beam_theme_original_palette(theme,c.custom_colors);
+            beam_theme_set_palette(&c,edited);
+            assert(c.theme==theme && c.theme_modified[theme]);
+            assert(beam_theme_config_mode(&c)==BEAM_THEME_CUSTOM);
+            assert(!memcmp(beam_theme_config_palette(&c),edited,sizeof(edited)));
+        }
+        c.theme=BEAM_THEME_MOCHA;beam_theme_reset_palette(&c);
+        assert(!c.theme_modified[BEAM_THEME_MOCHA]);
+        assert(c.theme_modified[BEAM_THEME_LATTE]);
+        assert(beam_theme_config_mode(&c)==BEAM_THEME_MOCHA);
+        c.theme=BEAM_THEME_WORKBENCH;beam_theme_reset_palette(&c);
+        assert(beam_theme_config_mode(&c)==BEAM_THEME_WORKBENCH);
+        c.theme=BEAM_THEME_CUSTOM;beam_theme_reset_palette(&c);
+        assert(c.custom_colors[BEAM_THEME_ROLE_FILL]==0xf38ba8UL);
+    }
+    puts("appearance tests passed: editable independent palettes and per-theme reset");
     return 0;
 }

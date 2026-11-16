@@ -4,7 +4,7 @@ CFLAGS ?= -O2 -m68000 -mcrt=nix20 -Wno-pointer-sign -Wall -Wextra
 INC = -Iinclude -Isdk/include
 COMMON = src/config.c src/control.c
 PLUGIN_COMMON = src/protocol.c src/plugin_common.c src/plugin_locale.c src/beam68plugins_strings.c sdk/src/beam68plugin.c
-NEW_PLUGINS = Plugins/FileFinder/FileFinder Plugins/SystemCommands/SystemCommands Plugins/DosTools/DosTools Plugins/TaskManager/TaskManager Plugins/ClipboardTools/ClipboardTools Plugins/DateUtilities/DateUtilities Plugins/WindowSwitcher/WindowSwitcher Plugins/DeveloperTools/DeveloperTools Plugins/ARexxRunner/ARexxRunner Plugins/MusicControls/MusicControls Plugins/AminetBrowser/AminetBrowser
+NEW_PLUGINS = Plugins/Wikipedia/Wikipedia Plugins/WHDLoad/WHDLoad Plugins/DOpus/DOpus Plugins/MusicLibrary/MusicLibrary Plugins/FileFinder/FileFinder Plugins/SystemCommands/SystemCommands Plugins/DosTools/DosTools Plugins/TaskManager/TaskManager Plugins/ClipboardTools/ClipboardTools Plugins/DateUtilities/DateUtilities Plugins/WindowSwitcher/WindowSwitcher Plugins/DeveloperTools/DeveloperTools Plugins/ARexxRunner/ARexxRunner Plugins/MusicControls/MusicControls Plugins/AminetBrowser/AminetBrowser
 
 all: Beam68 Beam68Prefs Beam68Ctl CreateIcons Plugins/Calc/Calc Plugins/Clock/Clock Plugins/Memory/Memory $(NEW_PLUGINS)
 
@@ -14,53 +14,53 @@ Beam68: src/main.c src/rexx_sequence.c src/matcher.c src/search_rank.c src/searc
 Beam68Prefs: src/prefs.c src/launcher_ui.c src/hotkey_capture.c src/plugin_catalog.c src/plugin_diagnostics.c src/plugin_health.c src/favorites.c src/aliases.c src/wb_drop.c src/appearance.c src/theme_file.c src/dos_compat.c src/stack_guard.c src/startup_error.c src/plugin_package.c src/plugin_install.c src/preset.c src/catalogue.c src/catalogue_window.c src/beam68prefs_strings.c $(COMMON) include/beam.h include/control.h include/hotkey_capture.h include/plugin_catalog.h include/plugin_diagnostics.h include/plugin_health.h include/aliases.h include/wb_drop.h include/appearance.h include/theme_file.h include/dos_compat.h include/stack_guard.h include/plugin_package.h include/plugin_install.h include/prefs_locale.h include/beam68prefs_strings.h
 	$(CC) $(CFLAGS) $(INC) -o $@ src/prefs.c src/launcher_ui.c src/hotkey_capture.c src/plugin_catalog.c src/plugin_diagnostics.c src/plugin_health.c src/favorites.c src/aliases.c src/wb_drop.c src/appearance.c src/theme_file.c src/dos_compat.c src/stack_guard.c src/startup_error.c src/plugin_package.c src/plugin_install.c src/preset.c src/catalogue.c src/catalogue_window.c src/beam68prefs_strings.c $(COMMON)
 
-Beam68Ctl: src/ctl.c src/control.c include/control.h
-	$(CC) $(CFLAGS) $(INC) -o $@ src/ctl.c src/control.c src/locale_support.c src/beam68_strings.c
+Beam68Ctl: src/ctl.c src/control.c src/config.c src/appearance.c include/control.h
+	$(CC) $(CFLAGS) $(INC) -o $@ src/ctl.c src/control.c src/config.c src/appearance.c src/locale_support.c src/beam68_strings.c
 
 CreateIcons: scripts/create_icons.c
 	$(CC) $(CFLAGS) $(INC) -o $@ scripts/create_icons.c
 
-Plugins/Calc/Calc: Plugins/Calc/Calc.c src/calc_engine.c $(PLUGIN_COMMON) include/calc_engine.h include/plugin_protocol.h include/plugin_reply.h
-	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/Calc/Calc.c src/calc_engine.c $(PLUGIN_COMMON)
+Plugins/Calc/Calc: Plugins/Calc/Calc.c src/calc_engine.c $(PLUGIN_COMMON) include/calc_engine.h include/plugin_protocol.h include/plugin_reply.h Plugins/Calc/version.c
+	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/Calc/Calc.c src/calc_engine.c $(PLUGIN_COMMON) Plugins/Calc/version.c
 
-Plugins/Clock/Clock: Plugins/Clock/Clock.c $(PLUGIN_COMMON) include/plugin_protocol.h include/plugin_reply.h
-	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/Clock/Clock.c $(PLUGIN_COMMON)
+Plugins/Clock/Clock: Plugins/Clock/Clock.c $(PLUGIN_COMMON) include/plugin_protocol.h include/plugin_reply.h Plugins/Clock/version.c
+	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/Clock/Clock.c $(PLUGIN_COMMON) Plugins/Clock/version.c
 
-Plugins/Memory/Memory: Plugins/Memory/Memory.c $(PLUGIN_COMMON) include/plugin_protocol.h include/plugin_reply.h
-	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/Memory/Memory.c $(PLUGIN_COMMON)
+Plugins/Memory/Memory: Plugins/Memory/Memory.c $(PLUGIN_COMMON) include/plugin_protocol.h include/plugin_reply.h Plugins/Memory/version.c
+	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/Memory/Memory.c $(PLUGIN_COMMON) Plugins/Memory/version.c
 
-Plugins/FileFinder/FileFinder: Plugins/FileFinder/FileFinder.c src/config.c src/appearance.c $(PLUGIN_COMMON)
-	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/FileFinder/FileFinder.c src/config.c src/appearance.c $(PLUGIN_COMMON)
+Plugins/FileFinder/FileFinder: Plugins/FileFinder/FileFinder.c src/plugin_walk.c src/config.c src/appearance.c $(PLUGIN_COMMON) Plugins/FileFinder/version.c
+	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/FileFinder/FileFinder.c src/plugin_walk.c src/config.c src/appearance.c $(PLUGIN_COMMON) Plugins/FileFinder/version.c
 
-Plugins/SystemCommands/SystemCommands: Plugins/SystemCommands/SystemCommands.c src/dos_compat.c $(PLUGIN_COMMON)
-	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/SystemCommands/SystemCommands.c src/dos_compat.c $(PLUGIN_COMMON)
+Plugins/SystemCommands/SystemCommands: Plugins/SystemCommands/SystemCommands.c src/dos_compat.c $(PLUGIN_COMMON) Plugins/SystemCommands/version.c
+	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/SystemCommands/SystemCommands.c src/dos_compat.c $(PLUGIN_COMMON) Plugins/SystemCommands/version.c
 
-Plugins/DosTools/DosTools: Plugins/DosTools/DosTools.c $(PLUGIN_COMMON)
-	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/DosTools/DosTools.c $(PLUGIN_COMMON)
+Plugins/DosTools/DosTools: Plugins/DosTools/DosTools.c $(PLUGIN_COMMON) Plugins/DosTools/version.c
+	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/DosTools/DosTools.c $(PLUGIN_COMMON) Plugins/DosTools/version.c
 
-Plugins/TaskManager/TaskManager: Plugins/TaskManager/TaskManager.c $(PLUGIN_COMMON)
-	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/TaskManager/TaskManager.c $(PLUGIN_COMMON)
+Plugins/TaskManager/TaskManager: Plugins/TaskManager/TaskManager.c $(PLUGIN_COMMON) Plugins/TaskManager/version.c
+	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/TaskManager/TaskManager.c $(PLUGIN_COMMON) Plugins/TaskManager/version.c
 
-Plugins/ClipboardTools/ClipboardTools: Plugins/ClipboardTools/ClipboardTools.c $(PLUGIN_COMMON)
-	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/ClipboardTools/ClipboardTools.c $(PLUGIN_COMMON)
+Plugins/ClipboardTools/ClipboardTools: Plugins/ClipboardTools/ClipboardTools.c $(PLUGIN_COMMON) Plugins/ClipboardTools/version.c
+	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/ClipboardTools/ClipboardTools.c $(PLUGIN_COMMON) Plugins/ClipboardTools/version.c
 
-Plugins/DateUtilities/DateUtilities: Plugins/DateUtilities/DateUtilities.c $(PLUGIN_COMMON)
-	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/DateUtilities/DateUtilities.c $(PLUGIN_COMMON)
+Plugins/DateUtilities/DateUtilities: Plugins/DateUtilities/DateUtilities.c $(PLUGIN_COMMON) Plugins/DateUtilities/version.c
+	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/DateUtilities/DateUtilities.c $(PLUGIN_COMMON) Plugins/DateUtilities/version.c
 
-Plugins/WindowSwitcher/WindowSwitcher: Plugins/WindowSwitcher/WindowSwitcher.c $(PLUGIN_COMMON)
-	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/WindowSwitcher/WindowSwitcher.c $(PLUGIN_COMMON)
+Plugins/WindowSwitcher/WindowSwitcher: Plugins/WindowSwitcher/WindowSwitcher.c $(PLUGIN_COMMON) Plugins/WindowSwitcher/version.c
+	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/WindowSwitcher/WindowSwitcher.c $(PLUGIN_COMMON) Plugins/WindowSwitcher/version.c
 
-Plugins/DeveloperTools/DeveloperTools: Plugins/DeveloperTools/DeveloperTools.c $(PLUGIN_COMMON)
-	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/DeveloperTools/DeveloperTools.c $(PLUGIN_COMMON)
+Plugins/DeveloperTools/DeveloperTools: Plugins/DeveloperTools/DeveloperTools.c $(PLUGIN_COMMON) Plugins/DeveloperTools/version.c
+	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/DeveloperTools/DeveloperTools.c $(PLUGIN_COMMON) Plugins/DeveloperTools/version.c
 
-Plugins/ARexxRunner/ARexxRunner: Plugins/ARexxRunner/ARexxRunner.c src/dos_compat.c $(PLUGIN_COMMON)
-	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/ARexxRunner/ARexxRunner.c src/dos_compat.c $(PLUGIN_COMMON)
+Plugins/ARexxRunner/ARexxRunner: Plugins/ARexxRunner/ARexxRunner.c src/dos_compat.c $(PLUGIN_COMMON) Plugins/ARexxRunner/version.c
+	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/ARexxRunner/ARexxRunner.c src/dos_compat.c $(PLUGIN_COMMON) Plugins/ARexxRunner/version.c
 
-Plugins/MusicControls/MusicControls: Plugins/MusicControls/MusicControls.c src/music_control.c $(PLUGIN_COMMON) include/music_control.h
-	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/MusicControls/MusicControls.c src/music_control.c $(PLUGIN_COMMON)
+Plugins/MusicControls/MusicControls: Plugins/MusicControls/MusicControls.c src/music_control.c $(PLUGIN_COMMON) include/music_control.h Plugins/MusicControls/version.c
+	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/MusicControls/MusicControls.c src/music_control.c $(PLUGIN_COMMON) Plugins/MusicControls/version.c
 
-Plugins/AminetBrowser/AminetBrowser: Plugins/AminetBrowser/AminetBrowser.c src/aminet.c src/aminet_http.c src/stack_guard.c $(PLUGIN_COMMON)
-	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/AminetBrowser/AminetBrowser.c src/aminet.c src/aminet_http.c src/stack_guard.c $(PLUGIN_COMMON)
+Plugins/AminetBrowser/AminetBrowser: Plugins/AminetBrowser/AminetBrowser.c src/control.c src/aminet.c src/aminet_http.c src/stack_guard.c $(PLUGIN_COMMON) Plugins/AminetBrowser/version.c
+	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/AminetBrowser/AminetBrowser.c src/control.c src/aminet.c src/aminet_http.c src/stack_guard.c $(PLUGIN_COMMON) Plugins/AminetBrowser/version.c
 
 # Syntax-check native translation units without linking; requires a real 3.2 NDK.
 # Complements the portable host tests, but does not replace target runtime validation.
@@ -74,6 +74,12 @@ check-toolchain:
 	CC=$(CC) sh scripts/check-toolchain.sh
 
 host-test:
+	@mkdir -p build
+	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror -Iinclude -o build/test_wikipedia tests/test_wikipedia.c src/wikipedia.c
+	./build/test_wikipedia
+	@mkdir -p build
+	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror -Itests/fake_ndk -Iinclude -o build/test_plugin_walk tests/test_plugin_walk.c src/plugin_walk.c
+	./build/test_plugin_walk
 	@mkdir -p build
 	$(HOST_CC) -std=c99 -O2 -Wall -Wextra -Werror -Itests/fake_ndk -Iinclude -o build/test_control tests/test_control.c src/control.c
 	./build/test_control
@@ -163,6 +169,9 @@ host-test:
 	./build/test_upgrade
 	python3 tests/test_build_provenance.py
 	python3 tests/test_archive_safety.py
+	python3 tests/test_stage_builds.py
+	python3 tests/test_plugin_versions.py
+	python3 scripts/plugin-versions.py --check
 	python3 tests/test_package_tool.py
 	python3 tests/test_installer.py
 	python3 tests/test_installer_qa.py
@@ -196,3 +205,15 @@ sdk-archive:
 
 # Header/catalog changes must invalidate every affected executable.
 Beam68 Beam68Prefs Beam68Ctl Plugins/Calc/Calc Plugins/Clock/Clock Plugins/Memory/Memory $(NEW_PLUGINS): $(wildcard include/*.h sdk/include/*.h)
+
+Plugins/MusicLibrary/MusicLibrary: Plugins/MusicLibrary/MusicLibrary.c src/plugin_walk.c src/config.c src/appearance.c src/sources.c $(PLUGIN_COMMON) Plugins/MusicLibrary/version.c
+	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/MusicLibrary/MusicLibrary.c src/plugin_walk.c src/config.c src/appearance.c src/sources.c $(PLUGIN_COMMON) Plugins/MusicLibrary/version.c
+
+Plugins/WHDLoad/WHDLoad: Plugins/WHDLoad/WHDLoad.c src/icon_info.c src/plugin_walk.c src/config.c src/appearance.c $(PLUGIN_COMMON) Plugins/WHDLoad/version.c
+	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/WHDLoad/WHDLoad.c src/icon_info.c src/plugin_walk.c src/config.c src/appearance.c $(PLUGIN_COMMON) Plugins/WHDLoad/version.c
+
+Plugins/DOpus/DOpus: Plugins/DOpus/DOpus.c src/config.c src/appearance.c src/rexx_sequence.c $(PLUGIN_COMMON) Plugins/DOpus/version.c
+	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/DOpus/DOpus.c src/config.c src/appearance.c src/rexx_sequence.c $(PLUGIN_COMMON) Plugins/DOpus/version.c
+
+Plugins/Wikipedia/Wikipedia: Plugins/Wikipedia/Wikipedia.c src/wikipedia.c src/launcher_ui.c src/control.c src/stack_guard.c $(PLUGIN_COMMON) Plugins/Wikipedia/version.c
+	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/Wikipedia/Wikipedia.c src/wikipedia.c src/launcher_ui.c src/control.c src/stack_guard.c $(PLUGIN_COMMON) Plugins/Wikipedia/version.c

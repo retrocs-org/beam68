@@ -1,0 +1,74 @@
+{
+  "ARexxRunner": {
+    "sha256": "d2328bb9184d62f0068460933290168fdefc0458ee5f05ad429f7419fe14db55",
+    "version": "0.1"
+  },
+  "AminetBrowser": {
+    "sha256": "363bc969df3648e7d28d5100bc2c65c5e1c4bdc87075d0947d398c261eb90eaf",
+    "version": "0.5"
+  },
+  "Calc": {
+    "sha256": "9b7e16bff1556689b1e80adc784a0e9033135325f7c6b87d06a1ee2ada5b1880",
+    "version": "0.1"
+  },
+  "ClipboardTools": {
+    "sha256": "68a434b49b325ecca5029accbcdfc5f766c1a73f6275c0a3b6708e5dccee0d36",
+    "version": "0.1"
+  },
+  "Clock": {
+    "sha256": "f103ddd2ef4b976850b922c1018c8a3de6aae9678f16dd2b5125481087beb5a8",
+    "version": "0.1"
+  },
+  "DOpus": {
+    "sha256": "4adfa2e96d2297f958d949e5cacd3eaa017cd2b478f42208dd26d3342419d99f",
+    "version": "0.3"
+  },
+  "DateUtilities": {
+    "sha256": "39fdd1721b67956a8235a3c920b98f5efe34683cc8715888e72222509d55e28c",
+    "version": "0.1"
+  },
+  "DeveloperTools": {
+    "sha256": "a486d0d41c10a55138058dd07b3c29f6521dadf042b9c0dae993f3a925f53b6a",
+    "version": "0.1"
+  },
+  "DosTools": {
+    "sha256": "8fdacf98675e22c6bcd9ed16acba4843241b137f6a31cf9b86b6ffa5041277b6",
+    "version": "0.1"
+  },
+  "FileFinder": {
+    "sha256": "3ca07a16174043ed173f9d9aa14942812104a22c99977969c4f145dab4e9fd4e",
+    "version": "0.7"
+  },
+  "Memory": {
+    "sha256": "ddd38d5f946df13d01736ec306152e2101ba1dbdaa3f6a3de06d9708e63dd1cc",
+    "version": "0.1"
+  },
+  "MusicControls": {
+    "sha256": "81007f7aca20a3cec3b2ae777ec99b2f56f1eece219bac7e6eb2b842c1d25098",
+    "version": "0.1"
+  },
+  "MusicLibrary": {
+    "sha256": "415e52c874bdbfcfbef84fe92bf292b1cc1141312735a1f85f81c4122744818f",
+    "version": "0.6"
+  },
+  "SystemCommands": {
+    "sha256": "cb4b9b18845ee1db2a83d0048f971a70dc37fb37e6f01543fd1f51b21fcad3d7",
+    "version": "0.1"
+  },
+  "TaskManager": {
+    "sha256": "1c0dc7d055844e4c1b633feead850b4df48ca17ac5fe9bba12a5d39d4609acf7",
+    "version": "0.1"
+  },
+  "WHDLoad": {
+    "sha256": "ffb654c6b3ae1d67381045ac044f1f6fb2f54cdf7888ce65484d47b422c31d07",
+    "version": "0.5"
+  },
+  "Wikipedia": {
+    "sha256": "6c96a1986b3efcb06a6fd6f2e26d6c56b10f3b62edef3a26aae7a0edce45d6a4",
+    "version": "0.1"
+  },
+  "WindowSwitcher": {
+    "sha256": "abada4a19322992bd66f64e6b7456961cde5cc9cc432baf716a36adae41d814d",
+    "version": "0.1"
+  }
+}

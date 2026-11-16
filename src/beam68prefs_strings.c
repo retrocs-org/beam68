@@ -9,7 +9,7 @@ const char *const beam68prefs_strings[BEAM68PREFS_STRING_COUNT]={
     "Plugins", /* PMSG_PAGE_PLUGINS */
     "Appearance", /* PMSG_PAGE_APPEARANCE */
     "Favorites", /* PMSG_PAGE_FAVORITES */
-    "Applications", /* PMSG_PAGE_APPLICATIONS */
+    "Application shortcuts", /* PMSG_PAGE_APPLICATIONS */
     "Accessibility", /* PMSG_PAGE_ACCESSIBILITY */
     "Auto", /* PMSG_COMPACT_AUTO */
     "Always", /* PMSG_COMPACT_ALWAYS */
@@ -47,9 +47,9 @@ const char *const beam68prefs_strings[BEAM68PREFS_STRING_COUNT]={
     "Built-in Shell Commands (shell: and >)", /* PMSG_SHELL_SERVICE */
     "Plugins (drop .plugin, package drawer or .lha/.zip)", /* PMSG_PLUGIN_LIST */
     "Details", /* PMSG_DETAILS */
-    "Enable/Disable", /* PMSG_TOGGLE */
-    "Up", /* PMSG_UP */
-    "Down", /* PMSG_DOWN */
+    "Toggle", /* PMSG_TOGGLE */
+    "Priority up", /* PMSG_UP */
+    "Priority down", /* PMSG_DOWN */
     "Reload plugins", /* PMSG_RELOAD_PLUGINS */
     "Export report", /* PMSG_EXPORT_REPORT */
     "Timeout", /* PMSG_TIMEOUT */
@@ -65,7 +65,7 @@ const char *const beam68prefs_strings[BEAM68PREFS_STRING_COUNT]={
     "Window width", /* PMSG_WINDOW_WIDTH */
     "Height (0=auto)", /* PMSG_WINDOW_HEIGHT */
     "Selected icon preview", /* PMSG_ICON_PREVIEW */
-    "Custom palette (5 x RRGGBB)", /* PMSG_CUSTOM_PALETTE */
+    "Palette (5 x RRGGBB)", /* PMSG_CUSTOM_PALETTE */
     "Theme details", /* PMSG_THEME_DETAILS */
     "Theme file", /* PMSG_THEME_FILE */
     "Import", /* PMSG_IMPORT */
@@ -108,9 +108,9 @@ const char *const beam68prefs_strings[BEAM68PREFS_STRING_COUNT]={
     "Beam68 Appearance - dropped theme preview", /* PMSG_THEME_DROPPED */
     "Beam68 Preferences - plugin quarantine cleared", /* PMSG_QUARANTINE_CLEARED */
     "Health unavailable", /* PMSG_HEALTH_UNAVAILABLE */
-    "Name: %.64s\nCategory: %.30s\nTrigger: %c  Prefix: %.20s\nStatus: %s\nPriority: %ld of %ld\n", /* PMSG_DETAILS1 */
-    "Health: %.150s\nCapabilities: %.60s\nDescription: %.90s\nExample: %.80s\nHelp: %.110s\n", /* PMSG_DETAILS2 */
-    "Icon: %.80s\nExecutable: %.80s\nSettings: %.80s\nManifest: %.80s", /* PMSG_DETAILS3 */
+    "Name: %s\nCategory: %s\nTrigger: %c  Prefix: %s\nStatus: %s\nPriority: %ld of %ld\n", /* PMSG_DETAILS1 */
+    "Health: %s\nCapabilities: %s\nDescription: %s\nExample: %s\nHelp: %s\n", /* PMSG_DETAILS2 */
+    "Icon: %s\nExecutable: %s\nSettings: %s\nManifest: %s", /* PMSG_DETAILS3 */
     "(unknown)", /* PMSG_UNKNOWN */
     "(none)", /* PMSG_NONE */
     "(not available)", /* PMSG_NOT_AVAILABLE */
@@ -211,7 +211,7 @@ const char *const beam68prefs_strings[BEAM68PREFS_STRING_COUNT]={
     "ICON must be PLUGINDIR:<file> inside the package", /* PMSG_PKG_BAD_ICON */
     "GUIDE must be PLUGINDIR:<file> inside the package", /* PMSG_PKG_BAD_GUIDE */
     "SETTINGS must be ENVARC:Beam68/Plugins/<file>", /* PMSG_PKG_BAD_SETTINGS */
-    "\nProtocol: %ld  Guide: %.80s", /* PMSG_DETAILS4 */
+    "\nProtocol: %ld  Guide: %s", /* PMSG_DETAILS4 */
     "Extras", /* PMSG_PAGE_EXTRAS */
     "Favorite keys", /* PMSG_QUICK_LAUNCH */
     "WHDLoad command", /* PMSG_WHDLOAD_CMD */
@@ -255,7 +255,7 @@ const char *const beam68prefs_strings[BEAM68PREFS_STRING_COUNT]={
     "Bookmark files", /* PMSG_SRC_BOOKMARKS */
     "Open URL with", /* PMSG_SRC_URL_COMMAND */
     "Live preview", /* PMSG_PREVIEW_TITLE */
-    "%.64s\nPreview: %s\nDelay: %ld ms\nChoose Use or Save after closing Details.", /* PMSG_PREVIEW_BODY */
+    "Runs automatically after a typing pause.\n%.64s\nPreview: %s\nDelay: %ld ms\nChoose Use or Save after closing Details.", /* PMSG_PREVIEW_BODY */
     "Toggle|Faster|Slower|Delay...|Default|Done", /* PMSG_PREVIEW_BUTTONS */
     "This plugin does not allow live previews.\nYou can still run it with Enter.", /* PMSG_PREVIEW_UNAVAILABLE */
     "Next|Preview...|Close", /* PMSG_PREVIEW_DETAILS_MORE */
@@ -267,4 +267,20 @@ const char *const beam68prefs_strings[BEAM68PREFS_STRING_COUNT]={
     "Beam68\nApplication launcher for AmigaOS\n\nPreferences version: %s\nRunning Beam68: %s\nBuild date: %s\nPlugin protocol: 1\n\nBeam68 contributors\nhttps://beam68.retrocs.org\nhttps://github.com/retrocs-org/beam68", /* PMSG_ABOUT_BODY */
     "Not running", /* PMSG_ABOUT_NOT_RUNNING */
     "Unavailable (older or busy launcher)", /* PMSG_ABOUT_UNAVAILABLE */
+    "Restore original palette", /* PMSG_RESTORE_PALETTE */
+    "Plugin", /* PMSG_COL_PLUGIN */
+    "Version", /* PMSG_COL_VERSION */
+    "State", /* PMSG_COL_STATE */
+    "Key", /* PMSG_COL_KEY */
+    "Plugin version: %s\n", /* PMSG_PLUGIN_VERSION */
+    "Typing preview...", /* PMSG_TYPING_PREVIEW */
+    "\nID: %s\nAuthor: %s\nLicence: %s\nMinimum Beam68: %s\nURL: %s", /* PMSG_DETAILS_META */
+    "Close", /* PMSG_DETAILS_CLOSE */
+    "Pri", /* PMSG_COL_PRIORITY */
+    "Import...", /* PMSG_IMPORT_PLUGIN */
+    "Choose a plugin archive, package drawer or valid .plugin manifest.", /* PMSG_PLUGIN_IMPORT_INVALID */
+    "Remove...", /* PMSG_REMOVE_PLUGIN */
+    "Bundled plugins cannot be removed. Use Toggle to disable them.", /* PMSG_BUNDLED_KEEP */
+    "App shortcuts", /* PMSG_APPLICATION_SHORTCUTS_NAV */
+    "Extra search words and custom launch actions.", /* PMSG_APPLICATION_SHORTCUTS_HELP */
 };

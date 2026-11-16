@@ -81,32 +81,27 @@ languages = re.search(r'\(select #lang ((?:"[^"]+"\s*)+)\)', script).group(1)
 assert sorted(re.findall(r'"([^"]+)"', languages)) == sorted(
     p.parent.name for p in root.glob("catalogs/*/Beam68.catalog"))
 
-# Plugin list: same names, same order as the choices, all present on disk.
+# Plugin list: complete bundled inventory, all installed automatically.
 names = re.search(r'\(select #i ((?:"[^"]+"\s*)+)\)', script).group(1)
 names = re.findall(r'"([^"]+)"', names)
 on_disk = sorted(p.name for p in (root / "Plugins").iterdir() if p.is_dir())
 assert sorted(names) == on_disk, (names, on_disk)
 assert "(set #plugin-count %d)" % len(names) in script
 assert "(set #plugin-mask %d)" % ((1 << len(names)) - 1) in script
-choices = [m.group(1) for m in re.finditer(r'\(choices\s+((?:"[^"]*"\s*)+)\)', script)
-           if "Calculator" in m.group(1)][0]
-assert len(re.findall(r'"[^"]+"', choices)) == len(names)
-labels = re.findall(r'"([^"]+)"', choices)
-for name, label in zip(names, labels):
-    manifest = (root / "Plugins" / name / (name + ".plugin")).read_text(encoding="ascii")
-    title = re.search(r"^NAME=(.+)$", manifest, re.M).group(1).strip()
-    assert label.startswith(title), (name, label, title)
+assert '(askoptions' not in script
+assert '(set #plugins #plugin-mask)' in script
 for name in names:
     if not SOURCE_ONLY:
         assert (root / "Plugins" / name / name).is_file(), name
     assert (root / "Plugins" / name / (name + ".plugin")).is_file(), name
 
-# The base configuration is Beam68.cfg without PLUGIN= lines, kept in sync.
+# The installer supplies plugin registration and activation; the base has neither.
 spec = importlib.util.spec_from_file_location("cfg", root / "scripts/make-installer-cfg.py")
 cfg = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(cfg)
 base = (root / "installer/Beam68-base.cfg").read_text(encoding="ascii")
 assert base == cfg.base_text(), "run scripts/make-installer-cfg.py"
+assert "PLUGIN_DISABLED=" not in base
 assert "PLUGIN=" not in "\n".join(l for l in base.splitlines() if not l.startswith("#"))
 
 
@@ -195,7 +190,7 @@ for existing, startup in (("", False), ("SYS:Beam68", False),
     values = {"#novice": True, "#existing": existing,
               "#default-parent": "SYS:Utilities",
               "#default-dest": "SYS:Utilities/Beam68",
-              "#startup": "SYS:WBStartup/Beam68Start", "#plugin-mask": 16383}
+              "#startup": "SYS:WBStartup/Beam68Start", "#plugin-mask": 262143}
     def novice_value(node):
         if not isinstance(node, list):
             if node.startswith('"'): return node[1:-1]
@@ -216,7 +211,7 @@ for existing, startup in (("", False), ("SYS:Beam68", False),
                 "#parent", "#dest", "#update", "#portable-settings", "#plugins", "#autostart"):
             values[form[1]] = novice_value(form[2])
     assert values["#dest"] == (existing or "SYS:Utilities/Beam68")
-    assert values["#plugins"] == 16383
+    assert values["#plugins"] == 262143
     assert values["#autostart"] == (int(startup) if existing else 1)
 print("Novice defaults: fresh install and custom-location updates without prompts: PASS")
 
@@ -261,5 +256,98 @@ def find_novice_choices(node):
         novice_uninstall.append(node)
     for child in node: find_novice_choices(child)
 find_novice_choices(procedures["P_UNINSTALL"])
-assert [node[2] for node in novice_uninstall] == ["#dest", "1", "1"]
-print("Novice uninstall: remembered destination, remove programs, retain settings: PASS")
+assert [node[2] for node in novice_uninstall] == ["#dest"]
+assert "(set #keep-settings (askbool" in script
+assert script.index("(set #keep-settings (askbool") < script.index("(P_STOP_LAUNCHER)",script.index("(procedure P_UNINSTALL\n"))
+assert '(if #keep-settings' in script
+assert script.index('(P_STOP_LAUNCHER)',script.index('(procedure P_INSTALL')) < script.index('(set #src "Beam68")')
+assert '(P_START_LAUNCHER)' in script
+assert 'C:Run >NIL: <NIL:' in script
+assert '>NIL: WAITREADY' in script
+assert 'C:Wait' not in script
+assert '>NIL: SHOW' not in script
+print("Uninstall: explicit consent and settings choice before stopping/removing; startup verified: PASS")
+
+# Maintenance is offered at every user level, including Novice. Execute the
+# actual main dispatch with fake prompts; verify level restoration before work.
+maintenance = forms[-1]
+for level in (0, 1, 2):
+    for existing in ("", "Work:Beam68"):
+        for action in (0, 1):
+            state={"#existing":existing,"#novice":level==0,"@user-level":level}
+            events=[]
+            def dispatch(node):
+                if not isinstance(node,list):
+                    if node.startswith('"'): return node[1:-1]
+                    if node.isdigit(): return int(node)
+                    return state.get(node,node)
+                if not node:return None
+                if isinstance(node[0],list):
+                    for child in node:dispatch(child)
+                    return None
+                op,*args=node
+                if op=='if':return dispatch(args[1] if dispatch(args[0]) else args[2]) if dispatch(args[0]) or len(args)>2 else None
+                if op=='<>':return dispatch(args[0])!=dispatch(args[1])
+                if op=='=':return dispatch(args[0])==dispatch(args[1])
+                if op=='set':state[args[0]]=dispatch(args[1]);return None
+                if op=='user':state['@user-level']=dispatch(args[0]);return None
+                if op=='askchoice':
+                    assert state['@user-level']>0
+                    assert next(x for x in args if x[0]=='choices')==['choices','#t_choice_install','#t_choice_uninstall']
+                    events.append('menu');return action
+                if op in ('P_INSTALL','P_UNINSTALL'):
+                    assert state['@user-level']==level
+                    events.append(op);return None
+                raise AssertionError(op)
+            dispatch(maintenance)
+            assert events==(['menu','P_INSTALL' if action==0 else 'P_UNINSTALL'] if existing else ['P_INSTALL'])
+print("Maintenance menu: fresh install, update/uninstall and level restoration for all levels: PASS")
+
+main_source=(root/'src/main.c').read_text()
+cleanup=main_source.split('cleanup:',1)[1]
+assert cleanup.index('beam_index_free(&beam_index)') < cleanup.index('RemPort(control_port)')
+assert cleanup.index('DeleteFile((STRPTR)BEAM_RECOVERY_MARKER)') < cleanup.index('RemPort(control_port)')
+assert '(set @default-dest "T:")' in script
+assert 'ENVARC:Beam68-Uninstall.log' in script
+print("Shutdown completion: control port retained through cleanup; uninstall trace survives settings removal: PASS")
+
+# Start resident silently, then display the actual configured shortcut.
+start_branch=next(form for form in procedures['P_INSTALL']
+                  if form[:1]==['if'] and isinstance(form[1],list)
+                  and form[1][:2]==['if','#novice'])
+assert start_branch[2]==['P_START_LAUNCHER']
+assert 'INSTALLINFO' in script
+assert '(getenv "Beam68-InstallerShortcut")' in script
+assert '(set #t_ready (cat #t_ready #t_open_shortcut #shortcut #t_open_prefs))' in script
+print("Install completion: background resident, no SHOW, actual configured shortcut: PASS")
+
+# Live ENV: may resolve to ENVARC:. Never recurse over it after deleting the
+# backing store; follow the safe files-first sequence for both aliases.
+remove_settings=script.split('(if #keep-settings',1)[1].split('(complete 100)',1)[0]
+assert 'Delete ENV:Beam68 ALL' not in script
+assert remove_settings.index('(foreach "ENV:Beam68"') < remove_settings.index('Delete ENVARC:Beam68 ALL')
+assert '(set #file "ENV:Beam68.cfg") (P_DELETE_FILE)' in remove_settings
+assert '(set #file "ENVARC:Beam68.cfg") (P_DELETE_FILE)' in remove_settings
+assert 'THEME=MOCHA' in base
+print("Remove settings: live files before saved tree, no recursive ENV removal, legacy files removed: PASS")
+
+# Fresh installs and newly added plugins share the six-tool default policy.
+assert "(set #default-enabled-mask 63)" in script
+assert "(if (= (IN #default-enabled-mask #i) 0)" in script
+
+# Fresh installs append activation defaults as well as the full inventory.
+# Updates use P_UPDATE_CONFIG and retain existing explicit choices.
+fresh_registry = script.split('(set #pluginlines "")', 1)[1].split('(complete 70)', 1)[0]
+assert '(if (= (IN #default-enabled-mask #i) 0)' in fresh_registry
+assert '(cat #pluginlines "PLUGIN_DISABLED=PROGDIR:Plugins/" #plugin "/" #plugin ".plugin\\n")' in fresh_registry
+
+# Remove-settings uninstall and fresh installation must discard temporary Use
+# configuration: read_active checks it before the newly written saved file.
+clear_session = script.split('(procedure P_CLEAR_SESSION_CONFIG', 1)[1].split('; Updates keep', 1)[0]
+for suffix in ('', '.bak', '.new'):
+    assert '(set #file "T:Beam68/Beam68.cfg%s") (P_DELETE_FILE)' % suffix in clear_session
+fresh_config = script.split('; -- configuration: written once', 1)[1].split('; ENV:', 1)[0]
+assert fresh_config.index('(P_CLEAR_SESSION_CONFIG)') < fresh_config.index('(set #cfgextra "")')
+remove_config = script.split('(set #stage "Removing live settings files")', 1)[1]
+assert remove_config.index('(P_CLEAR_SESSION_CONFIG)') < remove_config.index('(run "C:Delete ENVARC:Beam68 ALL QUIET FORCE")')
+print("Fresh install and remove-settings uninstall clear overriding temporary configuration: PASS")

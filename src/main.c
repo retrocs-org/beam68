@@ -92,7 +92,7 @@ const char beam68_version_tag[]="$VER: Beam68 " BEAM68_VERSION " (" BEAM68_VERSI
 #define HOTKEY_ID 1001L
 #define BEAM_SCAN_MAX_CHUNK 256      /* upper bound per tick, any CPU */
 #define BEAM_SCAN_BUDGET_MICROS 30000 /* work at most ~30ms of each 50ms tick */
-#define BEAM_SCAN_FRAMES 17
+#define BEAM_SCAN_FRAMES BEAM_MAX_PATH
 #define BEAM_TICK_MICROS 50000
 #define BEAM_NOTIFY_DEBOUNCE_TICKS 10
 #define BEAM_SCAN_REDRAW_TICKS 10     /* refresh an open window ~2x/second */
@@ -287,7 +287,16 @@ struct BeamScanFrame {
     int depth;
     int root;
 };
-static struct BeamScanFrame scan_frames[BEAM_SCAN_FRAMES];
+static struct BeamScanFrame *scan_frames[BEAM_SCAN_FRAMES];
+static int plugins_loaded;
+static int whd_enabled,whd_index_wanted,whd_index_busy,whd_index_phase,whd_index_records,whd_index_complete;
+static unsigned long whd_index_serial,whd_index_rules;
+static struct timeval whd_index_started;
+static BPTR whd_index_file;
+static char whd_index_path[BEAM_MAX_PATH];
+static void whd_index_request(int force);
+static void whd_index_poll(void);
+static void whd_index_close(void);
 static int scan_active, scan_frames_used, scan_root, scan_count;
 static unsigned long scan_roots;     /* roots (bit per DIR) being rescanned */
 static unsigned long notify_pending_roots;
@@ -588,7 +597,7 @@ static int plugin_files_pending(void)
 static void arm_timer(void)
 {
     if (!timer_io || timer_pending ||
-        (!scan_active && !plugin_job.active &&
+        (!scan_active && !whd_index_busy && !whd_index_wanted && !plugin_job.active &&
          !(outgoing_rexx.message && !outgoing_rexx.timed_out) && !notify_refresh_ticks &&
          !recovery_grace_ticks && !preview_ticks && !icon_preview_ticks && !plugin_health_flush_ticks && !plugin_files_pending())) return;
     timer_io->tr_node.io_Command=TR_ADDREQUEST;
@@ -827,33 +836,13 @@ static int is_native_executable(const char *path)
  * path lookup: they never run at the same time. */
 static UBYTE io_buf[4096];
 
-/* WHDLoad: the SLAVE tool type of the last game icon classified. */
-static char icon_slave[64];
-
 static int icon_file_kind(const char *info_path)
 {
-    UBYTE *buf=io_buf;
-    char tool[64];
-    BPTR f=Open((STRPTR)info_path,MODE_OLDFILE);
-    LONG got,more;
-    int type;
-    if (!f) return 0;
-    got=Read(f,buf,50);
-    if (got<49 || buf[0]!=(UBYTE)(WB_DISKMAGIC>>8) ||
-        buf[1]!=(UBYTE)(WB_DISKMAGIC&255)) { Close(f); return 0; }
-    type=(int)buf[48];
-    icon_slave[0]=0;
-    if (type==WBPROJECT && cfg.index_games) {
-        more=Read(f,buf+got,(LONG)sizeof(io_buf)-got);
-        if (more>0) got+=more;
-        Close(f);
-        beam_icon_info(buf,(unsigned long)got,tool,sizeof(tool));
-        if (!beam_icon_is_whdload_tool(tool)) return BEAM_ITEM_WORKBENCH;
-        beam_icon_tooltype(buf,(unsigned long)got,"SLAVE",icon_slave,sizeof(icon_slave));
-        return BEAM_ITEM_GAME;
-    }
-    Close(f);
-    return (type==WBTOOL || type==WBPROJECT)?BEAM_ITEM_WORKBENCH:0;
+    unsigned char header[50];LONG got;BPTR f=Open((STRPTR)info_path,MODE_OLDFILE);
+    if(!f)return 0;
+    got=Read(f,header,sizeof(header));Close(f);
+    if(got<49 || header[0]!=(UBYTE)(WB_DISKMAGIC>>8) || header[1]!=(UBYTE)(WB_DISKMAGIC&255))return 0;
+    return header[48]==WBTOOL || header[48]==WBPROJECT?BEAM_ITEM_WORKBENCH:0;
 }
 
 static int read_slave(const char *slave_path,struct BeamSlaveInfo *info)
@@ -898,20 +887,6 @@ static void game_set_title(int index,const char *slave_path)
         item_bind_meta(&items[index]);
 }
 
-/* An icon-less WHDLoad slave; skipped when the game already has an icon
- * of the same name, which is how WHDLoad installs normally launch. */
-static int slave_without_icon(const char *slave_path)
-{
-    char info[BEAM_MAX_PATH+8];
-    unsigned int n=(unsigned int)strlen(slave_path);
-    BPTR lock;
-    if (n<7 || n+5>=sizeof(info)) return 0;
-    memcpy(info,slave_path,n-6); strcpy(info+n-6,".info");
-    lock=Lock((STRPTR)info,ACCESS_READ);
-    if (lock) { UnLock(lock); return 0; }
-    return 1;
-}
-
 /* Directory processing is cooperative, not a second shared-memory task.
  * Every timer reply does as much as fits in a ~30ms budget (bounded by
  * BEAM_SCAN_MAX_CHUNK) and yields at once when keyboard or hotkey input is
@@ -920,10 +895,10 @@ static void scan_pop(void)
 {
     struct BeamScanFrame *f;
     if (!scan_frames_used) return;
-    f=&scan_frames[--scan_frames_used];
+    f=scan_frames[--scan_frames_used];
     if (f->fib) FreeDosObject(DOS_FIB,f->fib);
     if (f->lock) UnLock(f->lock);
-    f->fib=NULL; f->lock=0;
+    FreeVec(f);scan_frames[scan_frames_used]=NULL;
 }
 /* Stop an unfinished scan.  Items not re-visited are kept (their stale mark
  * is simply cleared): an incomplete walk must never delete valid entries. */
@@ -939,21 +914,22 @@ static int scan_push(const char *path,int depth,int root)
 {
     struct BeamScanFrame *f;
     if (scan_frames_used==BEAM_SCAN_FRAMES) return 0;
-    f=&scan_frames[scan_frames_used];
+    f=(struct BeamScanFrame *)AllocVec(sizeof(*f),MEMF_ANY|MEMF_CLEAR);
+    if(!f)return 0;
     f->lock=Lock((STRPTR)path,ACCESS_READ);
-    if (!f->lock) return 0;
+    if (!f->lock) {FreeVec(f);return 0;}
     f->fib=(struct FileInfoBlock *)AllocDosObject(DOS_FIB,NULL);
-    if (!f->fib) { UnLock(f->lock); f->lock=0; return 0; }
+    if (!f->fib) { UnLock(f->lock);FreeVec(f);return 0; }
     if (!Examine(f->lock,f->fib)) {
         FreeDosObject(DOS_FIB,f->fib);
         UnLock(f->lock);
-        f->fib=NULL;f->lock=0;
+        FreeVec(f);
         return 0;
     }
     beam_copy(f->path,path,sizeof(f->path));
     f->depth=depth;
     f->root=root;
-    ++scan_frames_used;
+    scan_frames[scan_frames_used++]=f;
     return 1;
 }
 static unsigned long all_roots(void)
@@ -1002,6 +978,7 @@ static void scan_begin(unsigned long roots)
     scan_redraw_ticks=0;
     if (TimerBase) GetSysTime(&timing_scan_start);
     scan_active=1;
+    if(plugins_loaded)whd_index_request(1);
     if (!roots) scan_complete(); /* nothing to walk: finish (and sweep) now */
     else arm_timer();
 }
@@ -1102,6 +1079,7 @@ static void scan_complete(void)
     /* The walk finished: whatever is still stale has really disappeared.
        Sweeping renumbers items, so any shown result list must be rebuilt. */
     scan_snapshot(&completed);
+    if(whd_enabled) {int i;for(i=0;i<item_count;i++)if(items[i].kind==BEAM_ITEM_GAME)items[i].flags&=(unsigned char)~BEAM_ITEM_FLAG_STALE;}
     reconcile_scan(beam_scan_cacheable(&completed));
     ++index_generation;
     search_pending=1;
@@ -1152,7 +1130,7 @@ static void scan_step(void)
             ++scan_root;
             continue;
         }
-        f=&scan_frames[scan_frames_used-1];
+        f=scan_frames[scan_frames_used-1];
         if (!ExNext(f->lock,f->fib)) {
             /* End-of-drawer is normal; distinguish it from disk I/O errors. */
             if (IoErr()!=ERROR_NO_MORE_ENTRIES) ++scan_io_errors;
@@ -1172,7 +1150,7 @@ static void scan_step(void)
         if (f->fib->fib_DirEntryType==ST_USERDIR) {
             if (cfg.index_drawers)
                 index_add(path,BEAM_ITEM_DRAWER,f->root);
-            if (f->depth<cfg.max_depth && !scan_push(path,f->depth+1,f->root))
+            if ((cfg.max_depth<0 || f->depth<cfg.max_depth) && !scan_push(path,f->depth+1,f->root))
                 ++scan_unreadable;
         } else if (f->fib->fib_DirEntryType<0) {
             if (cfg.scan_icons && has_suffix_ci(filename,".info")) {
@@ -1185,18 +1163,8 @@ static void scan_step(void)
                     int index;
                     path[strlen(path)-5]=0;
                     index=index_add(path,kind,f->root);
-                    if (kind==BEAM_ITEM_GAME && index>=0 && icon_slave[0]) {
-                        char slave[BEAM_MAX_PATH];
-                        beam_copy(slave,f->path,sizeof(slave));
-                        if (AddPart((STRPTR)slave,(STRPTR)icon_slave,sizeof(slave)))
-                            game_set_title(index,slave);
-                    }
+                    (void)index;
                 }
-            } else if (cfg.index_modules && beam_module_name(filename)) {
-                index_add(path,BEAM_ITEM_MODULE,f->root);
-            } else if (cfg.index_games && has_suffix_ci(filename,".slave")) {
-                if (slave_without_icon(path))
-                    game_set_title(index_add(path,BEAM_ITEM_GAME,f->root),path);
             } else if (!has_suffix_ci(filename,".info")) {
                 if (cfg.index_files &&
                     beam_filename_patterns_match(filename,cfg.file_patterns))
@@ -2271,7 +2239,7 @@ static void palette_apply(void)
                       screen_drawinfo?screen_drawinfo->dri_NumPens:0);
     palette_release();
     if (!pubscreen || !pubscreen->ViewPort.ColorMap || cfg.reduced_colors ||
-        cfg.theme==BEAM_THEME_WORKBENCH) {
+        (safe_mode || beam_theme_config_mode(&cfg)==BEAM_THEME_WORKBENCH)) {
         if (cfg.high_contrast && screen_drawinfo && screen_drawinfo->dri_NumPens>BEAM_PEN_FILLTEXT) {
             palette.fill=screen_drawinfo->dri_Pens[BEAM_PEN_FILL];
             palette.fill_text=screen_drawinfo->dri_Pens[BEAM_PEN_FILLTEXT];
@@ -2282,7 +2250,7 @@ static void palette_apply(void)
     tags[1].ti_Tag=TAG_END; tags[1].ti_Data=0;
     for (role=0;role<BEAM_THEME_ROLE_COUNT;role++) {
         LONG pen;
-        if (!beam_theme_color_custom(cfg.theme,role,cfg.custom_colors,
+        if (!beam_theme_color_custom(beam_theme_config_mode(&cfg),role,beam_theme_config_palette(&cfg),
                                      &red,&green,&blue)) break;
         pen=ObtainBestPenA(pubscreen->ViewPort.ColorMap,
                            red,green,blue,tags);
@@ -2334,7 +2302,6 @@ static void hide_window(void)
     if (pubscreen) { UnlockPubScreen(NULL,pubscreen); pubscreen=NULL; }
 }
 
-static int plugins_loaded;
 static void load_plugins(void);
 static void ensure_plugins(void)
 {
@@ -2830,9 +2797,141 @@ static void bind_favorite_meta(void)
 /* ------------------------------------------------------- Directory Opus
  * Talks to Directory Opus over ARexx (port DOPUS_PORT, "DOPUS.1"):
  * Opus 5/Magellan understands "lister new <path>", Opus 4 "ScanDir <path>". */
+/* Optional app integrations are executed by enabled plugin workers. */
+static struct BeamLauncherPlugin *integration_plugin(const char *prefix)
+{
+    int i;if(!plugins_loaded)load_plugins();
+    for(i=0;i<plugin_count;i++)if(beam_equal(plugins[i].prefix,prefix))return &plugins[i];
+    return NULL;
+}
+static int integration_start(const char *prefix,const char *verb,const char *path,const char *select)
+{
+    char command[800];struct BeamLauncherPlugin *p=integration_plugin(prefix);
+    if(!p || !path || strpbrk(path,"\"*`\r\n") ||
+        (select && strpbrk(select,"\"*`\r\n")) ||
+        strlen(p->command)+strlen(path)+(select?strlen(select):0)+32>=sizeof(command))return 0;
+    sprintf(command,"\"%s\" %s \"%s\"",p->command,verb,path);
+    if(select && *select){strcat(command," \"");strcat(command,select);strcat(command,"\"");}
+    return beam_system(command,NULL,NULL,1)!=-1;
+}
+/* The optional plugin builds a private, atomic source file in another
+ * process. Validate it before importing a bounded batch on each timer tick. */
+static void whd_index_close(void)
+{
+    char temp[BEAM_MAX_PATH+5];
+    if(whd_index_file){Close(whd_index_file);whd_index_file=0;}
+    if(whd_index_path[0]) {
+        DeleteFile((STRPTR)whd_index_path);sprintf(temp,"%s.new",whd_index_path);DeleteFile((STRPTR)temp);
+    }
+    if(whd_index_phase==2){int i;for(i=0;i<item_count;i++)if(items[i].kind==BEAM_ITEM_GAME)items[i].flags&=(unsigned char)~BEAM_ITEM_FLAG_STALE;}
+    whd_index_busy=whd_index_phase=whd_index_records=0;whd_index_path[0]=0;
+}
+static void whd_index_request(int force)
+{
+    int previous=whd_enabled,i;unsigned long rules=5381UL;const char *s;
+    rules=(rules*33UL+(unsigned long)(cfg.max_depth+1))&0xffffffffUL;
+    rules=(rules*33UL+(unsigned long)cfg.max_items)&0xffffffffUL;
+    for(i=0;i<cfg.dir_count;i++) {
+        for(s=cfg.dirs[i];*s;s++)rules=(rules*33UL+(unsigned char)*s)&0xffffffffUL;
+        rules=(rules*33UL)&0xffffffffUL;
+    }
+    for(i=0;i<cfg.excluded_dir_count;i++) {
+        for(s=cfg.excluded_dirs[i];*s;s++)rules=(rules*33UL+(unsigned char)*s)&0xffffffffUL;
+        rules=(rules*33UL)&0xffffffffUL;
+    }
+    whd_enabled=integration_plugin("WHD:")!=NULL;
+    if(!force && previous==whd_enabled && rules==whd_index_rules)return;
+    whd_index_rules=rules;whd_index_wanted=whd_enabled;
+    if(previous && !whd_enabled) {
+        for(i=0;i<item_count;i++)if(items[i].kind==BEAM_ITEM_GAME) {
+            items[i].kind=has_suffix_ci(items[i].path,".slave")?BEAM_ITEM_FILE:BEAM_ITEM_WORKBENCH;
+            items[i].title=NULL;item_bind_meta(&items[i]);
+        }
+    }
+    if(previous!=whd_enabled)scan_begin(all_roots());
+    arm_timer();
+}
+static void whd_index_poll(void)
+{
+    char line[BEAM_MAX_PATH+48],command[640];int budget=24;
+    if(!whd_index_busy) {
+        struct BeamLauncherPlugin *p;struct DateStamp stamp;int busy;
+        if(!whd_index_wanted || !whd_enabled)return;
+        Forbid();busy=FindPort((STRPTR)"BEAM68_WHD_INDEX")!=NULL;Permit();if(busy)return;
+        p=integration_plugin("WHD:");if(!p){whd_index_wanted=0;return;}
+        DateStamp(&stamp);
+        sprintf(whd_index_path,"T:Beam68-WHD-%lx-%lx-%lx-%lx.index",
+            (unsigned long)stamp.ds_Days,(unsigned long)stamp.ds_Minute,(unsigned long)stamp.ds_Tick,++whd_index_serial);
+        sprintf(command,"\"%s\" INDEX \"%s\"",p->command,whd_index_path);
+        whd_index_wanted=0;
+        if(beam_system(command,NULL,NULL,1)==-1){whd_index_path[0]=0;return;}
+        whd_index_busy=1;GetSysTime(&whd_index_started);return;
+    }
+    if(micros_since(&whd_index_started)>300000000L){whd_index_close();return;}
+    if(!whd_index_file) {
+        BPTR lock=Lock((STRPTR)whd_index_path,ACCESS_READ);if(!lock)return;UnLock(lock);
+        if(whd_index_wanted || !whd_enabled){whd_index_close();return;}
+        if(scan_active)return;
+        whd_index_file=Open((STRPTR)whd_index_path,MODE_OLDFILE);if(!whd_index_file){whd_index_close();return;}
+        if(!FGets(whd_index_file,line,sizeof(line)) || strcmp(line,"BEAM68WHD1\n")){whd_index_close();return;}
+        whd_index_phase=1;
+    }
+    if(whd_index_wanted || !whd_enabled){whd_index_close();return;}
+    while(budget-- && FGets(whd_index_file,line,sizeof(line))) {
+        char *sep,*end,*path;long root;
+        if(!strncmp(line,"END ",4)) {
+            long records,errors;int i;
+            if(sscanf(line,"END %ld %ld",&records,&errors)!=2 || errors<0 || records!=whd_index_records){whd_index_close();return;}
+            if(whd_index_phase==1) {
+                if(Seek(whd_index_file,0,OFFSET_BEGINNING)==-1 || !FGets(whd_index_file,line,sizeof(line))){whd_index_close();return;}
+                whd_index_phase=2;whd_index_records=0;whd_index_complete=errors==0;
+                if(whd_index_complete)for(i=0;i<item_count;i++)if(items[i].kind==BEAM_ITEM_GAME)items[i].flags|=BEAM_ITEM_FLAG_STALE;
+                return;
+            }
+            if(whd_index_complete)for(i=0;i<item_count;i++) {
+                if(items[i].kind==BEAM_ITEM_GAME && (items[i].flags&BEAM_ITEM_FLAG_STALE) &&
+                    cfg.scan_icons && !has_suffix_ci(items[i].path,".slave")) {
+                    char info[BEAM_MAX_PATH+6];
+                    sprintf(info,"%s.info",items[i].path);
+                    if(icon_file_kind(info)) {
+                        items[i].kind=BEAM_ITEM_WORKBENCH;items[i].title=NULL;
+                        items[i].flags&=(unsigned char)~BEAM_ITEM_FLAG_STALE;item_bind_meta(&items[i]);
+                    }
+                }
+            }
+            reconcile_scan(whd_index_complete);whd_index_phase=0;whd_index_close();++index_generation;
+            if(whd_index_complete && cfg.index_cache && index_cache_path[0])beam_cache_save(&cfg,&beam_index,index_cache_path);
+            search_items();if(window)render();return;
+        }
+        sep=strchr(line,'\t');if(!sep){whd_index_close();return;}*sep++=0;
+        root=strtol(line,&end,10);path=beam_trim(sep);
+        if(*end || root<0 || root>=cfg.dir_count || !*path || strlen(path)>=BEAM_MAX_PATH ||
+            strpbrk(path,"\"*\r\n\t") || ++whd_index_records>cfg.max_items){whd_index_close();return;}
+        if(whd_index_phase==2) {
+            int index=index_add(path,BEAM_ITEM_GAME,(int)root);char slave[BEAM_MAX_PATH];
+            if(index<0){whd_index_close();return;}
+            if(game_slave_path(path,slave,sizeof(slave)))game_set_title(index,slave);
+        }
+    }
+    if(budget>=0)whd_index_close(); /* Missing trailer: retain the previous source. */
+}
+
+static void dopus_options(void)
+{
+    BPTR f;char line[160],*key,*eq;
+    f=Open((STRPTR)"ENVARC:Beam68/Plugins/DOpus.cfg",MODE_OLDFILE);if(!f)return;
+    while(FGets(f,line,sizeof(line))) {
+        key=beam_trim(line);eq=strchr(key,'=');if(!eq)continue;*eq++=0;key=beam_trim(key);eq=beam_trim(eq);
+        if(beam_equal(key,"PORT"))beam_copy(cfg.dopus_port,eq,sizeof(cfg.dopus_port));
+        if(beam_equal(key,"OPEN_DRAWERS"))cfg.dopus_drawers=beam_equal(eq,"YES");
+    }
+    Close(f);
+}
 static int dopus_running(void)
 {
     int found;
+    if(!integration_plugin("DOPUS:"))return 0;
+    dopus_options();
     Forbid();
     found=FindPort((STRPTR)cfg.dopus_port)!=NULL;
     Permit();
@@ -2886,38 +2985,21 @@ static void outgoing_rexx_failure(int stage)
 }
 static void outgoing_rexx_poll(void)
 {
-    char command[BEAM_MAX_PATH+80];
-    struct Message *reply;
-    int ok,stage,next=0;
-    if (!outgoing_rexx.message) return;
+    struct Message *reply;int ok;
+    if(!outgoing_rexx.message)return;
     reply=GetMsg(outgoing_rexx.reply);
-    if (!reply) {
-        if (!outgoing_rexx.timed_out &&
-            micros_since(&outgoing_rexx.started)>=3000000L) {
-            outgoing_rexx.timed_out=1;
-            outgoing_rexx_failure(outgoing_rexx.stage);
+    if(!reply) {
+        if(!outgoing_rexx.timed_out && micros_since(&outgoing_rexx.started)>=3000000L) {
+            outgoing_rexx.timed_out=1;outgoing_rexx_failure(REXX_MODULE);
         }
         return;
     }
-    stage=outgoing_rexx.stage;
     ok=outgoing_rexx.message->rm_Result1==0;
-    if (stage==REXX_DOPUS_NEW) outgoing_rexx.handle[0]=0;
-    if (stage==REXX_DOPUS_NEW && ok && outgoing_rexx.message->rm_Result2) {
-        const char *handle=(const char *)outgoing_rexx.message->rm_Result2;
-        if (beam_rexx_handle_valid(handle))
-            beam_copy(outgoing_rexx.handle,handle,sizeof(outgoing_rexx.handle));
-    }
     outgoing_rexx_free_message();
-    if (outgoing_rexx.timed_out) { outgoing_rexx_close(); return; }
-    next=beam_rexx_next(stage,ok,outgoing_rexx.handle,outgoing_rexx.drawer,
-        outgoing_rexx.select,command,sizeof(command));
-    if (next>0) {
-        if (outgoing_rexx_send(command,next)) return;
-        ok=0;
-    } else if (next<0) ok=0;
-    if (!ok) outgoing_rexx_failure(stage);
+    if(!ok && !outgoing_rexx.timed_out)outgoing_rexx_failure(REXX_MODULE);
     outgoing_rexx_close();
 }
+
 static int arexx_send(const char *port_name,const char *command,char *result,unsigned int cap)
 {
     (void)result; (void)cap; /* Module actions need completion status, not text. */
@@ -2927,17 +3009,7 @@ static int arexx_send(const char *port_name,const char *command,char *result,uns
 }
 static int dopus_show_select(const char *drawer,const char *select)
 {
-    char command[BEAM_MAX_PATH+48];
-    if (!dopus_running() || !drawer || outgoing_rexx.message ||
-        strlen(cfg.dopus_port)>=sizeof(outgoing_rexx.port) ||
-        strlen(drawer)>=sizeof(outgoing_rexx.drawer) ||
-        strpbrk(drawer,"\"*\r\n") ||
-        (select && (strlen(select)>=sizeof(outgoing_rexx.select) || strpbrk(select,"\"*\r\n")))) return 0;
-    beam_copy(outgoing_rexx.port,cfg.dopus_port,sizeof(outgoing_rexx.port));
-    beam_copy(outgoing_rexx.drawer,drawer,sizeof(outgoing_rexx.drawer));
-    beam_copy(outgoing_rexx.select,select?select:"",sizeof(outgoing_rexx.select));
-    sprintf(command,"lister new \"%s\"",drawer);
-    return outgoing_rexx_send(command,REXX_DOPUS_NEW);
+    return dopus_running() && integration_start("DOPUS:","OPEN",drawer,select);
 }
 
 static int dopus_show(const char *drawer)
@@ -2992,7 +3064,7 @@ static void launch_selected(void)
             }
         }
         kind=(e->kind==BEAM_ITEM_VOLUME || e->kind==BEAM_ITEM_ASSIGN)?BEAM_ITEM_DRAWER:e->kind;
-        if (kind==BEAM_ITEM_DRAWER && cfg.dopus_drawers && dopus_show(e->path)) {
+        if (kind==BEAM_ITEM_DRAWER && (dopus_options(),cfg.dopus_drawers) && dopus_show(e->path)) {
             hide_window(); return;
         }
         if (!workbench_open(e->path,kind)) {
@@ -3131,7 +3203,7 @@ static void launch_selected(void)
     if (action_mode==BEAM_ACTION_DRAWER) {
         char parent[BEAM_MAX_PATH];
         if (!beam_parent_drawer(it->path,parent,sizeof(parent)) ||
-            (!(cfg.dopus_drawers && dopus_show(parent)) &&
+            (!((dopus_options(),cfg.dopus_drawers) && dopus_show(parent)) &&
              !workbench_open(parent,BEAM_ITEM_DRAWER))) {
             beam_copy(status,WorkbenchBase && WorkbenchBase->lib_Version>=44?
                 beam_str(MSG_DRAWER_OPEN_FAILED):
@@ -3285,22 +3357,13 @@ static void launch_selected(void)
     }
     kick_confirm_item=-1;
     if (it->kind==BEAM_ITEM_GAME && has_suffix_ci(it->path,".slave")) {
-        /* Icon-less slave: run WHDLoad with the game drawer as data path. */
-        char drawer[BEAM_MAX_PATH];
-        if (!beam_parent_drawer(it->path,drawer,sizeof(drawer)) ||
-            strchr(cfg.whdload_command,'"') ||
-            strlen(cfg.whdload_command)+strlen(it->path)+strlen(drawer)+32>=sizeof(command)) {
-            beam_copy(status,beam_str(MSG_UNSAFE_PATH),sizeof(status));
-            render(); return;
-        }
-        sprintf(command,"\"%s\" SLAVE=\"%s\" DATA=\"%s\" PRELOAD",
-                cfg.whdload_command,it->path,drawer);
-        if (beam_system(command,NULL,NULL,1)==-1) {
-            beam_copy(status,beam_str(MSG_SHELL_LAUNCH_FAILED),sizeof(status)); render(); return;
+        if (!integration_start("WHD:","PLAY",it->path,NULL)) {
+            beam_copy(status,"Enable the WHDLoad plugin and check its Settings.",sizeof(status));
+            render();return;
         }
     } else if (it->kind!=BEAM_ITEM_SHELL) {
         if ((it->kind==BEAM_ITEM_DRAWER || it->kind==BEAM_ITEM_VOLUME) &&
-            cfg.dopus_drawers && dopus_show(it->path)) {
+            (dopus_options(),cfg.dopus_drawers) && dopus_show(it->path)) {
             hide_window(); return;
         }
         record_document(it->path,it->kind);
@@ -3481,6 +3544,7 @@ static void load_plugins(void)
         }
     }
     help_build();
+    whd_index_request(0);
 }
 
 static void reload_plugins_only(void)
@@ -3555,10 +3619,12 @@ static int reload_config(void)
         FreeVec(next);
         beam_copy(status,beam_str(MSG_CONFIG_INVALID),sizeof(status)); return 0;
     }
+    memset(&ix,0,sizeof(ix));ix.ix_Version=IX_VERSION;
     if (ParseIX((STRPTR)next->hotkey,&ix)!=0) {
         FreeVec(next);
         beam_copy(status,beam_str(MSG_HOTKEY_INVALID),sizeof(status)); return 0;
     }
+    ix.ix_Version=IX_VERSION; /* ParseIX does not establish the SetFilterIX ABI version. */
     memset(&new_index,0,sizeof(new_index));
     if (next->max_items!=cfg.max_items) {
         if (!allocate_index(&new_index,next->max_items,&actual_items)) {
@@ -3571,11 +3637,13 @@ static int reload_config(void)
             next_memory_reduced=1;
         }
     }
-    if (hotkey_filter) {
+    if (hotkey_filter && (!beam_equal(cfg.hotkey,next->hotkey) || CxObjError(hotkey_filter))) {
         SetFilterIX(hotkey_filter,&ix);
         if (CxObjError(hotkey_filter)) {
-            if (ParseIX((STRPTR)cfg.hotkey,&previous_ix)==0)
-                SetFilterIX(hotkey_filter,&previous_ix);
+            memset(&previous_ix,0,sizeof(previous_ix));previous_ix.ix_Version=IX_VERSION;
+            if (ParseIX((STRPTR)cfg.hotkey,&previous_ix)==0) {
+                previous_ix.ix_Version=IX_VERSION;SetFilterIX(hotkey_filter,&previous_ix);
+            }
             if (new_alloc) beam_index_free(&new_index);
             FreeVec(next);
             beam_copy(status,beam_str(MSG_HOTKEY_FAILED),sizeof(status)); return 0;
@@ -3642,10 +3710,11 @@ static void drain_control(void)
     struct BeamControlMessage *msg;
     if (!control_port) return;
     while ((raw=GetMsg(control_port))) {
-        ULONG command=0;
+        ULONG command=0,handoff_serial=0;
         ULONG theme=BEAM_THEME_WORKBENCH;
         ULONG custom_colors[BEAM_THEME_COLOR_COUNT];
         struct BeamThemeControlMessage *theme_msg;
+        struct BeamVersionRequest reload_request;
         int i;
         msg=(struct BeamControlMessage *)raw;
         if (raw->mn_Length>=sizeof(*msg) &&
@@ -3658,6 +3727,15 @@ static void drain_control(void)
                 for (i=0;i<BEAM_THEME_COLOR_COUNT;i++)
                     custom_colors[i]=theme_msg->custom_colors[i];
             } else if (command==BEAM_CTL_PREVIEW_THEME) command=0;
+            if(command==BEAM_CTL_PLUGIN_HANDOFF) {
+                if(raw->mn_Length>=sizeof(struct BeamPluginHandoffMessage))
+                    handoff_serial=((struct BeamPluginHandoffMessage *)raw)->serial;
+                else command=0;
+            }
+            if(command==BEAM_CTL_RELOAD_CONFIRMED) {
+                if(raw->mn_Length>=sizeof(reload_request))reload_request=*(struct BeamVersionRequest *)raw;
+                else command=0;
+            }
             if(command==BEAM_CTL_QUERY_VERSION) beam_control_reply_version(msg);
             FreeVec(raw); /* validated protocol: allocated by control.c */
         } else if (raw->mn_ReplyPort) {
@@ -3666,15 +3744,23 @@ static void drain_control(void)
             FreeVec(raw); /* our protocol, other version: still control.c's */
         }
         /* Anything else is neither ours to free nor repliable: leave it. */
-        if (command==BEAM_CTL_RELOAD) { reload_config(); render(); }
+        if(command==BEAM_CTL_RELOAD_CONFIRMED) {
+            int applied=reload_config();
+            beam_control_reply_reload(&reload_request.control,applied?(plugin_load_errors?2:1):-1,status);
+            if(window)render();
+        }
+        else if (command==BEAM_CTL_RELOAD) { reload_config(); render(); }
         else if (command==BEAM_CTL_RELOAD_PLUGINS) { reload_plugins_only(); render(); }
         else if (command==BEAM_CTL_REINDEX) { scan_begin(all_roots()); beam_copy(status,beam_str(MSG_SCANNING),sizeof(status)); search_items(); render(); }
         else if (command==BEAM_CTL_SHOW) show_window();
         else if (command==BEAM_CTL_HIDE) hide_window();
+        else if(command==BEAM_CTL_PLUGIN_HANDOFF && window &&
+                beam_control_handoff_matches(plugin_serial,handoff_serial,query,plugin_original_query))hide_window();
         else if (command==BEAM_CTL_QUIT) quitting=1;
         else if (command==BEAM_CTL_PREVIEW_THEME && !safe_mode &&
                  theme<BEAM_THEME_COUNT) {
             cfg.theme=(int)theme;
+            cfg.theme_modified[cfg.theme]=0; /* preview supplies effective colors */
             for (i=0;i<BEAM_THEME_COLOR_COUNT;i++)
                 cfg.custom_colors[i]=custom_colors[i];
             if (window) { palette_apply(); render(); }
@@ -3834,7 +3920,7 @@ static void drain_rexx(void)
                 beam_copy(output,BEAM68_VERSION,sizeof(output));break;
             case BEAM_REXX_HELP:
                 beam_copy(output,
-                    "SHOW HIDE RELOAD RELOADPLUGINS REINDEX QUIT STATUS INDEX VERSION PLUGINS PLUGIN <1..16> REQUESTS REQUEST <1..3> TIMING [RESET] HELP",
+                    "SHOW HIDE RELOAD RELOADPLUGINS REINDEX QUIT STATUS INDEX VERSION PLUGINS PLUGIN <1..32> REQUESTS REQUEST <1..3> TIMING [RESET] HELP",
                     sizeof(output));break;
             case BEAM_REXX_REQUESTS:
                 sprintf(output,"outstanding=%lu limit=%u automatic_limit=%u waiting=%ld",
@@ -4333,6 +4419,7 @@ static void event_loop(void)
             timer_pending=0;
             outgoing_rexx_poll();
             if (scan_active) scan_step();
+            if(whd_index_busy || whd_index_wanted)whd_index_poll();
             if (plugin_job.active) plugin_poll();
             if (plugin_files_pending() && ++plugin_retired_poll_ticks>=10) {
                 plugin_retired_poll_ticks=0;plugin_retired_poll();
@@ -4487,6 +4574,7 @@ cleanup:
     if (resident_started) safe_mode_active_set(0);
     notify_stop();
     scan_cancel();
+    whd_index_wanted=0;whd_index_close();
     outgoing_rexx_poll();
     outgoing_rexx_close();
     cleanup_timer();
@@ -4500,19 +4588,6 @@ cleanup:
     if (broker) { DeleteCxObjAll(broker); broker=NULL; hotkey_filter=NULL; }
     remove_rexx_port();
     remove_reply_port();
-    if (control_port) {
-        Forbid(); RemPort(control_port); Permit();
-        {
-            struct Message *m;
-            while ((m=GetMsg(control_port))) {
-                struct BeamControlMessage *cm=(struct BeamControlMessage *)m;
-                if (m->mn_ReplyPort) ReplyMsg(m);
-                else if (m->mn_Length>=sizeof(*cm) && cm->magic==BEAM_CONTROL_MAGIC)
-                    FreeVec(m);
-            }
-        }
-        DeleteMsgPort(control_port); control_port=NULL;
-    }
     if (cx_port) {
         CxMsg *m;
         while ((m=(CxMsg *)GetMsg(cx_port))) ReplyMsg((struct Message *)m);
@@ -4547,6 +4622,21 @@ cleanup:
     /* A clean exit, or a startup that failed gracefully, is not a crash. */
     if (recovery_marker_owned)
         DeleteFile((STRPTR)BEAM_RECOVERY_MARKER);
+    /* QUITWAIT must not report stopped while final resource cleanup and
+       settings writes are still in progress. Remove the public port last. */
+    if (control_port) {
+        Forbid(); RemPort(control_port); Permit();
+        {
+            struct Message *m;
+            while ((m=GetMsg(control_port))) {
+                struct BeamControlMessage *cm=(struct BeamControlMessage *)m;
+                if (m->mn_ReplyPort) ReplyMsg(m);
+                else if (m->mn_Length>=sizeof(*cm) && cm->magic==BEAM_CONTROL_MAGIC)
+                    FreeVec(m);
+            }
+        }
+        DeleteMsgPort(control_port); control_port=NULL;
+    }
     return success ? 0 : 20;
 }
 

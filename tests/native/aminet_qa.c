@@ -12,7 +12,7 @@ static struct BeamAminetDetails details;
 static char error[121],remote[200],local[240],root[100];
 static const char *local_file(const char *name)
 { strcpy(local,root);AddPart(local,(STRPTR)name,sizeof(local));return local; }
-static int cancel(unsigned long bytes) { (void)bytes;return 0; }
+static int cancel(unsigned long bytes,unsigned long total) { (void)bytes;(void)total;return 0; }
 #define CHECK(x) do { if(!(x)) { printf("FAIL line %d: %s; %s\n",__LINE__,#x,error);return 20; } } while(0)
 static int run(int argc,char **argv) {
  FILE *f;char package[97];int i;BPTR lock=0;

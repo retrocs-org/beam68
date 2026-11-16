@@ -39,6 +39,8 @@ class GithubAPI:
     def json(self, url, method='GET', data=None, file=None, missing=False):
         self.events.append((method, url))
         if method == 'GET':
+            if url.endswith('/releases/latest'):
+                return copy.deepcopy(self.r)
             return {'html_url': 'https://github.com/retrocs-org/beam68', 'permissions': {'push': True}}
         if file:
             if self.fail_upload == file.name:
@@ -61,6 +63,10 @@ class GitlabAPI:
         self.corrupt = False
     def json(self, url, method='GET', data=None, file=None, missing=False):
         self.events.append((method, url))
+        if method == 'PUT' and '/releases/' in url:
+            self.r.update(data)
+            self.r['upcoming_release'] = False
+            return self.r
         if method == 'PUT':
             self.files[url] = file.read_bytes() + (b'bad' if self.corrupt else b'')
             return {'message': '201 Created'}
@@ -114,7 +120,7 @@ class ReleaseTests(unittest.TestCase):
                     'sdk/Example/HelloRexx/HelloRexx.rexx':'/* example */\n',
                     'sdk/Example/Makefile':'all:\n',
                     'sdk/tools/package-plugin.py':'# package validator\n',
-                    'docs/RELEASE-NOTES.md': 'Reviewed notes\n',
+                    'docs/RELEASE-NOTES.md': '# Beam68 0.1\n\nLauncher.\n\n## Features\n\n- Search.\n\n## Installation\n\nOpen Install.\n\n## Source and Licence\n\nMIT; https://github.com/retrocs-org/beam68\n\n## Version Changelog\n\n### 0.1\n\nInitial release.\n',
                     'scripts/build-install-amiga.sh': 'runtime_executables="\nBeam68\n"\nruntime_data="\nLICENSE\n"\n'}
         for name, text in contents.items():
             p = self.root / name
@@ -165,6 +171,16 @@ class ReleaseTests(unittest.TestCase):
         self.config.update(aminet=True, uploader='maintainer@example.net')
         return m
 
+    def test_release_notes_reject_incomplete_or_stale_changelog(self):
+        text=(self.root/'docs/RELEASE-NOTES.md').read_text()
+        rel.validate_release_notes(self.root,'0.1',text)
+        for bad in (text.replace('Initial release.','Only some changes.'),
+                    text.replace('## Installation','## Setup'),
+                    text.replace('# Beam68 0.1','# Beam68 0.2'),
+                    text+'\nIn development\n'):
+            with self.assertRaises(ReleaseError):
+                rel.validate_release_notes(self.root,'0.1',bad)
+
     def test_aminet_readme_has_full_current_release_without_older_sections(self):
         mod=rel.module(ROOT,'make-aminet-release')
         (self.root/'VERSION').write_text('0.2\n')
@@ -172,10 +188,15 @@ class ReleaseTests(unittest.TestCase):
         changes='# Changelog\n\n## 0.2\n\n### Features\n'+('- Added feature.\n'*80)+'\n### Enhancements\n- Faster typing.\n\n### Bugs\n- Last bug fix.\n\n## 0.1\n- Older release entry.\n'
         (self.root/'CHANGELOG.md').write_text(changes)
         with patch.object(mod,'ROOT',self.root),patch.object(mod,'VERSION','0.2'):
-            text=mod.readme('Author','maintainer@example.net','Beam68-0.2.lha').decode('latin-1')
+            text=mod.readme('Author','maintainer@example.net','Beam68.lha').decode('ascii')
         self.assertIn('Last bug fix.',text)
         self.assertNotIn('Older release entry.',text)
-        self.assertIn('Replaces:     util/wb/Beam68-0.2.lha',text)
+        self.assertIn('URL:          https://beam68.retrocs.org/',text)
+        self.assertIn('Requires:',text)
+        self.assertNotIn('###',text)
+        self.assertNotIn('Replaces:',text)
+        for heading in ('FEATURES','INSTALLATION','SOURCE AND LICENCE','VERSION CHANGELOG'):
+            self.assertIn(heading,text)
 
     def test_existing_aminet_uses_published_bytes_and_tagged_docs(self):
         m = self.existing_aminet_fixture()
@@ -183,12 +204,12 @@ class ReleaseTests(unittest.TestCase):
         receipt_before = (self.tool.state/'receipt.json').read_bytes()
         (self.root/'README.md').write_text('Unreleased working documentation')
         prepared, folder, key = self.tool.prepare_existing_aminet()
-        self.assertEqual(sha(folder/'Beam68-0.1.lha'), m['files']['Beam68-0.1.lha'])
-        self.assertNotIn(b'Unreleased working documentation', (folder/'Beam68-0.1.readme').read_bytes())
+        self.assertEqual(sha(folder/'Beam68.lha'), m['files']['Beam68-0.1.lha'])
+        self.assertNotIn(b'Unreleased working documentation', (folder/'Beam68.readme').read_bytes())
         self.assertEqual(self.tool.manifest.read_bytes(), manifest_before)
         self.assertEqual((self.tool.state/'receipt.json').read_bytes(), receipt_before)
         self.assertEqual(self.tool.prepare_existing_aminet()[2], key)
-        (folder/'Beam68-0.1.lha').write_bytes(b'tampered')
+        (folder/'Beam68.lha').write_bytes(b'tampered')
         with self.assertRaises(ReleaseError):
             self.tool.prepare_existing_aminet()
 
@@ -217,7 +238,7 @@ class ReleaseTests(unittest.TestCase):
         m = self.build()
         self.assertEqual(len(self.commands), 4)
         self.assertIsNone(m['commit'])
-        self.assertEqual(m['tag'], 'v0.1')
+        self.assertEqual(m['tag'], '0.1')
         self.assertEqual(self.tool.check(), m['files'])
         with zipfile.ZipFile(self.tool.out / 'Beam68-0.1-plugin-sdk.zip') as z:
             self.assertIn('Beam68-PluginSDK/LICENSE', z.namelist())
@@ -300,12 +321,32 @@ class ReleaseTests(unittest.TestCase):
         m = self.build();api = GithubAPI();adapter = rel.GitHub(m, self.tool.out, api)
         adapter.preflight();adapter.publish()
         self.assertFalse(api.r['draft'])
+        self.assertIs(api.r['prerelease'],False)
+        self.assertEqual(api.r['make_latest'],'true')
         patch_index = next(i for i, e in enumerate(api.events) if e[0] == 'PATCH')
         uploads = [i for i, e in enumerate(api.events) if 'uploads.github.com' in e[1]]
         self.assertEqual(len(uploads), len(m['files']))
         self.assertTrue(all(i < patch_index for i in uploads))
         adapter.publish()
         self.assertEqual(len([e for e in api.events if 'uploads.github.com' in e[1]]), len(m['files']))
+    def test_github_existing_prerelease_promoted_after_verification(self):
+        m=self.build();api=GithubAPI();adapter=rel.GitHub(m,self.tool.out,api)
+        adapter.publish()
+        api.r.update(prerelease=True,make_latest='false')
+        adapter.publish()
+        self.assertFalse(api.r['prerelease'])
+        self.assertEqual(api.r['make_latest'],'true')
+
+    def test_gitlab_normal_release_has_current_date_and_latest_check(self):
+        m=self.build();m['gitlab']='https://gitlab.example.net/team/beam68'
+        api=GitlabAPI(m['gitlab']);adapter=rel.GitLab(m,self.tool.out,api)
+        adapter.publish()
+        self.assertIn('released_at',api.r)
+        self.assertIn(('GET',adapter.base+'/releases/permalink/latest'),api.events)
+        api.r['upcoming_release']=True
+        adapter.publish()
+        self.assertFalse(api.r['upcoming_release'])
+
     def test_unknown_digest_and_conflict_keep_draft(self):
         m = self.build();api = GithubAPI();api.bad_digest = True
         with self.assertRaises(ReleaseError): rel.GitHub(m, self.tool.out, api).publish()
@@ -413,7 +454,7 @@ class ReleaseTests(unittest.TestCase):
         api.r['assets']['links'][0]['url']='https://other.example/file'
         with self.assertRaisesRegex(ReleaseError,'links'): adapter.preflight()
     def test_aminet_existing_incoming_name_refused(self):
-        m=self.build(True);FTP.uploads=[];FTP.fail=False;FTP.existing=['Beam68-0.1.lha']
+        m=self.build(True);FTP.uploads=[];FTP.fail=False;FTP.existing=['Beam68.lha']
         try:
             with self.assertRaisesRegex(ReleaseError,'already exist'):
                 rel.Aminet(m,self.tool.state/'aminet',self.tool.state/'aminet-receipt.json',sha(self.tool.manifest),FTP).preflight()
@@ -602,7 +643,11 @@ class ReleaseTests(unittest.TestCase):
         m=self.build(True)
         self.assertEqual(len(m['files']),4)
         self.assertFalse(any(n.endswith('.readme') for n in m['files']))
-        self.assertEqual(set(m['aminet_files']),{'Beam68-0.1.lha','Beam68-0.1.readme'})
+        self.assertEqual(set(m['aminet_files']),{'Beam68.lha','Beam68.readme'})
+        self.assertEqual(m['aminet_files']['Beam68.lha'],m['files']['Beam68-0.1.lha'])
+        text=(self.tool.state/'aminet/Beam68.readme').read_text(encoding='ascii')
+        self.assertIn('Unpack Beam68.lha',text)
+        self.assertTrue(all(len(line)<=76 for line in text.splitlines()))
     def test_github_permission_denial_is_distinct_from_repository_mismatch(self):
         m=self.build();api=GithubAPI();adapter=rel.GitHub(m,self.tool.out,api)
         with patch.object(api,'json',return_value={'html_url':m['github'],'permissions':{'push':False}}):

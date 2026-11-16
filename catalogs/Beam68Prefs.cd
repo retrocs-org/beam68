@@ -14,7 +14,7 @@ Appearance
 PMSG_PAGE_FAVORITES (6//)
 Favorites
 PMSG_PAGE_APPLICATIONS (7//)
-Applications
+Application shortcuts
 PMSG_PAGE_ACCESSIBILITY (8//)
 Accessibility
 PMSG_COMPACT_AUTO (9//)
@@ -90,11 +90,11 @@ Plugins (drop .plugin, package drawer or .lha/.zip)
 PMSG_DETAILS (44//)
 Details
 PMSG_TOGGLE (45//)
-Enable/Disable
+Toggle
 PMSG_UP (46//)
-Up
+Priority up
 PMSG_DOWN (47//)
-Down
+Priority down
 PMSG_RELOAD_PLUGINS (48//)
 Reload plugins
 PMSG_EXPORT_REPORT (49//)
@@ -126,7 +126,7 @@ Height (0=auto)
 PMSG_ICON_PREVIEW (62//)
 Selected icon preview
 PMSG_CUSTOM_PALETTE (63//)
-Custom palette (5 x RRGGBB)
+Palette (5 x RRGGBB)
 PMSG_THEME_DETAILS (64//)
 Theme details
 PMSG_THEME_FILE (65//)
@@ -212,11 +212,11 @@ Beam68 Preferences - plugin quarantine cleared
 PMSG_HEALTH_UNAVAILABLE (105//)
 Health unavailable
 PMSG_DETAILS1 (106//)
-Name: %.64s\nCategory: %.30s\nTrigger: %c  Prefix: %.20s\nStatus: %s\nPriority: %ld of %ld\n
+Name: %s\nCategory: %s\nTrigger: %c  Prefix: %s\nStatus: %s\nPriority: %ld of %ld\n
 PMSG_DETAILS2 (107//)
-Health: %.150s\nCapabilities: %.60s\nDescription: %.90s\nExample: %.80s\nHelp: %.110s\n
+Health: %s\nCapabilities: %s\nDescription: %s\nExample: %s\nHelp: %s\n
 PMSG_DETAILS3 (108//)
-Icon: %.80s\nExecutable: %.80s\nSettings: %.80s\nManifest: %.80s
+Icon: %s\nExecutable: %s\nSettings: %s\nManifest: %s
 PMSG_UNKNOWN (109//)
 (unknown)
 PMSG_NONE (110//)
@@ -418,7 +418,7 @@ GUIDE must be PLUGINDIR:<file> inside the package
 PMSG_PKG_BAD_SETTINGS (208//)
 SETTINGS must be ENVARC:Beam68/Plugins/<file>
 PMSG_DETAILS4 (209//)
-\nProtocol: %ld  Guide: %.80s
+\nProtocol: %ld  Guide: %s
 PMSG_PAGE_EXTRAS (210//)
 Extras
 PMSG_QUICK_LAUNCH (211//)
@@ -507,7 +507,7 @@ Open URL with
 PMSG_PREVIEW_TITLE (252//)
 Live preview
 PMSG_PREVIEW_BODY (253//)
-%.64s\nPreview: %s\nDelay: %ld ms\nChoose Use or Save after closing Details.
+Runs automatically after a typing pause.\n%.64s\nPreview: %s\nDelay: %ld ms\nChoose Use or Save after closing Details.
 PMSG_PREVIEW_BUTTONS (254//)
 Toggle|Faster|Slower|Delay...|Default|Done
 PMSG_PREVIEW_UNAVAILABLE (255//)
@@ -532,3 +532,51 @@ PMSG_ABOUT_NOT_RUNNING (263//)
 Not running
 PMSG_ABOUT_UNAVAILABLE (264//)
 Unavailable (older or busy launcher)
+
+PMSG_RESTORE_PALETTE (265//)
+Restore original palette
+
+PMSG_COL_PLUGIN (266//)
+Plugin
+
+PMSG_COL_VERSION (267//)
+Version
+
+PMSG_COL_STATE (268//)
+State
+
+PMSG_COL_KEY (269//)
+Key
+
+PMSG_PLUGIN_VERSION (270//)
+Plugin version: %s\n
+
+PMSG_TYPING_PREVIEW (271//)
+Typing preview...
+
+PMSG_DETAILS_META (272//)
+\nID: %s\nAuthor: %s\nLicence: %s\nMinimum Beam68: %s\nURL: %s
+
+PMSG_DETAILS_CLOSE (273//)
+Close
+
+PMSG_COL_PRIORITY (274//)
+Pri
+
+PMSG_IMPORT_PLUGIN (275//)
+Import...
+
+PMSG_PLUGIN_IMPORT_INVALID (276//)
+Choose a plugin archive, package drawer or valid .plugin manifest.
+
+PMSG_REMOVE_PLUGIN (277//)
+Remove...
+
+PMSG_BUNDLED_KEEP (278//)
+Bundled plugins cannot be removed. Use Toggle to disable them.
+
+PMSG_APPLICATION_SHORTCUTS_NAV (279//)
+App shortcuts
+
+PMSG_APPLICATION_SHORTCUTS_HELP (280//)
+Extra search words and custom launch actions.

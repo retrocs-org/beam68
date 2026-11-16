@@ -42,7 +42,7 @@ static int theme_name_equal(const char *a,const char *b)
 const char *beam_theme_name(int theme)
 {
     static const char *names[BEAM_THEME_COUNT]={
-        "Workbench","Latte","Frappe","Macchiato","Mocha","Custom"
+        "Workbench","Latte","Frappe","Macchiato","Mocha","Rose"
     };
     return (theme>=0 && theme<BEAM_THEME_COUNT)?names[theme]:names[0];
 }
@@ -64,6 +64,8 @@ int beam_theme_from_name(const char *name)
 {
     int i;
     if (!name) return BEAM_THEME_WORKBENCH;
+    /* Retain old exported theme names and configuration spelling. */
+    if (theme_name_equal(name,"Custom") || theme_name_equal(name,"User palette")) return BEAM_THEME_CUSTOM;
     for (i=0;i<BEAM_THEME_COUNT;i++) if (theme_name_equal(name,beam_theme_name(i)))
         return i;
     return BEAM_THEME_WORKBENCH;
@@ -178,4 +180,35 @@ int beam_preview_fits(int width, int height)
 {
     return width>0 && height>0 &&
         width<=BEAM_PREVIEW_MAX_IMAGE && height<=BEAM_PREVIEW_MAX_IMAGE;
+}
+
+int beam_theme_config_mode(const struct BeamConfig *c)
+{
+    return c->theme_modified[c->theme]?BEAM_THEME_CUSTOM:c->theme;
+}
+const unsigned long *beam_theme_config_palette(const struct BeamConfig *c)
+{
+    return c->theme_modified[c->theme]?c->theme_colors[c->theme]:c->custom_colors;
+}
+void beam_theme_original_palette(int theme,unsigned long *colors)
+{
+    static const unsigned long rose[5]={0xcdd6f4UL,0x585b70UL,0xf38ba8UL,0x1e1e2eUL,0x11111bUL};
+    int role;
+    for(role=0;role<BEAM_THEME_COLOR_COUNT;role++) {
+        unsigned long r,g,b;
+        if(beam_theme_color(theme,role,&r,&g,&b))
+            colors[role]=((r&255UL)<<16)|((g&255UL)<<8)|(b&255UL);
+        else colors[role]=rose[role];
+    }
+}
+void beam_theme_set_palette(struct BeamConfig *c,const unsigned long *colors)
+{
+    int role;
+    for(role=0;role<BEAM_THEME_COLOR_COUNT;role++)c->theme_colors[c->theme][role]=colors[role];
+    c->theme_modified[c->theme]=1;
+}
+void beam_theme_reset_palette(struct BeamConfig *c)
+{
+    c->theme_modified[c->theme]=0;
+    if(c->theme==BEAM_THEME_CUSTOM)beam_theme_original_palette(c->theme,c->custom_colors);
 }

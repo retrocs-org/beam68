@@ -6,6 +6,238 @@ Do not publish until release notes, destinations and every artifact are reviewed
 No command creates repositories, pushes branches, deploys the website, moves a
 tag, overwrites a conflicting asset or rolls back another service's release.
 
+## Contents
+
+- [GitHub and GitLab release guidelines](#github-and-gitlab-release-guidelines)
+- [Aminet submission rules](#aminet-submission-rules)
+- [Configure locally](#configure-locally)
+- [Committed source only](#committed-source-only)
+- [Build, check and prepare](#build-check-and-prepare)
+- [Credentials and publication](#credentials-and-publication)
+- [Receipts and interrupted runs](#receipts-and-interrupted-runs)
+- [Testing and limits](#testing-and-limits)
+- [Build output](#build-output)
+- [GitHub App installation credentials](#github-app-installation-credentials)
+- [Submit an already published release to Aminet](#submit-an-already-published-release-to-aminet)
+
+## GitHub and GitLab release guidelines
+
+These rules apply to Beam68 tagged releases on GitHub and GitLab. Use
+scripts/release.py for preparation and publication. Local configuration and
+credential setup are covered below. Aminet follows the submission rules in this guide.
+
+### Version and tag
+
+- VERSION, the application, Preferences, package metadata and release notes must
+  identify the same release. Beam68 remains 0.2 until a version change is agreed.
+- Use the exact version as the public tag, for example `0.2`, without a `v`
+  prefix. The default tag is VERSION; pass `--tag 0.2` explicitly for clarity.
+- Both services must receive the same annotated tag object and source commit.
+  Never move, force-push or recreate a published release tag.
+- Release titles use the exact tag. The release description contains the complete
+  changelog for that version, not an "In development" placeholder.
+
+### Release notes
+
+CHANGELOG.md is the change history. docs/RELEASE-NOTES.md contains the matching
+current release notes used for publication. Review both before building. Preparation and publication validate the section order,
+release title/version, nonempty sections and complete matching changelog.
+Development placeholders and incomplete or stale notes are refused.
+
+Use the same section order as the Aminet readme, expressed as Markdown.
+Start with the application/version title and a short application description.
+The top-level Features section summarizes the whole app; the Features subsection
+inside Version Changelog lists only newly added functionality for this version.
+
+```markdown
+# Beam68 0.2
+
+Short application description.
+
+## Features
+
+- Short summary of the application's capabilities.
+
+## Installation
+
+Download Beam68-0.2.lha, unpack it and open Install.
+Include requirements, setup guidance and the manual location.
+
+## Source and Licence
+
+Link to the source repository, exact tagged release and licence.
+
+## Version Changelog
+
+### 0.2
+
+#### Features
+
+- New functionality introduced in this release.
+
+#### Enhancements
+
+- Improvements to existing functionality or performance.
+
+#### Bugs
+
+- Problems corrected in this release.
+```
+
+Keep the complete current-version changes synchronized with CHANGELOG.md.
+CHANGELOG.md remains the historical version-by-version change list; the published
+release description adds the application overview, installation and source/licence
+sections around that version's changes. Use versioned download names here, unlike
+Aminet's stable names. Do not copy Aminet-only metadata headers into Markdown.
+
+Keep older releases in CHANGELOG.md, but do not copy them into the current tagged
+release description. Markdown is appropriate for GitHub/GitLab. The first public
+release lists its initial features rather than pre-release fixes. Avoid unsupported
+performance claims, private paths, credentials and internal development notes.
+
+### Assets and filenames
+
+Upload exactly these four assets, substituting VERSION in each name:
+
+```text
+Beam68-0.2.lha
+Beam68-0.2.lha.sha256
+Beam68-0.2-plugin-sdk.zip
+Beam68-0.2-plugin-sdk.zip.sha256
+```
+
+- Repository assets include the version. Only Aminet uses stable filenames.
+- The LHA contains the complete installable application, plugins, themes,
+  documentation and licence. The SDK ZIP contains the standalone plugin SDK.
+- Each checksum contains its SHA-256 digest, two spaces, exact filename and newline.
+- Upload identical package and checksum bytes to both services. GitLab exposes
+  its verified generic-package files through release asset links.
+- Use the hosts' automatic tagged source archives. Do not upload an additional
+  source ZIP, website ZIP, aggregate checksum file, readme, logs or manifests.
+- Keep credentials, local configuration, build records and publication receipts
+  out of public release assets. Do not add hosted CI configuration as a release
+  prerequisite; current checks run locally.
+
+### Preparation and publication
+
+1. Finish code, documentation, translations, website information and changelog.
+   Review repository contents for sensitive files. Commit all release inputs;
+   publication requires a clean checkout.
+2. Confirm both configured repository destinations and access. Push the reviewed
+   source normally if needed; source pushing is separate from release uploading.
+3. Build in a fresh version-specific output directory. Run the checks and inspect
+   the packaged documentation, installer, native verification and SDK inventory.
+   Portable checks do not replace testing on the target system.
+4. Prepare the exact tag and release notes. Review the manifest and all four
+   hashes. Any release-input change after building requires a new build.
+5. Publish explicitly to the intended services, using the same output directory,
+   tag and notes throughout. Keep receipts and verify the public release links.
+
+Example for 0.2, with a fresh output directory:
+
+```sh
+python3 scripts/release.py source --to gitlab,github --dry-run
+python3 scripts/release.py source --to gitlab,github --confirm-push
+python3 scripts/release.py build --output outputs/release-0.2-new
+python3 scripts/release.py check --output outputs/release-0.2-new
+python3 scripts/release.py prepare --output outputs/release-0.2-new \
+  --tag 0.2 --notes docs/RELEASE-NOTES.md
+python3 scripts/release.py publish --output outputs/release-0.2-new \
+  --tag 0.2 --notes docs/RELEASE-NOTES.md \
+  --to gitlab,github --confirm-publish
+```
+
+This example is for a new tag; it does not replace an existing 0.2 release.
+Do not run it to bypass conflicting published assets. Confirm native testing
+separately before publishing. Website deployment remains a separate manual task.
+
+### Interrupted publication and corrections
+
+Preserve manifests, checksums, logs and receipts. Resume the same prepared release
+only after inspecting the failure. Matching existing assets may be reused;
+conflicting assets or notes are deliberately refused. Do not delete receipts,
+edit fingerprints or disable checks to force a retry. A completed publication on
+one service is not automatically rolled back if another fails.
+
+Prefer a new patch release for corrections to published application packages.
+A notes-only correction can update the release description after review, without
+changing package bytes or moving the tag. If replacing published packages is
+explicitly authorized, treat it as a separate reviewed recovery operation:
+retain originals and their hashes, explain the correction, verify identical
+replacement bytes on every destination and preserve a replacement receipt.
+The normal release command does not overwrite conflicting assets. Check whether
+Aminet needs a separate submission whenever its distributed bytes change.
+
+## Aminet submission rules
+
+Aminet submissions always use stable, case-sensitive filenames:
+
+- `Beam68.lha`
+- `Beam68.readme`
+
+Do not include a version in either filename. The readme's Version field identifies
+the release. GitHub and GitLab assets retain their versioned names. The Aminet
+LHA is an unchanged copy of the verified runtime archive; renaming must not
+rebuild or modify its contents. Never submit the SDK ZIP as the application LHA.
+
+### Readme format
+
+Generate the readme with scripts/make-aminet-release.py through the release tool.
+Use plain ASCII text, readable indentation and lines no longer than 76 columns.
+Do not include Markdown links, heading markers or decorative Unicode separators.
+
+Header fields, in order:
+
+```text
+Short:        Keyboard application launcher for OS 3.x
+Author:       Beam68 contributors
+Uploader:     frossmant@icloud.com
+Type:         util/wb
+Version:      <VERSION>
+Architecture: m68k-amigaos >= 3.0.0
+Requires:     AmigaOS 3.0+, 68000+; TCP/IP for Aminet Browser
+Distribution: Aminet
+URL:          https://beam68.retrocs.org/
+```
+
+Follow the header with a short description and these sections:
+
+- FEATURES: a concise summary of the application.
+- INSTALLATION: unpack Beam68.lha, open Install, describe Novice and the hotkey.
+- SOURCE AND LICENCE: repository, tagged release and MIT licence information.
+- VERSION CHANGELOG: the complete matching VERSION section from CHANGELOG.md,
+  grouped under Features, Enhancements and Bugs with indented entries.
+
+Do not truncate the current release's changes or include older release sections.
+The uploader contact is public. Review it before submitting.
+
+### Preparing and uploading
+
+Use the normal release commands documented in this guide. Aminet preparation
+is separate from the four GitHub/GitLab assets and records its own hashes.
+The existing-release path uses the published archive and tagged documentation.
+
+Use a fresh output directory after changing naming or readme rules. Do not edit
+old manifests, receipts or submitted files to make them appear current. Existing
+incoming filenames require inspection before another submission; never overwrite
+an unknown pending upload. FTP acknowledgement means awaiting moderation.
+
+Earlier Beam68 releases used versioned Aminet filenames. The first submission
+under the stable name does not automatically remove those older entries. Review
+any migration/removal with Aminet separately rather than claiming it happened.
+
+## Release visibility
+
+GitHub and GitLab publications are normal, latest releases. GitHub explicitly
+sets prerelease=false and make_latest=true after verifying all uploaded assets;
+its temporary draft is published only after verification. GitLab sets released_at
+to the current UTC time so it is not an upcoming release. The tool checks each
+service's latest-release endpoint before reporting publication as complete.
+A matching existing GitHub prerelease is promoted; a matching GitLab upcoming
+release is dated to the present. Assets, notes and tags must still pass the
+normal conflict checks. Re-running publication can make the selected release
+latest again, so do not use this workflow to publish historical releases.
+
 ## Configure locally
 
 The default settings file is external to the checkout:
@@ -86,10 +318,10 @@ the prepared release stale. Native runtime certification remains a separate task
 The only files packaged at the top level of outputs/ and uploaded to GitHub
 and GitLab tagged releases are:
 
-- Beam68-0.1.lha
-- Beam68-0.1.lha.sha256
-- Beam68-0.1-plugin-sdk.zip
-- Beam68-0.1-plugin-sdk.zip.sha256
+- Beam68-0.2.lha
+- Beam68-0.2.lha.sha256
+- Beam68-0.2-plugin-sdk.zip
+- Beam68-0.2-plugin-sdk.zip.sha256
 
 Names derive from VERSION. The LHA contains the runtime, bundled plugins,
 themes and notices. The SDK ZIP contains the standalone SDK, C/ARexx examples,
@@ -163,13 +395,13 @@ build. The default selection is gitlab,github. Distinct names are required. Omit
 `--confirm-publish` refuses publication. Selected credentials, repositories,
 remote tags, existing assets and Aminet receipts are preflighted before mutations.
 All destinations must use the same annotated tag object pointing to the prepared
-commit. Tags are never forced. The version derives from VERSION; the default tag is v followed by that version.
-Use `prepare --tag 0.1` and `publish --tag 0.1` for an exact alternative tag.
+commit. Tags are never forced. The version and default unprefixed tag derive from VERSION.
+Beam68 uses explicit unprefixed tags: pass `prepare --tag 0.2` and
+`publish --tag 0.2` for the current release.
 `--tag-message` sets its annotation and must match between preparation and publication.
 Package filenames and embedded app versions do not change with a tag override.
-Release titles use the exact tag. The first-release website links use 0.1; use
-`--tag 0.1` when preparing and publishing it. Update website tag links before building
-if you choose a nondefault tag.
+Release titles use the exact tag. Update version-specific website links before
+building; the download page discovers published stable releases automatically.
 
 The publication stage is hash-checked before every destination; reviewed copies
 are used for every upload. The release inventory is exactly the two requested packages and their two
@@ -186,6 +418,10 @@ GitLab uses versioned generic packages, downloads and hashes their bytes before
 creating a release linking them. Existing package bytes, notes and release links
 must match. HTTPS redirects for package downloads never forward API credentials
 to other origins. API writes reject redirects entirely.
+
+Follow the [Aminet submission rules](#aminet-submission-rules) for stable `Beam68.lha` and
+`Beam68.readme` names and the plain-text readme layout. Repository release assets
+keep their versioned names.
 
 Aminet submits the LHA/readme via anonymous FTP to main.aminet.net, `/new`.
 This is unencrypted FTP, separate from the HTTPS repository APIs. The incoming
@@ -264,3 +500,25 @@ Preparation writes `outputs/release/aminet-existing/` and a separate manifest.
 It does not change the repository publication manifest, packages, tags or receipts.
 The upload retains the existing partial-submission protection and awaits moderation.
 Do not delete receipts or edit fingerprints to work around a stale build.
+
+## Bundled plugin versions
+
+Run `python3 scripts/plugin-versions.py --check` before release builds. Plugin
+versions are independent from Beam68 VERSION and Protocol 1. Changed plugin
+inputs require a higher PLUGIN_VERSION and a reviewed --record update; see
+[Plugin SDK](PLUGIN_SDK.md#independent-bundled-plugin-versions).
+
+## Stage a test installer in a running shared builds drawer
+
+After a verified build, use scripts/stage-builds.py with the same output directory,
+the shared builds root as --destination, and the compression-capable LHA tool as
+--lha when needed. The tool checks the archive and checksum, preserves the Beam68
+drawer and nested drawer identities, and atomically replaces individual files.
+It preserves unrelated files and guest metadata and backs up replaced test files
+under the selected output's release/staging-backups directory. It never installs
+into the guest system, starts a session or changes networking.
+
+Do not remove/recreate a shared drawer while Workbench has it open: guest locks
+can continue referencing the old host directory, causing missing-icon/script
+errors. After an earlier whole-directory replacement, close and reopen that
+Workbench drawer once before starting Install. Future staged updates preserve it.

@@ -1,0 +1,9 @@
+{
+  "captured": "2026-11-16",
+  "installed_file_sha256": {
+    "Utilities/Beam68/Beam68": "e9c5e948b58fb2aa321fdab15df118192149d95c75756d648756394280ea9a7a",
+    "Utilities/Beam68/Plugins/Wikipedia/Wikipedia": "0561247b8bc763661305ddab94e04a295b70ce96c0d40c06382d445284c3d11a",
+    "Utilities/Beam68/Plugins/Wikipedia/Wikipedia.plugin": "4ac8fceb058bb04d26f72b07567b836aeea11a617d0c500a65ab144efddf8a8a"
+  },
+  "note": "Hashes describe files present in the installation at capture time. Captures show actual search and summary windows."
+}

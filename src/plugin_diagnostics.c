@@ -40,7 +40,7 @@ int beam_plugin_diagnostic_line(int index,int state,char trigger,
     const char *manifest,char *out,unsigned int cap)
 {
     char number[4]; unsigned int n=0;
-    if (!out || !cap || index<1 || index>16 || !manifest) return 0;
+    if (!out || !cap || index<1 || index>32 || !manifest) return 0;
     out[0]=0;
     number[0]=(char)('0'+index/10);
     number[1]=(char)('0'+index%10);

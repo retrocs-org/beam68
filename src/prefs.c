@@ -76,7 +76,10 @@ struct Library *KeymapBase;
 #define PAGE_ACCESSIBILITY 6
 #define PAGE_EXTRAS 7
 #define PAGE_SOURCES 8
-#define PAGE_LAST PAGE_SOURCES
+#define PAGE_LAYOUT 9
+#define PAGE_LAST PAGE_LAYOUT
+#define G_GROUP 108
+#define G_UNLIMITED 110
 #define G_USE 2
 #define G_SAVE 3
 #define G_CANCEL 4
@@ -120,8 +123,7 @@ struct Library *KeymapBase;
 #define G_THEME_DESCRIPTION 45
 #define G_CUSTOM_COLORS 46
 #define G_THEME_CYCLE 47
-#define G_RELOAD_PLUGINS 48
-#define G_EXPORT_DIAGNOSTICS 49
+#define G_IMPORT_PLUGIN 49
 #define G_PLUGIN_SETTINGS_BACK 50
 #define G_PLUGIN_SETTING_VALUE 51
 #define G_PLUGIN_SETTING_APPLY 52
@@ -156,6 +158,7 @@ struct Library *KeymapBase;
 #define G_RECENT_DOCS 88
 #define G_PRESET_EXPORT 90
 #define G_PRESET_IMPORT 91
+#define G_RESET_PALETTE 109
 #define G_EDIT_COLOURS 92
 #define G_CATALOGUE 93
 #define G_INDEX_MODULES 94
@@ -198,10 +201,12 @@ static struct AppWindow *app_window;
 static struct Screen *screen;
 static APTR visual;
 static struct Gadget *gadgets;
-static struct Gadget *g[110];
+static struct Gadget *g[111];
 static struct BeamPlugin plugin_metadata[BEAM_MAX_PLUGINS];
 static unsigned char plugin_states[BEAM_MAX_PLUGINS];
 static char detail_title[128];
+static unsigned int plugin_row_columns=40;
+static char plugin_list_heading[96];
 static char plugin_labels[BEAM_MAX_PLUGINS][BEAM_MAX_PATH+12];
 static char plugin_setting_labels[BEAM_MAX_PLUGIN_SETTINGS][128];
 static char plugin_setting_values[BEAM_MAX_PLUGIN_SETTINGS][64];
@@ -212,6 +217,8 @@ static char application_labels[BEAM_ALIAS_CAP][BEAM_MAX_PATH+BEAM_ALIAS_LEN+8];
 static char favorite_labels[BEAM_FAVORITES_CAP][BEAM_MAX_PATH+BEAM_FAVORITE_GROUP_LEN+6];
 static char theme_labels[BEAM_THEME_COUNT][24];
 static STRPTR theme_cycle_labels[BEAM_THEME_COUNT+1];
+static void selected_palette(unsigned long *colors);
+static void sync_palette_field(void);
 static char custom_colors_text[48];
 static char excluded_text[512];
 static char theme_file_path[BEAM_MAX_PATH]="RAM:Beam68.theme";
@@ -227,7 +234,7 @@ static int pending_page=-1;
 static int last_launcher_running=-1;
 static unsigned char launcher_state_tick=0;
 static char launcher_status_text[32]="Stopped";
-static STRPTR page_names[]={(STRPTR)"General",(STRPTR)"Indexing",(STRPTR)"Plugins","Appearance","Favorites","Applications","Accessibility","Extras","Sources",NULL};
+static STRPTR page_names[]={(STRPTR)"General",(STRPTR)"Indexing",(STRPTR)"Plugins","Appearance","Favorites","Application shortcuts","Accessibility","Extras","Sources",NULL};
 static char section_button_labels[9][24];
 static STRPTR compact_labels[]={(STRPTR)"Auto",(STRPTR)"Always",(STRPTR)"Never",NULL};
 
@@ -245,7 +252,7 @@ static void prefs_locale_open(void)
 {
     static const int pages[]={PMSG_PAGE_GENERAL,PMSG_PAGE_INDEXING,PMSG_PAGE_PLUGINS,
         PMSG_PAGE_APPEARANCE,PMSG_PAGE_FAVORITES,PMSG_PAGE_APPLICATIONS,PMSG_PAGE_ACCESSIBILITY,
-        PMSG_PAGE_EXTRAS,PMSG_PAGE_SOURCES};
+        PMSG_PAGE_EXTRAS,PMSG_PAGE_SOURCES,PMSG_PAGE_APPEARANCE};
     struct TagItem tags[2];
     int i;
     LocaleBase=(struct LocaleBase *)OpenLibrary("locale.library",38);
@@ -254,7 +261,7 @@ static void prefs_locale_open(void)
         tags[1].ti_Tag=TAG_DONE; tags[1].ti_Data=0;
         prefs_catalog=OpenCatalogA(NULL,(STRPTR)"Beam68Prefs.catalog",tags);
     }
-    for (i=0;i<9;i++) page_names[i]=(STRPTR)pstr(pages[i]);
+    for (i=0;i<10;i++) page_names[i]=(STRPTR)pstr(pages[i]);
     compact_labels[0]=(STRPTR)pstr(PMSG_COMPACT_AUTO);
     compact_labels[1]=(STRPTR)pstr(PMSG_COMPACT_ALWAYS);
     compact_labels[2]=(STRPTR)pstr(PMSG_COMPACT_NEVER);
@@ -311,6 +318,24 @@ static struct Gadget *add_tagged(ULONG kind,struct Gadget *previous,
     return CreateGadget(kind,previous,&ng,tag1,val1,tag2,val2,TAG_DONE);
 }
 
+static void draw_plugin_heading(void)
+{
+    struct RastPort *rp;
+    struct TextFont *font,*old_font;
+    struct DrawInfo *di;
+    UBYTE pen,mode;
+    if(!win || page!=PAGE_PLUGINS || plugin_settings_mode)return;
+    rp=win->RPort;old_font=rp->Font;pen=rp->FgPen;mode=rp->DrawMode;
+    font=OpenFont(&topaz);if(font)SetFont(rp,font);
+    di=GetScreenDrawInfo(screen);
+    SetAPen(rp,di && di->dri_NumPens>BEAM_PEN_TEXT?di->dri_Pens[BEAM_PEN_TEXT]:1);
+    SetDrMd(rp,JAM1);
+    Move(rp,192,73);Text(rp,plugin_list_heading,(LONG)strlen(plugin_list_heading));
+    SetAPen(rp,pen);SetDrMd(rp,mode);SetFont(rp,old_font);
+    if(di)FreeScreenDrawInfo(screen,di);
+    if(font)CloseFont(font);
+}
+
 static void build_labels(void)
 {
     int i,count=(page==PAGE_DIRS)?config.dir_count:
@@ -346,11 +371,14 @@ static void build_labels(void)
                         beam_equal(plugin_metadata[j].prefix,plugin_metadata[i].prefix))
                         plugin_states[i]=BEAM_PLUGIN_CONFLICT;
             name=plugin_metadata[i].name[0]?plugin_metadata[i].name:config.plugin_files[i];
-            sprintf(plugin_labels[i],"[%s] %.60s %c",
-                plugin_states[i]==BEAM_PLUGIN_OK?pstr(PMSG_STATE_ON):
-                plugin_states[i]==BEAM_PLUGIN_DISABLED?pstr(PMSG_STATE_OFF):
-                plugin_states[i]==BEAM_PLUGIN_QUARANTINED?pstr(PMSG_STATE_QUAR):pstr(PMSG_STATE_ERR),
-                name,plugin_metadata[i].trigger?plugin_metadata[i].trigger:' ');
+            {
+                char priority[8],key[2];sprintf(priority,"%d",i+1);key[0]=plugin_metadata[i].trigger?plugin_metadata[i].trigger:'-';key[1]=0;
+                beam_catalog_format_row(plugin_labels[i],sizeof(plugin_labels[i]),plugin_row_columns,
+                    priority,name,plugin_metadata[i].plugin_version,
+                    plugin_states[i]==BEAM_PLUGIN_OK?pstr(PMSG_STATE_ON):
+                    plugin_states[i]==BEAM_PLUGIN_DISABLED?pstr(PMSG_STATE_OFF):
+                    plugin_states[i]==BEAM_PLUGIN_QUARANTINED?pstr(PMSG_STATE_QUAR):pstr(PMSG_STATE_ERR),key);
+            }
         } else if (page==PAGE_ADVANCED) {
             sprintf(application_labels[i],"%.52s | %.40s",
                     aliases.entries[i].path,
@@ -400,24 +428,33 @@ static int build_window(void)
     if (page==PAGE_APPEARANCE &&
         (selection<0 || selection>=BEAM_THEME_COUNT)) selection=config.theme;
     memset(g,0,sizeof(g)); gadgets=NULL;
+    plugin_row_columns=(unsigned int)(content_width-130-24)/8;
+    beam_catalog_format_row(plugin_list_heading,sizeof(plugin_list_heading),plugin_row_columns,
+                            pstr(PMSG_COL_PRIORITY),pstr(PMSG_COL_PLUGIN),pstr(PMSG_COL_VERSION),pstr(PMSG_COL_STATE),pstr(PMSG_COL_KEY));
     build_labels();
     last=CreateContext(&gadgets);
     if (!last) return 0;
-    /* Nine sections.  Low screens (NTSC 640x200) get two narrow columns so
-       the buttons never reach Use/Save/Cancel. */
+    /* Six sections; related settings use a cycle within General/Appearance. */
     section_height=(config.large_gadgets && h>=300)?21:(h>=260?17:15);
     section_step=(config.large_gadgets && h>=300)?24:(h>=260?20:16);
-    for (i=0;i<9;i++) {
-        UWORD id=(UWORD)(i<7?G_SECTION_FIRST+i:i==7?G_SECTION_EXTRAS:G_SECTION_SOURCES);
-        if (h>=230) {
-            sprintf(section_button_labels[i],"%c %.20s",i==page?'>':' ',page_names[i]);
-            last=add_gadget(BUTTON_KIND,last,id,16,40+i*section_step,145,section_height,
-                            section_button_labels[i],PLACETEXT_IN);
-        } else {
-            sprintf(section_button_labels[i],"%c%.7s",i==page?'>':' ',page_names[i]);
-            last=add_gadget(BUTTON_KIND,last,id,8+(i&1)*78,40+(i>>1)*17,74,15,
-                            section_button_labels[i],PLACETEXT_IN);
-        }
+    for (i=0;i<6;i++) {
+        int selected_page=page==PAGE_ACCESSIBILITY || page==PAGE_LAYOUT?PAGE_APPEARANCE:
+            page==PAGE_EXTRAS || page==PAGE_SOURCES?PAGE_GENERAL:page;
+        UWORD id=(UWORD)(G_SECTION_FIRST+i);
+        sprintf(section_button_labels[i],"%c %.20s",i==selected_page?'>':' ',i==PAGE_ADVANCED?pstr(PMSG_APPLICATION_SHORTCUTS_NAV):(const char *)page_names[i]);
+        last=add_gadget(BUTTON_KIND,last,id,16,40+i*section_step,145,section_height,
+                        section_button_labels[i],PLACETEXT_IN);
+    }
+    if(page==PAGE_GENERAL || page==PAGE_EXTRAS || page==PAGE_SOURCES) {
+        static STRPTR groups[]={"Startup","Behaviour","Sources",NULL};
+        last=add_tagged(CYCLE_KIND,last,G_GROUP,right,23,250,15,"",0,
+            GTCY_Labels,(ULONG)groups,GTCY_Active,(ULONG)(page==PAGE_GENERAL?0:page==PAGE_EXTRAS?1:2));
+        g[G_GROUP]=last;
+    } else if(page==PAGE_APPEARANCE || page==PAGE_ACCESSIBILITY || page==PAGE_LAYOUT) {
+        static STRPTR groups[]={"Themes","Text and readability","Window layout",NULL};
+        last=add_tagged(CYCLE_KIND,last,G_GROUP,right,23,290,15,"",0,
+            GTCY_Labels,(ULONG)groups,GTCY_Active,(ULONG)(page==PAGE_APPEARANCE?0:page==PAGE_ACCESSIBILITY?1:2));
+        g[G_GROUP]=last;
     }
     if (page==PAGE_GENERAL) {
         last=add_tagged(STRING_KIND,last,G_HOTKEY,right+85,44,
@@ -450,12 +487,12 @@ static int build_window(void)
         }
         last=add_tagged(INTEGER_KIND,last,G_DEPTH,right+72,40,65,14,
                         pstr(PMSG_DEPTH),PLACETEXT_LEFT,
-                        GTIN_Number,(ULONG)config.max_depth,GTIN_MaxChars,2);
+                        GTIN_Number,(ULONG)(config.max_depth<0?4:config.max_depth),GTIN_MaxChars,2);
         g[G_DEPTH]=last;
-        last=add_tagged(CHECKBOX_KIND,last,G_ICONS,right+190,40,22,12,
+        last=add_tagged(CHECKBOX_KIND,last,G_ICONS,right+300,40,22,12,
                         pstr(PMSG_ICONS),PLACETEXT_RIGHT,
                         GTCB_Checked,config.scan_icons,TAG_IGNORE,0); g[G_ICONS]=last;
-        last=add_tagged(CHECKBOX_KIND,last,G_EXES,right+300,40,22,12,
+        last=add_tagged(CHECKBOX_KIND,last,G_EXES,right+300,62,22,12,
                         pstr(PMSG_EXECUTABLES),PLACETEXT_RIGHT,
                         GTCB_Checked,config.scan_executables,TAG_IGNORE,0); g[G_EXES]=last;
         last=add_tagged(CHECKBOX_KIND,last,G_INDEX_FILES,right+72,62,22,12,
@@ -464,9 +501,9 @@ static int build_window(void)
         last=add_tagged(CHECKBOX_KIND,last,G_INDEX_DRAWERS,right+190,62,22,12,
                         pstr(PMSG_DRAWERS),PLACETEXT_RIGHT,
                         GTCB_Checked,config.index_drawers,TAG_IGNORE,0);g[G_INDEX_DRAWERS]=last;
-        last=add_tagged(CHECKBOX_KIND,last,G_INDEX_GAMES,right+300,62,22,12,
-                        pstr(PMSG_WHDLOAD_GAMES),PLACETEXT_RIGHT,
-                        GTCB_Checked,config.index_games,TAG_IGNORE,0);g[G_INDEX_GAMES]=last;
+        last=add_tagged(CHECKBOX_KIND,last,G_UNLIMITED,right+152,40,22,12,
+                        "Unlimited",PLACETEXT_RIGHT,
+                        GTCB_Checked,(ULONG)(config.max_depth<0),TAG_IGNORE,0);g[G_UNLIMITED]=last;
         last=add_tagged(STRING_KIND,last,G_FILE_PATTERNS,right+110,85,
                         content_width-110,14,pstr(PMSG_FILE_PATTERNS),PLACETEXT_LEFT,
                         GTST_String,(ULONG)config.file_patterns,
@@ -515,22 +552,20 @@ static int build_window(void)
                         GTCB_Checked,config.shell_commands,TAG_IGNORE,0);
         g[G_SHELL_SERVICE]=last;
         last=add_tagged(LISTVIEW_KIND,last,G_LIST,right,78,content_width-130,
-                        list_height-10,pstr(PMSG_PLUGIN_LIST),PLACETEXT_ABOVE,
-                        GTLV_Labels,(ULONG)&labels,TAG_IGNORE,0); g[G_LIST]=last;
+                        list_height-10,"",0,
+                        GTLV_Labels,(ULONG)&labels,GTLV_ShowSelected,0); g[G_LIST]=last;
         last=add_gadget(BUTTON_KIND,last,G_DETAILS,w-140,48,120,17,pstr(PMSG_DETAILS),PLACETEXT_IN);
         g[G_DETAILS]=last;
         last=add_gadget(BUTTON_KIND,last,G_SETTINGS,w-140,70,120,17,pstr(PMSG_SETTINGS),PLACETEXT_IN);
         g[G_SETTINGS]=last;
         last=add_gadget(BUTTON_KIND,last,G_TOGGLE,w-140,92,120,17,pstr(PMSG_TOGGLE),PLACETEXT_IN);
         g[G_TOGGLE]=last;
-        last=add_gadget(BUTTON_KIND,last,G_PLUGIN_UP,w-140,114,58,17,pstr(PMSG_UP),PLACETEXT_IN);
+        last=add_gadget(BUTTON_KIND,last,G_PLUGIN_UP,w-140,114,120,17,pstr(PMSG_UP),PLACETEXT_IN);
         g[G_PLUGIN_UP]=last;
-        last=add_gadget(BUTTON_KIND,last,G_PLUGIN_DOWN,w-78,114,58,17,pstr(PMSG_DOWN),PLACETEXT_IN);
+        last=add_gadget(BUTTON_KIND,last,G_PLUGIN_DOWN,w-140,136,120,17,pstr(PMSG_DOWN),PLACETEXT_IN);
         g[G_PLUGIN_DOWN]=last;
-        last=add_gadget(BUTTON_KIND,last,G_RELOAD_PLUGINS,w-140,136,120,17,pstr(PMSG_RELOAD_PLUGINS),PLACETEXT_IN);
-        g[G_RELOAD_PLUGINS]=last;
-        last=add_gadget(BUTTON_KIND,last,G_EXPORT_DIAGNOSTICS,w-140,158,120,17,pstr(PMSG_EXPORT_REPORT),PLACETEXT_IN);
-        g[G_EXPORT_DIAGNOSTICS]=last;
+        last=add_gadget(BUTTON_KIND,last,G_IMPORT_PLUGIN,w-140,158,120,17,pstr(PMSG_IMPORT_PLUGIN),PLACETEXT_IN);
+        g[G_IMPORT_PLUGIN]=last;
         if (h>=230) {
             last=add_tagged(INTEGER_KIND,last,G_TIMEOUT,w-78,190,58,14,
                             pstr(PMSG_TIMEOUT),PLACETEXT_ABOVE,
@@ -541,7 +576,9 @@ static int build_window(void)
                         GTST_String,(ULONG)"",GTST_MaxChars,BEAM_MAX_PATH-1); g[G_ENTRY]=last;
         last=add_gadget(BUTTON_KIND,last,G_BROWSE,button_x,entry_y-2,68,17,pstr(PMSG_BROWSE),PLACETEXT_IN); g[G_BROWSE]=last;
         last=add_gadget(BUTTON_KIND,last,G_ADD,button_x+74,entry_y-2,58,17,pstr(PMSG_ADD),PLACETEXT_IN); g[G_ADD]=last;
-        last=add_gadget(BUTTON_KIND,last,G_REMOVE,button_x+136,entry_y-2,72,17,pstr(PMSG_REMOVE),PLACETEXT_IN); g[G_REMOVE]=last;
+        last=add_tagged(BUTTON_KIND,last,G_REMOVE,button_x+136,entry_y-2,88,17,pstr(PMSG_REMOVE_PLUGIN),PLACETEXT_IN,
+                        GA_Disabled,(ULONG)(selection<0 || selection>=config.plugin_file_count ||
+                        beam_catalog_is_bundled(&config,selection,&plugin_metadata[selection])),TAG_IGNORE,0); g[G_REMOVE]=last;
     } else if (page==PAGE_FAVORITES) {
         last=add_tagged(STRING_KIND,last,G_FAVORITE_GROUP,right+72,44,
                         150,14,pstr(PMSG_GROUP),PLACETEXT_LEFT,
@@ -556,6 +593,8 @@ static int build_window(void)
         last=add_gadget(BUTTON_KIND,last,G_ADD,button_x+74,entry_y-2,58,17,pstr(PMSG_ADD),PLACETEXT_IN); g[G_ADD]=last;
         last=add_gadget(BUTTON_KIND,last,G_REMOVE,button_x+136,entry_y-2,72,17,pstr(PMSG_REMOVE),PLACETEXT_IN); g[G_REMOVE]=last;
     } else if (page==PAGE_ADVANCED) {
+        last=add_tagged(TEXT_KIND,last,0,right,23,content_width,12,"",0,
+                        GTTX_Text,(ULONG)pstr(PMSG_APPLICATION_SHORTCUTS_HELP),TAG_IGNORE,0);
         if (h>=225) {
             int list_width=content_width/3;
             int form_left,form_width,field_x,field_width;
@@ -594,43 +633,36 @@ static int build_window(void)
                             pstr(PMSG_EDIT_APPLICATIONS),PLACETEXT_IN); g[G_ALIAS_EDIT]=last;
         }
     } else if (page==PAGE_APPEARANCE) {
-        beam_theme_format_colors(config.custom_colors,custom_colors_text,
-                                 sizeof(custom_colors_text));
+        { unsigned long colors[BEAM_THEME_COLOR_COUNT];selected_palette(colors);
+          beam_theme_format_colors(colors,custom_colors_text,sizeof(custom_colors_text)); }
         last=add_tagged(CYCLE_KIND,last,G_THEME_CYCLE,right+55,44,175,15,
                         pstr(PMSG_THEME),PLACETEXT_LEFT,
                         GTCY_Labels,(ULONG)theme_cycle_labels,
                         GTCY_Active,(ULONG)selection); g[G_THEME_CYCLE]=last;
         last=add_gadget(BUTTON_KIND,last,G_EDIT_COLOURS,right+55,66,175,15,
                         pstr(PMSG_EDIT_COLOURS),PLACETEXT_IN); g[G_EDIT_COLOURS]=last;
-        last=add_tagged(INTEGER_KIND,last,G_WIDTH,right+350,48,100,14,
-                        pstr(PMSG_WINDOW_WIDTH),PLACETEXT_LEFT,
-                        GTIN_Number,(ULONG)config.window_width,GTIN_MaxChars,4); g[G_WIDTH]=last;
-        last=add_tagged(INTEGER_KIND,last,G_HEIGHT,right+350,79,100,14,
-                        pstr(PMSG_WINDOW_HEIGHT),PLACETEXT_LEFT,
-                        GTIN_Number,(ULONG)config.window_height,GTIN_MaxChars,4); g[G_HEIGHT]=last;
-        last=add_tagged(CHECKBOX_KIND,last,G_PREVIEW,right+260,111,22,12,
-                        pstr(PMSG_ICON_PREVIEW),PLACETEXT_RIGHT,
-                        GTCB_Checked,config.icon_preview,TAG_IGNORE,0); g[G_PREVIEW]=last;
+        last=add_gadget(BUTTON_KIND,last,G_RESET_PALETTE,right+20,86,230,15,
+                        pstr(PMSG_RESTORE_PALETTE),PLACETEXT_IN);g[G_RESET_PALETTE]=last;
         if (h>=230) {
-            last=add_tagged(STRING_KIND,last,G_CUSTOM_COLORS,right+260,137,
-                            content_width-260,14,pstr(PMSG_CUSTOM_PALETTE),PLACETEXT_ABOVE,
+            last=add_tagged(STRING_KIND,last,G_CUSTOM_COLORS,right+76,115,
+                            content_width-76,14,pstr(PMSG_CUSTOM_PALETTE),PLACETEXT_ABOVE,
                             GTST_String,(ULONG)custom_colors_text,
                             GTST_MaxChars,sizeof(custom_colors_text)-1);
             g[G_CUSTOM_COLORS]=last;
-            last=add_tagged(TEXT_KIND,last,G_THEME_DESCRIPTION,right+260,166,
-                            content_width-260,18,pstr(PMSG_THEME_DETAILS),PLACETEXT_ABOVE,
+            last=add_tagged(TEXT_KIND,last,G_THEME_DESCRIPTION,right+76,147,
+                            content_width-76,18,pstr(PMSG_THEME_DETAILS),PLACETEXT_ABOVE,
                             GTTX_Text,(ULONG)beam_theme_description(selection),
                             GTTX_Border,TRUE);
             g[G_THEME_DESCRIPTION]=last;
         }
         if (h>=340) {
-            last=add_tagged(STRING_KIND,last,G_THEME_PATH,right+76,195,
+            last=add_tagged(STRING_KIND,last,G_THEME_PATH,right+76,183,
                             content_width-246,14,pstr(PMSG_THEME_FILE),PLACETEXT_LEFT,
                             GTST_String,(ULONG)theme_file_path,
                             GTST_MaxChars,BEAM_MAX_PATH-1);g[G_THEME_PATH]=last;
-            last=add_gadget(BUTTON_KIND,last,G_THEME_IMPORT,w-180,193,72,17,
+            last=add_gadget(BUTTON_KIND,last,G_THEME_IMPORT,w-180,181,72,17,
                             pstr(PMSG_IMPORT),PLACETEXT_IN);g[G_THEME_IMPORT]=last;
-            last=add_gadget(BUTTON_KIND,last,G_THEME_EXPORT,w-102,193,72,17,
+            last=add_gadget(BUTTON_KIND,last,G_THEME_EXPORT,w-102,181,72,17,
                             pstr(PMSG_EXPORT),PLACETEXT_IN);g[G_THEME_EXPORT]=last;
         }
         /* Resizing with the Intuition size gadget lasts for the current session.
@@ -647,52 +679,41 @@ static int build_window(void)
         last=add_tagged(INTEGER_KIND,last,G_FONT_SIZE,right+100,78,70,14,
                         pstr(PMSG_FONT_SIZE),PLACETEXT_LEFT,
                         GTIN_Number,(ULONG)config.font_size,GTIN_MaxChars,2);g[G_FONT_SIZE]=last;
-        last=add_tagged(INTEGER_KIND,last,G_ROW_SPACING,right+300,78,70,14,
-                        pstr(PMSG_ROW_SPACING),PLACETEXT_LEFT,
-                        GTIN_Number,(ULONG)config.row_spacing,GTIN_MaxChars,2);g[G_ROW_SPACING]=last;
-        last=add_tagged(CHECKBOX_KIND,last,G_HIGH_CONTRAST,right+40,116,22,12,
+        last=add_tagged(CHECKBOX_KIND,last,G_HIGH_CONTRAST,right+20,96,22,12,
                         pstr(PMSG_HIGH_CONTRAST),PLACETEXT_RIGHT,
                         GTCB_Checked,config.high_contrast,TAG_IGNORE,0);g[G_HIGH_CONTRAST]=last;
-        last=add_tagged(CHECKBOX_KIND,last,G_LARGE_GADGETS,right+280,116,22,12,
-                        pstr(PMSG_LARGE_GADGETS),PLACETEXT_RIGHT,
-                        GTCB_Checked,config.large_gadgets,TAG_IGNORE,0);g[G_LARGE_GADGETS]=last;
-        last=add_tagged(CHECKBOX_KIND,last,G_REDUCED_COLORS,right+40,151,22,12,
+        last=add_tagged(CHECKBOX_KIND,last,G_REDUCED_COLORS,right+20,118,22,12,
                         pstr(PMSG_REDUCED_COLORS),PLACETEXT_RIGHT,
                         GTCB_Checked,config.reduced_colors,TAG_IGNORE,0);g[G_REDUCED_COLORS]=last;
-        last=add_tagged(CYCLE_KIND,last,G_COMPACT_MODE,right+300,148,125,15,
-                        pstr(PMSG_COMPACT),PLACETEXT_LEFT,
-                        GTCY_Labels,(ULONG)compact_labels,
-                        GTCY_Active,(ULONG)config.compact_mode);g[G_COMPACT_MODE]=last;
+        last=add_tagged(CHECKBOX_KIND,last,G_LARGE_GADGETS,right+20,140,22,12,
+                        pstr(PMSG_LARGE_GADGETS),PLACETEXT_RIGHT,
+                        GTCB_Checked,config.large_gadgets,TAG_IGNORE,0);g[G_LARGE_GADGETS]=last;
+    } else if (page==PAGE_LAYOUT) {
+        last=add_tagged(INTEGER_KIND,last,G_WIDTH,right+170,44,100,14,pstr(PMSG_WINDOW_WIDTH),PLACETEXT_LEFT,
+            GTIN_Number,(ULONG)config.window_width,GTIN_MaxChars,4);g[G_WIDTH]=last;
+        last=add_tagged(INTEGER_KIND,last,G_HEIGHT,right+170,68,100,14,pstr(PMSG_WINDOW_HEIGHT),PLACETEXT_LEFT,
+            GTIN_Number,(ULONG)config.window_height,GTIN_MaxChars,4);g[G_HEIGHT]=last;
+        last=add_tagged(INTEGER_KIND,last,G_ROW_SPACING,right+170,92,70,14,pstr(PMSG_ROW_SPACING),PLACETEXT_LEFT,
+            GTIN_Number,(ULONG)config.row_spacing,GTIN_MaxChars,2);g[G_ROW_SPACING]=last;
+        last=add_tagged(CYCLE_KIND,last,G_COMPACT_MODE,right+170,116,125,15,pstr(PMSG_COMPACT),PLACETEXT_LEFT,
+            GTCY_Labels,(ULONG)compact_labels,GTCY_Active,(ULONG)config.compact_mode);g[G_COMPACT_MODE]=last;
+        last=add_tagged(CHECKBOX_KIND,last,G_PREVIEW,right+20,140,22,12,pstr(PMSG_ICON_PREVIEW),PLACETEXT_RIGHT,
+            GTCB_Checked,config.icon_preview,TAG_IGNORE,0);g[G_PREVIEW]=last;
     } else if (page==PAGE_SOURCES) {
         /* Index sources and how their results are opened (15-pixel rows
            so the page also fits a 640x200 screen). */
-        last=add_tagged(CHECKBOX_KIND,last,G_INDEX_MODULES,right+20,44,22,12,
-                        pstr(PMSG_SRC_MODULES),PLACETEXT_RIGHT,
-                        GTCB_Checked,config.index_modules,TAG_IGNORE,0);g[G_INDEX_MODULES]=last;
-        last=add_tagged(STRING_KIND,last,G_MODULE_PORT,right+150,59,120,13,
-                        pstr(PMSG_SRC_PLAYER_PORT),PLACETEXT_LEFT,
-                        GTST_String,(ULONG)config.module_port,
-                        GTST_MaxChars,sizeof(config.module_port)-1);g[G_MODULE_PORT]=last;
-        last=add_tagged(STRING_KIND,last,G_MODULE_AREXX,right+150,74,content_width-170,13,
-                        pstr(PMSG_SRC_PLAYER_AREXX),PLACETEXT_LEFT,
-                        GTST_String,(ULONG)config.module_arexx,
-                        GTST_MaxChars,sizeof(config.module_arexx)-1);g[G_MODULE_AREXX]=last;
-        last=add_tagged(STRING_KIND,last,G_MODULE_COMMAND,right+150,89,content_width-170,13,
-                        pstr(PMSG_SRC_PLAYER_COMMAND),PLACETEXT_LEFT,
-                        GTST_String,(ULONG)config.module_command,
-                        GTST_MaxChars,sizeof(config.module_command)-1);g[G_MODULE_COMMAND]=last;
-        last=add_tagged(CHECKBOX_KIND,last,G_INDEX_REXX,right+20,104,22,12,
+        last=add_tagged(CHECKBOX_KIND,last,G_INDEX_REXX,right+20,44,22,12,
                         pstr(PMSG_SRC_REXX),PLACETEXT_RIGHT,
                         GTCB_Checked,config.index_rexx,TAG_IGNORE,0);g[G_INDEX_REXX]=last;
-        last=add_tagged(STRING_KIND,last,G_BOOKMARK_FILES,right+150,119,content_width-240,13,
+        last=add_tagged(STRING_KIND,last,G_BOOKMARK_FILES,right+150,64,content_width-240,13,
                         pstr(PMSG_SRC_BOOKMARKS),PLACETEXT_LEFT,
                         GTST_String,(ULONG)config.bookmark_files,
                         GTST_MaxChars,sizeof(config.bookmark_files)-1);g[G_BOOKMARK_FILES]=last;
         if (AslBase) {
-            last=add_gadget(BUTTON_KIND,last,G_BOOKMARK_BROWSE,right+content_width-84,118,
+            last=add_gadget(BUTTON_KIND,last,G_BOOKMARK_BROWSE,right+content_width-84,63,
                             64,15,pstr(PMSG_BROWSE),PLACETEXT_IN);g[G_BOOKMARK_BROWSE]=last;
         }
-        last=add_tagged(STRING_KIND,last,G_URL_COMMAND,right+150,134,content_width-170,13,
+        last=add_tagged(STRING_KIND,last,G_URL_COMMAND,right+150,84,content_width-170,13,
                         pstr(PMSG_SRC_URL_COMMAND),PLACETEXT_LEFT,
                         GTST_String,(ULONG)config.url_command,
                         GTST_MaxChars,sizeof(config.url_command)-1);g[G_URL_COMMAND]=last;
@@ -702,42 +723,22 @@ static int build_window(void)
                         pstr(PMSG_QUICK_LAUNCH),PLACETEXT_LEFT,
                         GTST_String,(ULONG)config.quick_launch,
                         GTST_MaxChars,sizeof(config.quick_launch)-1);g[G_QUICK_LAUNCH]=last;
-        last=add_tagged(STRING_KIND,last,G_WHDLOAD_CMD,right+150,62,120,14,
-                        pstr(PMSG_WHDLOAD_CMD),PLACETEXT_LEFT,
-                        GTST_String,(ULONG)config.whdload_command,
-                        GTST_MaxChars,sizeof(config.whdload_command)-1);g[G_WHDLOAD_CMD]=last;
-        last=add_tagged(STRING_KIND,last,G_DOPUS_PORT,right+150,78,100,14,
-                        pstr(PMSG_DOPUS_PORT),PLACETEXT_LEFT,
-                        GTST_String,(ULONG)config.dopus_port,
-                        GTST_MaxChars,sizeof(config.dopus_port)-1);g[G_DOPUS_PORT]=last;
-        last=add_tagged(CHECKBOX_KIND,last,G_DOPUS_DRAWERS,right+20,96,22,12,
-                        pstr(PMSG_DOPUS_DRAWERS),PLACETEXT_RIGHT,
-                        GTCB_Checked,config.dopus_drawers,TAG_IGNORE,0);g[G_DOPUS_DRAWERS]=last;
-        last=add_tagged(CHECKBOX_KIND,last,G_PLUGIN_CACHE,right+20,112,22,12,
+        last=add_tagged(CHECKBOX_KIND,last,G_PLUGIN_CACHE,right+20,64,22,12,
                         pstr(PMSG_PLUGIN_CACHE),PLACETEXT_RIGHT,
                         GTCB_Checked,config.plugin_cache,TAG_IGNORE,0);g[G_PLUGIN_CACHE]=last;
-        last=add_tagged(INTEGER_KIND,last,G_RESULTS_MAX,right+150,130,50,14,
+        last=add_tagged(INTEGER_KIND,last,G_RESULTS_MAX,right+150,88,50,14,
                         pstr(PMSG_RESULTS_MAX),PLACETEXT_LEFT,
                         GTIN_Number,(ULONG)config.results_max,GTIN_MaxChars,2);g[G_RESULTS_MAX]=last;
-        last=add_tagged(INTEGER_KIND,last,G_BROWSE_MAX,right+330,130,50,14,
+        last=add_tagged(INTEGER_KIND,last,G_BROWSE_MAX,right+330,88,50,14,
                         pstr(PMSG_BROWSE_MAX),PLACETEXT_LEFT,
                         GTIN_Number,(ULONG)config.browse_max,GTIN_MaxChars,3);g[G_BROWSE_MAX]=last;
-        last=add_tagged(INTEGER_KIND,last,G_HIDDEN_MAX,right+150,146,50,14,
+        last=add_tagged(INTEGER_KIND,last,G_HIDDEN_MAX,right+150,108,50,14,
                         pstr(PMSG_HIDDEN_MAX),PLACETEXT_LEFT,
                         GTIN_Number,(ULONG)config.hidden_max,GTIN_MaxChars,3);g[G_HIDDEN_MAX]=last;
-        last=add_tagged(INTEGER_KIND,last,G_RECENT_DOCS,right+330,146,50,14,
+        last=add_tagged(INTEGER_KIND,last,G_RECENT_DOCS,right+330,108,50,14,
                         pstr(PMSG_RECENT_DOCS),PLACETEXT_LEFT,
                         GTIN_Number,(ULONG)config.recent_docs_max,GTIN_MaxChars,2);g[G_RECENT_DOCS]=last;
-        /* Fields end at right+270 (x 460); the buttons start at x 484 on
-           the narrowest (640 pixel) window, above the checkbox rows. */
-        if (AslBase) {
-            last=add_gadget(BUTTON_KIND,last,G_PRESET_EXPORT,w-150,44,130,15,
-                            pstr(PMSG_PRESET_EXPORT),PLACETEXT_IN);g[G_PRESET_EXPORT]=last;
-            last=add_gadget(BUTTON_KIND,last,G_PRESET_IMPORT,w-150,61,130,15,
-                            pstr(PMSG_PRESET_IMPORT),PLACETEXT_IN);g[G_PRESET_IMPORT]=last;
-        }
-        last=add_gadget(BUTTON_KIND,last,G_CATALOGUE,w-150,78,130,15,
-                        pstr(PMSG_CAT_BUTTON),PLACETEXT_IN);g[G_CATALOGUE]=last;
+
     }
     if (page==PAGE_GENERAL) {
         launcher_running=beam_control_running();
@@ -789,6 +790,7 @@ static int build_window(void)
          page==PAGE_APPEARANCE))
         app_window=AddAppWindowA(1UL,0UL,win,app_port,NULL);
     GT_RefreshWindow(win,NULL);
+    draw_plugin_heading();
     if (g[G_LIST] && page!=PAGE_APPEARANCE &&
         selection>=0 && selection<page_list_count()) {
         GT_SetGadgetAttrs(g[G_LIST],win,NULL,GTLV_Selected,(ULONG)selection,
@@ -803,6 +805,7 @@ static int build_window(void)
     /* The list selection and description were supplied to CreateGadget.
        Only paint the custom preview after the first refresh; updating either
        gadget here can close the window on some V39 GadTools builds. */
+    if(page==PAGE_DIRS && g[G_DEPTH])GT_SetGadgetAttrs(g[G_DEPTH],win,NULL,GA_Disabled,(ULONG)(config.max_depth<0),TAG_DONE);
     if (page==PAGE_APPEARANCE) draw_theme_preview();
     return 1;
 }
@@ -850,14 +853,18 @@ static void collect_page(void)
             config.shell_commands=!!(g[G_SHELL_SERVICE]->Flags&GFLG_SELECTED);
     } else if (page==PAGE_APPEARANCE) {
         struct StringInfo *si;
-        config.window_width=(int)gadget_number(G_WIDTH);
-        config.window_height=(int)gadget_number(G_HEIGHT);
+        if(g[G_WIDTH])config.window_width=(int)gadget_number(G_WIDTH);
+        if(g[G_HEIGHT])config.window_height=(int)gadget_number(G_HEIGHT);
         if (g[G_PREVIEW]) config.icon_preview=!!(g[G_PREVIEW]->Flags&GFLG_SELECTED);
         if (selection>=0 && selection<BEAM_THEME_COUNT) config.theme=selection;
         if (g[G_CUSTOM_COLORS]) {
             si=(struct StringInfo *)g[G_CUSTOM_COLORS]->SpecialInfo;
-            custom_colors_valid=si && si->Buffer &&
-                beam_theme_parse_colors((char *)si->Buffer,config.custom_colors);
+            unsigned long colors[BEAM_THEME_COLOR_COUNT],current[BEAM_THEME_COLOR_COUNT];
+            custom_colors_valid=si && si->Buffer && beam_theme_parse_colors((char *)si->Buffer,colors);
+            if(custom_colors_valid) {
+                selected_palette(current);
+                if(memcmp(colors,current,sizeof(colors)))beam_theme_set_palette(&config,colors);
+            }
         }
         if (g[G_THEME_PATH]) {
             si=(struct StringInfo *)g[G_THEME_PATH]->SpecialInfo;
@@ -867,7 +874,7 @@ static void collect_page(void)
     } else if (page==PAGE_DIRS) {
         struct StringInfo *si;
         char work[512],*p,*next;
-        config.max_depth=(int)gadget_number(G_DEPTH);
+        config.max_depth=g[G_UNLIMITED] && (g[G_UNLIMITED]->Flags&GFLG_SELECTED)?-1:(int)gadget_number(G_DEPTH);
         if (g[G_ICONS]) config.scan_icons=!!(g[G_ICONS]->Flags&GFLG_SELECTED);
         if (g[G_EXES]) config.scan_executables=!!(g[G_EXES]->Flags&GFLG_SELECTED);
         if (g[G_INDEX_FILES]) config.index_files=!!(g[G_INDEX_FILES]->Flags&GFLG_SELECTED);
@@ -890,20 +897,17 @@ static void collect_page(void)
         char *text=gadget_text(G_FONT_NAME);
         if (text) beam_copy(config.font_name,beam_trim(text),sizeof(config.font_name));
         config.font_size=(int)gadget_number(G_FONT_SIZE);
-        config.row_spacing=(int)gadget_number(G_ROW_SPACING);
+        if(g[G_ROW_SPACING])config.row_spacing=(int)gadget_number(G_ROW_SPACING);
         if (g[G_HIGH_CONTRAST]) config.high_contrast=!!(g[G_HIGH_CONTRAST]->Flags&GFLG_SELECTED);
         if (g[G_LARGE_GADGETS]) config.large_gadgets=!!(g[G_LARGE_GADGETS]->Flags&GFLG_SELECTED);
         if (g[G_REDUCED_COLORS]) config.reduced_colors=!!(g[G_REDUCED_COLORS]->Flags&GFLG_SELECTED);
+    } else if(page==PAGE_LAYOUT) {
+        config.window_width=(int)gadget_number(G_WIDTH);config.window_height=(int)gadget_number(G_HEIGHT);
+        config.row_spacing=(int)gadget_number(G_ROW_SPACING);
+        if(g[G_PREVIEW])config.icon_preview=!!(g[G_PREVIEW]->Flags&GFLG_SELECTED);
     } else if (page==PAGE_SOURCES) {
         char *text;
-        if (g[G_INDEX_MODULES]) config.index_modules=!!(g[G_INDEX_MODULES]->Flags&GFLG_SELECTED);
         if (g[G_INDEX_REXX]) config.index_rexx=!!(g[G_INDEX_REXX]->Flags&GFLG_SELECTED);
-        if ((text=gadget_text(G_MODULE_PORT)))
-            beam_copy(config.module_port,beam_trim(text),sizeof(config.module_port));
-        if ((text=gadget_text(G_MODULE_AREXX)))
-            beam_copy(config.module_arexx,beam_trim(text),sizeof(config.module_arexx));
-        if ((text=gadget_text(G_MODULE_COMMAND)) && *beam_trim(text))
-            beam_copy(config.module_command,beam_trim(text),sizeof(config.module_command));
         if ((text=gadget_text(G_BOOKMARK_FILES)))
             beam_copy(config.bookmark_files,beam_trim(text),sizeof(config.bookmark_files));
         if ((text=gadget_text(G_URL_COMMAND)) && *beam_trim(text))
@@ -912,11 +916,6 @@ static void collect_page(void)
         char *text;
         if ((text=gadget_text(G_QUICK_LAUNCH)))
             beam_copy(config.quick_launch,beam_trim(text),sizeof(config.quick_launch));
-        if ((text=gadget_text(G_WHDLOAD_CMD)) && *beam_trim(text))
-            beam_copy(config.whdload_command,beam_trim(text),sizeof(config.whdload_command));
-        if ((text=gadget_text(G_DOPUS_PORT)) && *beam_trim(text))
-            beam_copy(config.dopus_port,beam_trim(text),sizeof(config.dopus_port));
-        if (g[G_DOPUS_DRAWERS]) config.dopus_drawers=!!(g[G_DOPUS_DRAWERS]->Flags&GFLG_SELECTED);
         if (g[G_PLUGIN_CACHE]) config.plugin_cache=!!(g[G_PLUGIN_CACHE]->Flags&GFLG_SELECTED);
         if (g[G_RESULTS_MAX]) config.results_max=(int)gadget_number(G_RESULTS_MAX);
         if (g[G_BROWSE_MAX]) config.browse_max=(int)gadget_number(G_BROWSE_MAX);
@@ -941,12 +940,13 @@ static char *gadget_text(int id)
 /* Standard OS3.x ASL file requester.  The Indexing page restricts
  * selection to drawers, while Plugins picks a .plugin manifest file.
  * It only fills the path field; Add is an explicit second step. */
-static void browse_path(void)
+static int browse_path(void)
 {
     struct FileRequester *fr;
     struct Gadget *target=(page==PAGE_ADVANCED)?g[G_APP_PATH]:g[G_ENTRY];
     char path[BEAM_MAX_PATH];
-    if (!AslBase || !target) { DisplayBeep(screen); return; }
+    int accepted=0;
+    if (!AslBase || !target) { DisplayBeep(screen); return 0; }
     fr=AllocAslRequestTags(ASL_FileRequest,
         ASLFR_TitleText,(ULONG)((page==PAGE_DIRS)?pstr(PMSG_SELECT_DIRECTORY):
                      (page==PAGE_PLUGINS)?pstr(PMSG_SELECT_PLUGIN):pstr(PMSG_SELECT_APPLICATION)),
@@ -954,7 +954,7 @@ static void browse_path(void)
         ASLFR_PrivateIDCMP,TRUE, /* do not consume GadTools parent IDCMP */
         ASLFR_DrawersOnly,(ULONG)(page==PAGE_DIRS),
         TAG_DONE);
-    if (!fr) { DisplayBeep(screen); return; }
+    if (!fr) { DisplayBeep(screen); return 0; }
     if (AslRequest(fr,NULL)) {
         /* Do not silently accept a truncated directory or file path. */
         if (!fr->fr_Drawer || strlen((const char *)fr->fr_Drawer)>=sizeof(path))
@@ -967,11 +967,13 @@ static void browse_path(void)
             } else if (strlen(path)+strlen((const char *)fr->fr_File)+2>=sizeof(path) ||
                 !AddPart(path,(STRPTR)fr->fr_File,sizeof(path))) path[0]=0;
         }
-        if (*path)
+        if (*path) {
             GT_SetGadgetAttrs(target,win,NULL,GTST_String,(ULONG)path,TAG_DONE);
-        else DisplayBeep(screen);
+            accepted=1;
+        } else DisplayBeep(screen);
     }
     FreeAslRequest(fr);
+    return accepted;
 }
 
 /* ASL font requester for the launcher font.  The launcher loads it with
@@ -1014,6 +1016,33 @@ static void choose_font(void)
 #define CP_BLUE 4
 #define CP_OK 5
 #define CP_CANCEL 6
+static void selected_palette(unsigned long *colors)
+{
+    int i;
+    if(config.theme_modified[config.theme] || config.theme==BEAM_THEME_CUSTOM) {
+        const unsigned long *p=beam_theme_config_palette(&config);
+        for(i=0;i<BEAM_THEME_COLOR_COUNT;i++)colors[i]=p[i];
+    } else if(config.theme==BEAM_THEME_WORKBENCH && screen) {
+        static const int pens[5]={BEAM_PEN_TEXT,BEAM_PEN_SHADOW,BEAM_PEN_FILL,BEAM_PEN_FILLTEXT,BEAM_PEN_BACKGROUND};
+        struct DrawInfo *di=GetScreenDrawInfo(screen);
+        beam_theme_original_palette(BEAM_THEME_CUSTOM,colors);
+        if(di && screen->ViewPort.ColorMap)for(i=0;i<5;i++) {
+            ULONG rgb[3];
+            if(di->dri_NumPens>pens[i]) {
+                GetRGB32(screen->ViewPort.ColorMap,di->dri_Pens[pens[i]],1,rgb);
+                colors[i]=((rgb[0]>>24)<<16)|((rgb[1]>>24)<<8)|(rgb[2]>>24);
+            }
+        }
+        if(di)FreeScreenDrawInfo(screen,di);
+    } else beam_theme_original_palette(config.theme,colors);
+}
+static void sync_palette_field(void)
+{
+    unsigned long colors[BEAM_THEME_COLOR_COUNT];selected_palette(colors);
+    beam_theme_format_colors(colors,custom_colors_text,sizeof(custom_colors_text));
+    custom_colors_valid=1;
+    if(g[G_CUSTOM_COLORS])GT_SetGadgetAttrs(g[G_CUSTOM_COLORS],win,NULL,GTST_String,(ULONG)custom_colors_text,TAG_DONE);
+}
 static void edit_colours(void)
 {
     static STRPTR roles[6];
@@ -1028,7 +1057,7 @@ static void edit_colours(void)
     LONG pen=-1;
     for (i=0;i<5;i++) roles[i]=(STRPTR)pstr(role_ids[i]);
     roles[5]=NULL;
-    for (i=0;i<BEAM_THEME_COLOR_COUNT;i++) colours[i]=config.custom_colors[i];
+    selected_palette(colours);
     last=CreateContext(&list);
     memset(&ng,0,sizeof(ng));
     ng.ng_TextAttr=&topaz; ng.ng_VisualInfo=visual;
@@ -1098,16 +1127,15 @@ static void edit_colours(void)
     CloseWindow(cw);
     FreeGadgets(list);
     if (!accept) return;
-    for (i=0;i<BEAM_THEME_COLOR_COUNT;i++) config.custom_colors[i]=colours[i];
+    beam_theme_set_palette(&config,colours);
     custom_colors_valid=1;
-    beam_theme_format_colors(config.custom_colors,custom_colors_text,sizeof(custom_colors_text));
+    sync_palette_field();
     if (g[G_CUSTOM_COLORS])
         GT_SetGadgetAttrs(g[G_CUSTOM_COLORS],win,NULL,GTST_String,(ULONG)custom_colors_text,TAG_DONE);
     draw_theme_preview();
 }
 
 /* Append a hotlist file to BOOKMARK_FILES (';'-separated). */
-static int ask_file(const char *title,int save,char *path,unsigned int cap);
 static void add_bookmark_file(void)
 {
     char path[BEAM_MAX_PATH];
@@ -1133,73 +1161,6 @@ static void add_bookmark_file(void)
     strcat(config.bookmark_files,path);
     if (g[G_BOOKMARK_FILES])
         GT_SetGadgetAttrs(g[G_BOOKMARK_FILES],win,NULL,GTST_String,(ULONG)config.bookmark_files,TAG_DONE);
-}
-
-/* ------------------------------------------------------------- presets */
-static int ask_file(const char *title,int save,char *path,unsigned int cap)
-{
-    struct FileRequester *fr;
-    int ok=0;
-    path[0]=0;
-    if (!AslBase) return 0;
-    fr=(struct FileRequester *)AllocAslRequestTags(ASL_FileRequest,
-        ASLFR_TitleText,(ULONG)title,ASLFR_Window,(ULONG)win,
-        ASLFR_PrivateIDCMP,TRUE,ASLFR_DoSaveMode,(ULONG)save,
-        ASLFR_InitialPattern,(ULONG)"#?.preset",ASLFR_DoPatterns,TRUE,
-        ASLFR_InitialFile,(ULONG)(save?"Beam68.preset":""),TAG_DONE);
-    if (!fr) return 0;
-    if (AslRequest(fr,NULL) && fr->fr_File && *fr->fr_File && fr->fr_Drawer &&
-        strlen((const char *)fr->fr_Drawer)+strlen((const char *)fr->fr_File)+2<cap) {
-        beam_copy(path,(const char *)fr->fr_Drawer,cap);
-        ok=AddPart((STRPTR)path,fr->fr_File,(LONG)cap)!=0;
-    }
-    FreeAslRequest(fr);
-    return ok;
-}
-
-/* Saved settings (ENVARC:) plus every plugin settings file. */
-static void export_preset(void)
-{
-    static char extra[BEAM_MAX_PLUGINS][64];
-    const char *names[4+BEAM_MAX_PLUGINS];
-    char path[BEAM_MAX_PATH];
-    int n=0,i,written;
-    if (!ask_file(pstr(PMSG_PRESET_EXPORT),1,path,sizeof(path))) return;
-    names[n++]="Beam68.cfg"; names[n++]="Favorites.txt";
-    names[n++]="Aliases.txt"; names[n++]="Hidden.txt";
-    for (i=0;i<config.plugin_file_count && i<BEAM_MAX_PLUGINS;i++) {
-        const char *s=plugin_metadata[i].settings;
-        if (strlen(s)>22 && !strncmp(s,"ENVARC:Beam68/Plugins/",22) && strlen(s+22)<50) {
-            sprintf(extra[i],"Plugins/%s",s+22);
-            names[n++]=extra[i];
-        }
-    }
-    written=beam_preset_export(path,"ENVARC:Beam68",names,n);
-    set_title(pstr(written>0?PMSG_PRESET_EXPORTED:PMSG_PRESET_FAILED));
-}
-
-static void import_preset(void)
-{
-    static const char *dirs[]={"ENVARC:Beam68","ENV:Beam68"};
-    struct EasyStruct es;
-    char path[BEAM_MAX_PATH];
-    APTR args[1];
-    if (!ask_file(pstr(PMSG_PRESET_IMPORT),0,path,sizeof(path))) return;
-    es.es_StructSize=sizeof(es); es.es_Flags=0;
-    es.es_Title=(UBYTE *)pstr(PMSG_PRESET_IMPORT);
-    es.es_TextFormat=(UBYTE *)pstr(PMSG_PRESET_CONFIRM);
-    es.es_GadgetFormat=(UBYTE *)pstr(PMSG_PRESET_BUTTONS);
-    args[0]=(APTR)path;
-    if (EasyRequestArgs(win,&es,NULL,args)!=1) return;
-    if (beam_preset_import(path,dirs,2)<=0) { set_title(pstr(PMSG_PRESET_FAILED)); return; }
-    /* Show the imported settings and let a running launcher apply them. */
-    beam_config_defaults(&config);
-    beam_config_read_active(&config);
-    beam_favorites_load_active(&favorites);
-    beam_aliases_load_active(&aliases);
-    if (beam_control_running()) beam_control_send(BEAM_CTL_RELOAD);
-    close_window(); if (!build_window()) done=1;
-    if (!done) set_title(pstr(PMSG_PRESET_IMPORTED));
 }
 
 static void modify_list(int remove)
@@ -1237,6 +1198,9 @@ static void modify_list(int remove)
     }
     if (remove) {
         if (selection<0 || selection>=n) return;
+        if (page==PAGE_PLUGINS && beam_catalog_is_bundled(&config,selection,&plugin_metadata[selection])) {
+            DisplayBeep(screen);set_title(pstr(PMSG_BUNDLED_KEEP));return;
+        }
         if (page==PAGE_PLUGINS) {
             static char package_dir[BEAM_MAX_PATH];
             install_message[0]=0;
@@ -1300,6 +1264,18 @@ static void modify_list(int remove)
     }
 }
 
+static void import_plugin(void)
+{
+    static struct BeamPlugin metadata;
+    char *path;
+    if(page!=PAGE_PLUGINS || !browse_path())return;
+    path=entry_value();
+    if(!path || (!beam_plugin_install_candidate(path) && !beam_plugin_read(&metadata,path))) {
+        DisplayBeep(screen);set_title(pstr(PMSG_PLUGIN_IMPORT_INVALID));return;
+    }
+    modify_list(0);
+}
+
 static void show_selected_application(void)
 {
     const struct BeamAlias *entry;
@@ -1324,6 +1300,7 @@ static void show_selected_appearance(void)
     if (!win || page!=PAGE_APPEARANCE || selection<0 ||
         selection>=BEAM_THEME_COUNT) return;
     config.theme=selection;
+    sync_palette_field();
     if (g[G_THEME_DESCRIPTION])
         GT_SetGadgetAttrs(g[G_THEME_DESCRIPTION],win,NULL,
             GTTX_Text,(ULONG)beam_theme_description(selection),TAG_DONE);
@@ -1351,20 +1328,18 @@ static void preview_main_theme(void)
         set_title(pstr(PMSG_APPEARANCE_WAITS));
         return;
     }
-    if (beam_control_send_theme((unsigned long)config.theme,
-                                config.custom_colors))
+    if (beam_control_send_theme((unsigned long)beam_theme_config_mode(&config),
+                                beam_theme_config_palette(&config)))
         theme_preview_changed=1;
 }
 
 static int import_theme_file(const char *path)
 {
     unsigned long colors[BEAM_THEME_COLOR_COUNT];
-    int i;
     if (!path || !beam_theme_file_load(path,colors)) return 0;
     /* Commit only after the whole file has passed signature and color
        validation, so an unreadable drop cannot damage the active palette. */
-    for (i=0;i<BEAM_THEME_COLOR_COUNT;i++) config.custom_colors[i]=colors[i];
-    config.theme=BEAM_THEME_CUSTOM;selection=BEAM_THEME_CUSTOM;
+    beam_theme_set_palette(&config,colors);selection=config.theme;
     beam_copy(theme_file_path,path,sizeof(theme_file_path));
     close_window();if(!build_window()){done=1;return 0;}
     show_selected_appearance();
@@ -1384,8 +1359,9 @@ static void import_theme_gadget(void)
 static void export_theme_gadget(void)
 {
     char *path=gadget_text(G_THEME_PATH);
-    collect_page();
-    if (!path || !beam_theme_file_save(beam_trim(path),config.custom_colors)) {
+    unsigned long colors[BEAM_THEME_COLOR_COUNT];
+    collect_page();selected_palette(colors);
+    if (!path || !beam_theme_file_save(beam_trim(path),colors)) {
         DisplayBeep(screen);set_title(pstr(PMSG_THEME_EXPORT_FAILED));
     } else set_title(pstr(PMSG_THEME_EXPORTED));
 }
@@ -1417,12 +1393,12 @@ static void draw_theme_preview(void)
                       di?di->dri_NumPens:0);
     if (di) FreeScreenDrawInfo(screen,di);
     palette=workbench;
-    if (selection!=BEAM_THEME_WORKBENCH && screen->ViewPort.ColorMap) {
+    if (beam_theme_config_mode(&config)!=BEAM_THEME_WORKBENCH && screen->ViewPort.ColorMap) {
         tags[0].ti_Tag=OBP_Precision; tags[0].ti_Data=PRECISION_GUI;
         tags[1].ti_Tag=TAG_END; tags[1].ti_Data=0;
         for (role=0;role<BEAM_THEME_ROLE_COUNT;role++) {
             LONG pen;
-            if (!beam_theme_color_custom(selection,role,config.custom_colors,
+            if (!beam_theme_color_custom(beam_theme_config_mode(&config),role,beam_theme_config_palette(&config),
                                          &red,&green,&blue)) break;
             pen=ObtainBestPenA(screen->ViewPort.ColorMap,red,green,blue,tags);
             if (pen<0) break;
@@ -1536,10 +1512,9 @@ static int accept_drop(const char *path, int is_dir)
     if (!beam_drop_candidate(path,is_dir,target,candidate,sizeof(candidate)))
         return 0;
     if (page==PAGE_APPEARANCE) {
-        unsigned long colors[BEAM_THEME_COLOR_COUNT];int role;
+        unsigned long colors[BEAM_THEME_COLOR_COUNT];
         if (!beam_theme_file_load(candidate,colors)) return 0;
-        for(role=0;role<BEAM_THEME_COLOR_COUNT;role++)config.custom_colors[role]=colors[role];
-        config.theme=BEAM_THEME_CUSTOM;selection=BEAM_THEME_CUSTOM;
+        beam_theme_set_palette(&config,colors);selection=config.theme;
         beam_copy(theme_file_path,candidate,sizeof(theme_file_path));
         return 1;
     }
@@ -1652,12 +1627,18 @@ static void move_plugin(int direction)
     if (!build_window()) done=1;
 }
 /* A short title updates on selection without opening a requester. Details
- * uses EasyRequest for a richer, read-only diagnostics panel. */
+ * opens the complete read-only plugin document. */
 static void show_selected_plugin(void)
 {
     const char *name;
-    if (!win || page!=PAGE_PLUGINS || plugin_settings_mode || selection<0 ||
-        selection>=config.plugin_file_count) return;
+    if (!win || page!=PAGE_PLUGINS || plugin_settings_mode)return;
+    if(g[G_SETTINGS])GT_SetGadgetAttrs(g[G_SETTINGS],win,NULL,GA_Disabled,
+        (ULONG)(selection<0 || selection>=config.plugin_file_count ||
+        !beam_catalog_has_settings(&plugin_metadata[selection])),TAG_DONE);
+    if(g[G_REMOVE])GT_SetGadgetAttrs(g[G_REMOVE],win,NULL,GA_Disabled,
+        (ULONG)(selection<0 || selection>=config.plugin_file_count ||
+        beam_catalog_is_bundled(&config,selection,&plugin_metadata[selection])),TAG_DONE);
+    if(selection<0 || selection>=config.plugin_file_count)return;
     name=plugin_metadata[selection].name[0]?
         plugin_metadata[selection].name:config.plugin_files[selection];
     sprintf(detail_title,"Beam68 - %.65s : %s",name,
@@ -1776,8 +1757,7 @@ static void plugin_preview_controls(void)
     manifest=config.plugin_files[selection];
     es.es_StructSize=sizeof(es);es.es_Flags=0;
     es.es_Title=(STRPTR)pstr(PMSG_PREVIEW_TITLE);
-    if (!plugin_metadata[selection].preview ||
-        beam_plugin_has_capability(&plugin_metadata[selection],"SYSTEM")) {
+    if (!beam_catalog_can_preview(&plugin_metadata[selection])) {
         es.es_TextFormat=(STRPTR)pstr(PMSG_PREVIEW_UNAVAILABLE);
         es.es_GadgetFormat=(STRPTR)pstr(PMSG_OK);
         EasyRequestArgs(win,&es,NULL,NULL);return;
@@ -1803,11 +1783,73 @@ static void plugin_preview_controls(void)
     }
 }
 
+/* One scrollable document, sized to show every line when the screen permits. */
+static void plugin_details_window(const char *body)
+{
+    static struct Node nodes[128];
+    static char lines[128][104];
+    struct List text;
+    struct Gadget *list=NULL,*last;
+    struct Window *dialog;
+    struct IntuiMessage *message;
+    const char *cursor=body;
+    int count=0,w,h,top,finished=0,scroll=0,visible;
+    int border=(int)screen->WBorTop+(int)screen->Font->ta_YSize+8;
+    w=(int)screen->Width-12;if(w>760)w=760;
+    NewList(&text);memset(nodes,0,sizeof(nodes));
+    while(*cursor && count<128) {
+        unsigned int next,n=beam_text_line(cursor,(unsigned int)(w-40)/8,&next);
+        if(!next)break;
+        if(n>=sizeof(lines[0]))n=sizeof(lines[0])-1;
+        memcpy(lines[count],cursor,n);lines[count][n]=0;
+        nodes[count].ln_Name=lines[count];AddTail(&text,&nodes[count]);
+        cursor+=next;count++;
+    }
+    h=border+count*8+44;
+    if(h>(int)screen->Height-(int)screen->BarHeight-5)h=(int)screen->Height-(int)screen->BarHeight-5;
+    if(h<120)h=120;
+    top=((int)screen->Height-h)/2;if(top<(int)screen->BarHeight+1)top=(int)screen->BarHeight+1;
+    visible=(h-border-40)/8;if(visible<1)visible=1;
+    last=CreateContext(&list);
+    last=add_tagged(LISTVIEW_KIND,last,1,12,border,w-24,h-border-40,"",0,
+                    GTLV_Labels,(ULONG)&text,GTLV_ReadOnly,TRUE);
+    last=add_tagged(BUTTON_KIND,last,2,12,h-28,240,18,pstr(PMSG_TYPING_PREVIEW),PLACETEXT_IN,
+        GA_Disabled,(ULONG)(selection<0 || selection>=config.plugin_file_count ||
+        !beam_catalog_can_preview(&plugin_metadata[selection])),TAG_IGNORE,0);
+    last=add_gadget(BUTTON_KIND,last,3,w-112,h-28,100,18,pstr(PMSG_DETAILS_CLOSE),PLACETEXT_IN);
+    if(!last){FreeGadgets(list);DisplayBeep(screen);return;}
+    dialog=OpenWindowTags(NULL,WA_PubScreen,(ULONG)screen,WA_Title,(ULONG)pstr(PMSG_DETAILS_TITLE),
+        WA_Left,(ULONG)(((int)screen->Width-w)/2),WA_Top,(ULONG)top,
+        WA_Width,(ULONG)w,WA_Height,(ULONG)h,WA_Gadgets,(ULONG)list,
+        WA_DragBar,TRUE,WA_CloseGadget,TRUE,WA_Activate,TRUE,WA_SmartRefresh,TRUE,
+        WA_IDCMP,LISTVIEWIDCMP|IDCMP_CLOSEWINDOW|IDCMP_REFRESHWINDOW|IDCMP_RAWKEY,TAG_DONE);
+    if(!dialog){FreeGadgets(list);DisplayBeep(screen);return;}
+    GT_RefreshWindow(dialog,NULL);
+    while(!finished) {
+        WaitPort(dialog->UserPort);
+        while((message=GT_GetIMsg(dialog->UserPort))) {
+            ULONG cls=message->Class;UWORD code=message->Code;
+            struct Gadget *gadget=(struct Gadget *)message->IAddress;
+            UWORD id=cls==IDCMP_GADGETUP && gadget?gadget->GadgetID:0;
+            GT_ReplyIMsg(message);
+            if(cls==IDCMP_CLOSEWINDOW || (cls==IDCMP_GADGETUP && id==3) ||
+               (cls==IDCMP_RAWKEY && code==PREF_RAW_ESCAPE))finished=1;
+            else if(cls==IDCMP_REFRESHWINDOW){GT_BeginRefresh(dialog);GT_EndRefresh(dialog,TRUE);}
+            else if(cls==IDCMP_GADGETUP && id==2){plugin_preview_controls();ActivateWindow(dialog);}
+            else if(cls==IDCMP_RAWKEY && (code==PREF_RAW_UP || code==PREF_RAW_DOWN)) {
+                scroll+=code==PREF_RAW_UP?-1:1;
+                if(scroll>count-visible)scroll=count-visible;
+                if(scroll<0)scroll=0;
+                GT_SetGadgetAttrs(list->NextGadget,dialog,NULL,GTLV_Top,(ULONG)scroll,TAG_DONE);
+            }
+        }
+    }
+    CloseWindow(dialog);FreeGadgets(list);ActivateWindow(win);
+}
+
 static void plugin_details(void)
 {
-    struct EasyStruct es;
-    ULONG args[1];
-    static char body[1800];
+    static char body[4096];
     char health_text[160];
     const struct BeamPlugin *p;
     const struct BeamPluginHealthEntry *health;
@@ -1821,8 +1863,9 @@ static void plugin_details(void)
     health=beam_plugin_health_find(&plugin_health,manifest);
     if (!beam_plugin_health_format(health,health_text,sizeof(health_text)))
         beam_copy(health_text,pstr(PMSG_HEALTH_UNAVAILABLE),sizeof(health_text));
-    /* Three translatable parts; each is bounded by its %.Ns fields. */
-    sprintf(body,pstr(PMSG_DETAILS1),
+    /* The single details view wraps complete metadata without page truncation. */
+    sprintf(body,pstr(PMSG_PLUGIN_VERSION),p->plugin_version[0]?p->plugin_version:"-");
+    sprintf(body+strlen(body),pstr(PMSG_DETAILS1),
         p->name[0]?p->name:pstr(PMSG_UNKNOWN),p->category[0]?p->category:pstr(PMSG_NONE),
         p->trigger?p->trigger:'-',p->prefix[0]?p->prefix:pstr(PMSG_NONE),
         beam_plugin_diagnostic(plugin_states[selection]),
@@ -1839,70 +1882,13 @@ static void plugin_details(void)
         p->settings[0]?p->settings:pstr(PMSG_NO_SETTINGS),manifest);
     sprintf(body+strlen(body),pstr(PMSG_DETAILS4),(long)(p->protocol?p->protocol:1),
             p->guide[0]?p->guide:pstr(PMSG_NONE));
+    sprintf(body+strlen(body),pstr(PMSG_DETAILS_META),
+            p->id,p->author,p->license,p->min_beam68,p->url);
     strcat(body,"\n\n");
     strcat(body,beam_plugin_advice(plugin_states[selection]));
-    es.es_StructSize=sizeof(es);
-    es.es_Flags=0;
-    es.es_Title=(STRPTR)pstr(PMSG_DETAILS_TITLE);
-    es.es_TextFormat=(STRPTR)"%s";
-    {
-        const char *cursor=body;
-        static char text_page[520];
-        do {
-            const char *page_start=cursor;
-            int answer,more;
-            unsigned int lines=0,used=0;
-            while (*cursor && lines<8) {
-                unsigned int next,n=beam_text_line(cursor,60,&next);
-                if (!next) break;
-                memcpy(text_page+used,cursor,n);used+=n;
-                text_page[used++]='\n';cursor+=next;++lines;
-            }
-            text_page[used]=0;
-            more=*cursor!=0;
-            es.es_GadgetFormat=(STRPTR)pstr(more?PMSG_PREVIEW_DETAILS_MORE:PMSG_PREVIEW_DETAILS_LAST);
-            args[0]=(ULONG)text_page;
-            answer=(int)EasyRequestArgs(win,&es,NULL,args);
-            if (!answer) break;
-            if (answer==(more?2:1)) {
-                plugin_preview_controls();cursor=page_start;
-            }
-        } while (*cursor);
-    }
+    plugin_details_window(body);
 }
 
-static void export_diagnostics(void)
-{
-    BPTR f;
-    char line[512],health_text[160];
-    int i;
-    const struct BeamPluginHealthEntry *health;
-    collect_page();
-    beam_plugin_health_load(&plugin_health,BEAM_PLUGIN_HEALTH_PATH);
-    f=Open((STRPTR)"RAM:Beam68-Diagnostics.txt",MODE_NEWFILE);
-    if (!f) { DisplayBeep(screen);set_title(pstr(PMSG_REPORT_FAILED));return; }
-    sprintf(line,"Beam68 " BEAM68_VERSION " diagnostics\nlauncher=%s hotkey=%s\nitems=%ld depth=%ld theme=%s shell=%s\nplugins=%ld timeout=%lds\n",
-        beam_control_running()?"running":"stopped",config.hotkey,
-        (long)config.max_items,(long)config.max_depth,beam_theme_name(config.theme),
-        config.shell_commands?"on":"off",(long)config.plugin_file_count,
-        (long)config.plugin_timeout);
-    FPuts(f,(STRPTR)line);
-    for (i=0;i<config.plugin_file_count;i++) {
-        health=beam_plugin_health_find(&plugin_health,config.plugin_files[i]);
-        if (!beam_plugin_health_format(health,health_text,sizeof(health_text)))
-            beam_copy(health_text,"no health history",sizeof(health_text));
-        sprintf(line,"%ld %s name=%.48s category=%.24s prefix=%.20s caps=%.60s path=%.120s | %.150s\n",
-            (long)i+1,beam_plugin_diagnostic(plugin_states[i]),
-            plugin_metadata[i].name[0]?plugin_metadata[i].name:pstr(PMSG_UNKNOWN),
-            plugin_metadata[i].category[0]?plugin_metadata[i].category:"-",
-            plugin_metadata[i].prefix[0]?plugin_metadata[i].prefix:"-",
-            plugin_metadata[i].capabilities[0]?plugin_metadata[i].capabilities:"-",
-            config.plugin_files[i],health_text);
-        FPuts(f,(STRPTR)line);
-    }
-    if (!Close(f)) { DisplayBeep(screen);set_title(pstr(PMSG_REPORT_CLOSE_FAILED));return; }
-    set_title(pstr(PMSG_REPORT_EXPORTED));
-}
 static int plugin_setting_index(const char *key)
 {
     int i;
@@ -1918,6 +1904,15 @@ static void load_plugin_setting_values(void)
         beam_copy(plugin_setting_values[i],
             plugin_settings_meta.setting_defs[i].default_value,
             sizeof(plugin_setting_values[i]));
+    for(i=0;i<plugin_settings_meta.setting_count;i++) {
+        const char *key=plugin_settings_meta.setting_defs[i].key;
+        if(beam_equal(plugin_settings_meta.id,"org.beam68.whdload") && beam_equal(key,"COMMAND"))
+            beam_copy(plugin_setting_values[i],config.whdload_command,sizeof(plugin_setting_values[i]));
+        if(beam_equal(plugin_settings_meta.id,"org.beam68.dopus")) {
+            if(beam_equal(key,"PORT"))beam_copy(plugin_setting_values[i],config.dopus_port,sizeof(plugin_setting_values[i]));
+            if(beam_equal(key,"OPEN_DRAWERS"))beam_copy(plugin_setting_values[i],config.dopus_drawers?"YES":"NO",sizeof(plugin_setting_values[i]));
+        }
+    }
     f=Open((STRPTR)plugin_settings_path,MODE_OLDFILE);if (!f) return;
     while (FGets(f,line,sizeof(line))) {
         key=beam_trim(line);if (!*key||*key=='#'||*key==';') continue;
@@ -2017,7 +2012,6 @@ static int save_plugin_settings(void)
 {
     char tmp[BEAM_MAX_PATH+5],bak[BEAM_MAX_PATH+5],line[256],copy[256],*eq,*key;
     BPTR in,out,old;int i,skip,had_old,ok=1;
-    if (!apply_plugin_setting_value()) return 0;
     if (strlen(plugin_settings_path)+5>=sizeof(tmp)) return 0;
     sprintf(tmp,"%s.new",plugin_settings_path);sprintf(bak,"%s.bak",plugin_settings_path);
     out=Open((STRPTR)tmp,MODE_NEWFILE);if (!out) return 0;
@@ -2046,6 +2040,110 @@ static int save_plugin_settings(void)
     return 1;
 }
 
+/* Plugin settings have an independent modal window and transaction. The main
+ * Preferences gadgets, selection, unsaved edits and done flag are untouched. */
+static void plugin_settings_window(void)
+{
+    static char choices[BEAM_MAX_PLUGIN_SETTINGS][128];
+    static char *choice_labels[BEAM_MAX_PLUGIN_SETTINGS][65];
+    static char labels[BEAM_MAX_PLUGIN_SETTINGS][34];
+    static char edited[BEAM_MAX_PLUGIN_SETTINGS][64];
+    struct Gadget *list=NULL,*last,*fields[BEAM_MAX_PLUGIN_SETTINGS];
+    struct Window *dialog=NULL;struct IntuiMessage *message;
+    struct Hook edit_hook;
+    unsigned int active[BEAM_MAX_PLUGIN_SETTINGS],choice_counts[BEAM_MAX_PLUGIN_SETTINGS];
+    int i,width,height,border,finished=0,valid;
+    char title[120];
+    width=(int)screen->Width-12;if(width>720)width=720;
+    border=(int)screen->WBorTop+(int)screen->Font->ta_YSize+10;
+    height=border+plugin_settings_meta.setting_count*20+36;
+    if(width<500 || height>(int)screen->Height-(int)screen->BarHeight-2){DisplayBeep(screen);return;}
+    memset(fields,0,sizeof(fields));memset(active,0,sizeof(active));
+    memset(choice_counts,0,sizeof(choice_counts));
+    memset(&edit_hook,0,sizeof(edit_hook));
+    edit_hook.h_Entry=(HOOKFUNC)(void (*)(void))preview_delay_edit;
+    last=CreateContext(&list);if(!last)return;
+    for(i=0;i<plugin_settings_meta.setting_count;i++) {
+        const struct BeamPluginSetting *d=&plugin_settings_meta.setting_defs[i];
+        int y=border+i*20;
+        beam_copy(labels[i],d->label,sizeof(labels[i]));
+        if(d->type==BEAM_PLUGIN_SETTING_BOOL) {
+            last=add_tagged(CHECKBOX_KIND,last,100+i,285,y,22,12,labels[i],PLACETEXT_LEFT,
+                GTCB_Checked,(ULONG)(beam_equal(plugin_setting_values[i],"YES") ||
+                    beam_equal(plugin_setting_values[i],"TRUE") || !strcmp(plugin_setting_values[i],"1")),TAG_IGNORE,0);
+        } else if(d->type==BEAM_PLUGIN_SETTING_CHOICE) {
+            char *p,*comma;unsigned int n=0;
+            beam_copy(choices[i],d->choices,sizeof(choices[i]));p=choices[i];
+            while(*p && n<64) {
+                comma=strchr(p,',');if(comma)*comma=0;
+                choice_labels[i][n]=beam_trim(p);
+                if(beam_equal(choice_labels[i][n],plugin_setting_values[i]))active[i]=n;
+                n++;if(!comma)break;p=comma+1;
+            }
+            choice_labels[i][n]=NULL;choice_counts[i]=n;
+            last=add_tagged(CYCLE_KIND,last,100+i,285,y,width-300,15,labels[i],PLACETEXT_LEFT,
+                GTCY_Labels,(ULONG)choice_labels[i],GTCY_Active,(ULONG)active[i]);
+        } else {
+            struct NewGadget ng;
+            memset(&ng,0,sizeof(ng));ng.ng_TextAttr=&topaz;ng.ng_VisualInfo=visual;
+            ng.ng_LeftEdge=285;ng.ng_TopEdge=y;ng.ng_Width=width-300;ng.ng_Height=14;
+            ng.ng_GadgetID=100+i;ng.ng_GadgetText=(UBYTE *)labels[i];ng.ng_Flags=PLACETEXT_LEFT;
+            last=CreateGadget(STRING_KIND,last,&ng,GTST_String,(ULONG)plugin_setting_values[i],
+                GTST_MaxChars,63,GTST_EditHook,(ULONG)&edit_hook,TAG_DONE);
+        }
+        fields[i]=last;if(!last)goto cleanup;
+    }
+    last=add_gadget(BUTTON_KIND,last,1,width-210,height-26,90,18,pstr(PMSG_SAVE),PLACETEXT_IN);
+    if(!last)goto cleanup;
+    last=add_gadget(BUTTON_KIND,last,2,width-110,height-26,95,18,pstr(PMSG_CANCEL),PLACETEXT_IN);
+    if(!last)goto cleanup;
+    sprintf(title,"Beam68 - %.64s - %s",plugin_settings_meta.name,pstr(PMSG_SETTINGS));
+    dialog=OpenWindowTags(NULL,WA_PubScreen,(ULONG)screen,WA_Title,(ULONG)title,
+        WA_Left,(ULONG)(((int)screen->Width-width)/2),
+        WA_Top,(ULONG)((int)screen->BarHeight+2),WA_Width,(ULONG)width,WA_Height,(ULONG)height,
+        WA_Gadgets,(ULONG)list,WA_DragBar,TRUE,WA_CloseGadget,TRUE,WA_Activate,TRUE,
+        WA_SmartRefresh,TRUE,WA_IDCMP,IDCMP_GADGETUP|IDCMP_CLOSEWINDOW|IDCMP_RAWKEY|IDCMP_REFRESHWINDOW,TAG_DONE);
+    if(!dialog)goto cleanup;
+    GT_RefreshWindow(dialog,NULL);
+    while(!finished) {
+        WaitPort(dialog->UserPort);
+        while((message=GT_GetIMsg(dialog->UserPort))) {
+            ULONG cls=message->Class;UWORD code=message->Code;
+            struct Gadget *gadget=(struct Gadget *)message->IAddress;
+            unsigned int id=cls==IDCMP_GADGETUP && gadget?gadget->GadgetID:0;
+            GT_ReplyIMsg(message);if(finished)continue;
+            if(cls==IDCMP_CLOSEWINDOW || (cls==IDCMP_RAWKEY && code==PREF_RAW_ESCAPE) ||
+                (cls==IDCMP_GADGETUP && (id==2 || (id>=100 && code==0x45))))finished=1;
+            else if(cls==IDCMP_REFRESHWINDOW){GT_BeginRefresh(dialog);GT_EndRefresh(dialog,TRUE);}
+            else if(cls==IDCMP_GADGETUP && id>=100 && id<100U+(unsigned int)plugin_settings_meta.setting_count) {
+                i=id-100;if(plugin_settings_meta.setting_defs[i].type==BEAM_PLUGIN_SETTING_CHOICE)active[i]=code;
+            } else if(cls==IDCMP_GADGETUP && id==1) {
+                valid=1;
+                for(i=0;i<plugin_settings_meta.setting_count;i++) {
+                    const struct BeamPluginSetting *d=&plugin_settings_meta.setting_defs[i];
+                    char *value;
+                    if(d->type==BEAM_PLUGIN_SETTING_BOOL)value=(fields[i]->Flags&GFLG_SELECTED)?"YES":"NO";
+                    else if(d->type==BEAM_PLUGIN_SETTING_CHOICE)
+                        value=active[i]<choice_counts[i]?choice_labels[i][active[i]]:"";
+                    else value=((struct StringInfo *)fields[i]->SpecialInfo)->Buffer;
+                    if(!beam_catalog_setting_value(d,value,edited[i],sizeof(edited[i]))) {
+                        valid=0;break;
+                    }
+                }
+                if(!valid){DisplayBeep(screen);SetWindowTitles(dialog,(STRPTR)pstr(PMSG_SETTING_INVALID),(STRPTR)~0UL);}
+                else {
+                    memcpy(plugin_setting_values,edited,sizeof(plugin_setting_values));
+                    if(save_plugin_settings())finished=1;
+                    else {DisplayBeep(screen);SetWindowTitles(dialog,(STRPTR)pstr(PMSG_SETTING_SAVE_FAILED),(STRPTR)~0UL);}
+                }
+            }
+        }
+    }
+cleanup:
+    if(dialog)CloseWindow(dialog);
+    FreeGadgets(list);ActivateWindow(win);
+}
+
 /* Protocol-1 plugins can opt into an integrated page with SETTING records.
  * Older plugins retain the safe C:Ed fallback for their declared text file. */
 static void edit_plugin_settings(void)
@@ -2062,8 +2160,8 @@ static void edit_plugin_settings(void)
     if (p->setting_count) {
         plugin_settings_plugin=selection;plugin_settings_meta=*p;
         beam_copy(plugin_settings_path,path,sizeof(plugin_settings_path));
-        load_plugin_setting_values();plugin_settings_mode=1;selection=0;
-        close_window();if(!build_window())done=1;return;
+        load_plugin_setting_values();
+        plugin_settings_window();plugin_settings_plugin=-1;return;
     }
     sprintf(cmd,"C:Ed \"%s\"",path);
     if (beam_system(cmd,NULL,NULL,1)==-1) DisplayBeep(screen);
@@ -2330,7 +2428,7 @@ static void show_guide(void)
 {
     static const char *nodes[]={"PREFS_GENERAL","PREFS_INDEXING","PREFS_PLUGINS",
         "PREFS_APPEARANCE","PREFS_FAVORITES","PREFS_APPLICATIONS","PREFS_ACCESSIBILITY",
-        "PREFS_EXTRAS","PREFS_SOURCES"};
+        "PREFS_EXTRAS","PREFS_SOURCES","PREFS_APPEARANCE"};
     char path[BEAM_MAX_PATH],manifest[BEAM_MAX_PATH];
     struct NewAmigaGuide nag;
     AMIGAGUIDECONTEXT handle;
@@ -2468,7 +2566,7 @@ static int edit_gadget_at(WORD x,WORD y)
 static void store(int permanent)
 {
     BPTR safe_lock;
-    int restart_recovery=0;
+    int restart_recovery=0,applied;char reload_text[160];
     collect_page();
     if (!custom_colors_valid) {
         DisplayBeep(screen);
@@ -2529,7 +2627,13 @@ static void store(int permanent)
             set_title(pstr(PMSG_RESTART_FAILED));
             return;
         }
-    } else beam_control_send(BEAM_CTL_RELOAD); /* safe when not running */
+    } else {
+        applied=beam_control_reload(reload_text,sizeof(reload_text));
+        settings_committed=1;
+        if(applied<0 || applied==2) {
+            DisplayBeep(screen);set_title(reload_text);return;
+        }
+    }
     settings_committed=1;
     done=1;
 }
@@ -2544,7 +2648,7 @@ static void handle_events(void)
             id=((struct Gadget *)m->IAddress)->GadgetID;
         GT_ReplyIMsg(m);
         if (cls==IDCMP_REFRESHWINDOW) {
-            GT_BeginRefresh(win); GT_EndRefresh(win,TRUE);
+            GT_BeginRefresh(win);draw_plugin_heading();GT_EndRefresh(win,TRUE);
             draw_theme_preview();
         } else if (cls==IDCMP_INTUITICKS) {
             if (++launcher_state_tick>=5) {
@@ -2565,6 +2669,13 @@ static void handle_events(void)
                leave a half-refreshed window on OS 3.x.  Defer it. */
             pending_page=(int)next;
             return;
+        } else if(id==G_GROUP) {
+            if(page==PAGE_GENERAL || page==PAGE_EXTRAS || page==PAGE_SOURCES)
+                pending_page=code==0?PAGE_GENERAL:code==1?PAGE_EXTRAS:PAGE_SOURCES;
+            else pending_page=code==0?PAGE_APPEARANCE:code==1?PAGE_ACCESSIBILITY:PAGE_LAYOUT;
+            return;
+        } else if(id==G_UNLIMITED) {
+            GT_SetGadgetAttrs(g[G_DEPTH],win,NULL,GA_Disabled,(ULONG)!!(g[G_UNLIMITED]->Flags&GFLG_SELECTED),TAG_DONE);
         } else if (id==G_THEME_CYCLE) {
             selection=(int)code;
             show_selected_appearance();
@@ -2588,7 +2699,7 @@ static void handle_events(void)
         }
         else if (id==G_PLUGIN_SETTING_NEXT) cycle_plugin_setting();
         else if (id==G_PLUGIN_SETTING_SAVE) {
-            if (!save_plugin_settings()) {
+            if (!apply_plugin_setting_value() || !save_plugin_settings()) {
                 DisplayBeep(screen);set_title(pstr(PMSG_SETTING_SAVE_FAILED));
             } else set_title(pstr(PMSG_SETTING_SAVED));
         }
@@ -2607,26 +2718,15 @@ static void handle_events(void)
         else if (id==G_TOGGLE) toggle_plugin();
         else if (id==G_PLUGIN_UP) move_plugin(-1);
         else if (id==G_PLUGIN_DOWN) move_plugin(1);
-        else if (id==G_RELOAD_PLUGINS) {
-            if (!beam_control_send(BEAM_CTL_RELOAD_PLUGINS)) {
-                DisplayBeep(screen);set_title(pstr(PMSG_NOT_RUNNING));
-            } else set_title(pstr(PMSG_RELOAD_REQUESTED));
-        }
-        else if (id==G_EXPORT_DIAGNOSTICS) export_diagnostics();
+        else if (id==G_IMPORT_PLUGIN) import_plugin();
         else if (id==G_THEME_IMPORT) import_theme_gadget();
         else if (id==G_FONT_CHOOSE) choose_font();
-        else if (id==G_PRESET_EXPORT) export_preset();
-        else if (id==G_EDIT_COLOURS) edit_colours();
-        else if (id==G_BOOKMARK_BROWSE) add_bookmark_file();
-        else if (id==G_CATALOGUE) {
-            collect_page();
-            if (beam_catalogue_window(screen,visual,&config,import_theme_file,
-                                      install_message,sizeof(install_message))) {
-                close_window(); if (!build_window()) done=1;
-            }
-            if (!done && install_message[0]) { set_title(install_message); install_message[0]=0; }
+        else if (id==G_EDIT_COLOURS) { edit_colours();preview_main_theme(); }
+        else if (id==G_RESET_PALETTE) {
+            beam_theme_reset_palette(&config);sync_palette_field();
+            show_selected_appearance();
         }
-        else if (id==G_PRESET_IMPORT) import_preset();
+        else if (id==G_BOOKMARK_BROWSE) add_bookmark_file();
         else if (id==G_THEME_EXPORT) export_theme_gadget();
         else if (id==G_CAPTURE) begin_hotkey_capture();
         else if (id==G_ABOUT) show_about();
@@ -2640,10 +2740,6 @@ static void handle_events(void)
                 DisplayBeep(screen);
                 set_title(pstr(PMSG_BAD_COLORS));
             } else {
-                selection=BEAM_THEME_CUSTOM;
-                config.theme=selection;
-                GT_SetGadgetAttrs(g[G_THEME_CYCLE],win,NULL,
-                    GTCY_Active,(ULONG)selection,TAG_DONE);
                 show_selected_appearance();
             }
         }
@@ -2653,7 +2749,7 @@ static void handle_events(void)
          * ListView to a button. Re-assert the selected ordinal after every
          * plugin-page event so Details/Settings/Toggle never leave the user
          * wondering which row those actions target. */
-        if (id!=G_LIST && !done && win && page==PAGE_PLUGINS && !plugin_settings_mode &&
+        if (!done && win && page==PAGE_PLUGINS && !plugin_settings_mode &&
             selection>=0 && selection<config.plugin_file_count && g[G_LIST])
             GT_SetGadgetAttrs(g[G_LIST],win,NULL,
                 GTLV_Selected,(ULONG)selection,
@@ -2718,8 +2814,8 @@ static int prefs_main(int argc,char **argv)
 cleanup:
     if (!ok) beam_startup_error("Beam68 Preferences",startup_failure);
     if (theme_preview_changed && !settings_committed)
-        beam_control_send_theme((unsigned long)initial_config.theme,
-                                initial_config.custom_colors);
+        beam_control_send_theme((unsigned long)beam_theme_config_mode(&initial_config),
+                                beam_theme_config_palette(&initial_config));
     close_window();
     if (app_port) { DeleteMsgPort(app_port); app_port=NULL; }
     if (WorkbenchBase) CloseLibrary(WorkbenchBase);

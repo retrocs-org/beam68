@@ -38,10 +38,14 @@ def replace_expression(text, marker, replacement):
 
 def review_script(source, uninstall=False):
     text = replace_expression(source, "(procedure P_STOP_LAUNCHER", "(procedure P_STOP_LAUNCHER (set #qa-no-stop 1))")
+    text = replace_expression(text, "(procedure P_START_LAUNCHER", "(procedure P_START_LAUNCHER (set #qa-no-start 1))")
     # Test copies must neither stop the resident nor start test binaries with
     # the real active ENV: configuration. The production installer is unchanged.
     start = text.index("  (if (if #novice 1")
     text = text[:start] + '(message "QA files are ready. Return to Beam68 Installer QA to check them.")' + text[expression_end(text, start + 2):]
+    start = text.index("  ; Read the same active configuration")
+    end = text.index("\n  (exit #t_ready)",start)
+    text = text[:start] + text[end:]
     text = text.replace('(set #existing (getenv "Beam68/InstallDir"))', '(set #existing "")')
     # Fixed destinations at every user level: no path chosen by a requester
     # can escape the dedicated RAM test tree.
@@ -61,7 +65,8 @@ def review_script(source, uninstall=False):
     text = text.replace('(exit #t_removed)',
         '(textfile (dest "' + QA_ROOT + '/completed-uninstall") (append "done"))\n  (exit #t_removed)')
     if uninstall:
-        text = replace_expression(text, "(set #action", "(set #action 1)")
+        start = text.rindex('(if (<> #existing "")')
+        text = text[:start] + "(P_UNINSTALL)\n"
     assert 'getenv "Beam68/InstallDir"' not in text
     assert "QUITWAIT" not in text[text.index("(procedure P_STOP_LAUNCHER"):text.index("(procedure P_MAKEDIR")]
     assert '(run (cat "Run >NIL:' not in text

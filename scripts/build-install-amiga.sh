@@ -37,6 +37,10 @@ Plugins/WindowSwitcher/WindowSwitcher
 Plugins/DeveloperTools/DeveloperTools
 Plugins/ARexxRunner/ARexxRunner
 Plugins/MusicControls/MusicControls
+Plugins/MusicLibrary/MusicLibrary
+Plugins/WHDLoad/WHDLoad
+Plugins/DOpus/DOpus
+Plugins/Wikipedia/Wikipedia
 Plugins/AminetBrowser/AminetBrowser
 "
 
@@ -78,6 +82,10 @@ Plugins/DeveloperTools/DeveloperTools.plugin
 Plugins/ARexxRunner/ARexxRunner.plugin
 Plugins/ARexxRunner/ARexxRunner.cfg
 Plugins/MusicControls/MusicControls.plugin
+Plugins/MusicLibrary/MusicLibrary.plugin
+Plugins/WHDLoad/WHDLoad.plugin
+Plugins/DOpus/DOpus.plugin
+Plugins/Wikipedia/Wikipedia.plugin
 Plugins/MusicControls/MusicControls.cfg
 Plugins/AminetBrowser/AminetBrowser.plugin
 Plugins/AminetBrowser/AminetBrowser.cfg

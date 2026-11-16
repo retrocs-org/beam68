@@ -3,6 +3,7 @@
 #include <dos/dos.h>
 #include <proto/dos.h>
 #include <string.h>
+#include <stdio.h>
 #include "beam.h"
 #include "plugin_catalog.h"
 
@@ -155,4 +156,77 @@ int beam_catalog_merge_discovered(struct BeamConfig *c,
         added++;
     }
     return added;
+}
+
+/* Topaz is fixed-width: pad and bound every field so columns never drift. */
+void beam_catalog_format_row(char *out,unsigned int cap,unsigned int columns,
+                            const char *priority,const char *name,const char *version,
+                            const char *state,const char *key)
+{
+    char row[96];int width=(int)columns-22;
+    if(width<8)width=8;
+    if(width>40)width=40;
+    sprintf(row,"%-3.3s %-*.*s %-7.7s %-5.5s %-3.3s",priority?priority:"-",width,width,name?name:"-",
+            version && *version?version:"-",state?state:"-",key?key:"-");
+    beam_copy(out,row,cap);
+}
+
+/* Stable identities plus canonical paths protect even broken/legacy bundled
+ * manifests. Names or capabilities alone must not decide removability. */
+int beam_catalog_is_bundled(const struct BeamConfig *c,int index,const struct BeamPlugin *p)
+{
+    static const char *ids[]={"org.beam68.calc","org.beam68.clock","org.beam68.memory",
+        "org.beam68.filefinder","org.beam68.systemcommands","org.beam68.dostools",
+        "org.beam68.taskmanager","org.beam68.clipboardtools","org.beam68.dateutilities",
+        "org.beam68.windowswitcher","org.beam68.developertools","org.beam68.arexxrunner",
+        "org.beam68.musiccontrols","org.beam68.aminetbrowser","org.beam68.musiclibrary","org.beam68.whdload","org.beam68.dopus","org.beam68.wikipedia"};
+    static const char *drawers[]={"Calc","Clock","Memory","FileFinder","SystemCommands",
+        "DosTools","TaskManager","ClipboardTools","DateUtilities","WindowSwitcher",
+        "DeveloperTools","ARexxRunner","MusicControls","AminetBrowser","MusicLibrary","WHDLoad","DOpus","Wikipedia"};
+    char actual[BEAM_MAX_PATH],expected[BEAM_MAX_PATH],spec[BEAM_MAX_PATH];
+    unsigned int i;
+    if(!c || index<0 || index>=c->plugin_file_count)return 0;
+    for(i=0;i<sizeof(ids)/sizeof(ids[0]);i++)if(p && beam_equal(p->id,ids[i]))return 1;
+    if(!beam_catalog_resolve(c,c->plugin_files[index],actual,sizeof(actual)))return 0;
+    for(i=0;i<sizeof(drawers)/sizeof(drawers[0]);i++) {
+        sprintf(spec,"PROGDIR:Plugins/%s/%s.plugin",drawers[i],drawers[i]);
+        if(beam_catalog_resolve(c,spec,expected,sizeof(expected)) && beam_equal(actual,expected))return 1;
+        sprintf(spec,"PROGDIR:Plugins/%s.plugin",drawers[i]);
+        if(beam_catalog_resolve(c,spec,expected,sizeof(expected)) && beam_equal(actual,expected))return 1;
+    }
+    return 0;
+}
+
+int beam_catalog_can_preview(const struct BeamPlugin *p)
+{ return p && p->preview && !beam_plugin_has_capability(p,"SYSTEM"); }
+int beam_catalog_has_settings(const struct BeamPlugin *p)
+{ return p && p->settings[0]; }
+
+/* Validate a complete dialog before writing any of its plugin-owned settings. */
+int beam_catalog_setting_value(const struct BeamPluginSetting *d,const char *value,char *out,unsigned int cap)
+{
+    char copy[128],*p,*end;const char *s;
+    if(!d || !value || !out || !cap || strlen(value)>=64)return 0;
+    beam_copy(copy,value,sizeof(copy));p=beam_trim(copy);s=p;
+    if(strchr(p,'\n') || strchr(p,'\r'))return 0;
+    if(d->type==BEAM_PLUGIN_SETTING_BOOL) {
+        if(beam_equal(p,"YES") || beam_equal(p,"TRUE") || !strcmp(p,"1"))s="YES";
+        else if(beam_equal(p,"NO") || beam_equal(p,"FALSE") || !strcmp(p,"0"))s="NO";
+        else return 0;
+    } else if(d->type==BEAM_PLUGIN_SETTING_NUMBER) {
+        if(*p=='-' || *p=='+')p++;
+        if(!*p)return 0;
+        while(*p)if(*p<'0' || *p>'9')return 0;else p++;
+    } else if(d->type==BEAM_PLUGIN_SETTING_CHOICE) {
+        beam_copy(copy,d->choices,sizeof(copy));p=copy;s=NULL;
+        while(*p) {
+            end=strchr(p,',');if(end)*end=0;p=beam_trim(p);
+            if(beam_equal(p,value)){s=p;break;}
+            if(!end)break;
+            p=end+1;
+        }
+        if(!s)return 0;
+    } else if(d->type!=BEAM_PLUGIN_SETTING_TEXT)return 0;
+    if(strlen(s)>=cap)return 0;
+    beam_copy(out,s,cap);return 1;
 }

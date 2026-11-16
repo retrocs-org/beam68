@@ -41,7 +41,7 @@ for name in ('index.php','screenshots.php','get.php','developers.php','source.ph
     assert {'header','main','footer','nav'}<=parser.tags,name
     expected='https://beam68.retrocs.org/'+('' if name=='index.php' else name)
     assert parser.canonical==[expected] and parser.current==[name],name
-    assert b'https://github.com/retrocs-org/beam68' in raw,name
+    if name not in ('index.php','screenshots.php'):assert b'https://github.com/retrocs-org/beam68' in raw,name
     assert b'BitSkim' not in raw and b'bitskim.' not in raw,name
 for name,parser in pages.items():
     for href in parser.links+parser.assets:
@@ -99,14 +99,45 @@ assert b'/blob/main/sdk/README.md' in rendered['developers.php']
 assert b'Release status' not in rendered['index.php']
 assert b'class="nav-source"' not in rendered['get.php']
 catalog=json.loads((WEB/'includes/marketplace.json').read_text())
-assert len(catalog['plugins'])==14 and len(catalog['themes'])==4
+assert len(catalog['plugins'])==18 and len(catalog['themes'])==4
 for item in catalog['plugins']+catalog['themes']:
     assert (ROOT/item['path']).exists()
 assert {x['path'] for x in catalog['plugins']}=={str(p.parent.relative_to(ROOT)) for p in (ROOT/'Plugins').glob('*/*.plugin')}
 aminet=next(x for x in catalog['plugins'] if x['NAME']=='Aminet Browser')
 assert aminet['default_enabled'] is False and aminet['introduced']=='0.2'
-assert b'0.2' in rendered['index.php'] and b'14' in rendered['index.php']
-assert b'NEW IN 0.2' in rendered['marketplace.php']
-assert b'No. It searches packages' in rendered['index.php']
+assert b'0.2' in rendered['index.php'] and b'18' in rendered['index.php']
+assert all(x['NAME'].encode() in rendered['marketplace.php'] for x in catalog['plugins'])
+assert b'Aminet asks before downloading' in rendered['index.php']
 assert (ROOT/'VERSION').read_text('ascii').strip()=='0.2'
 print('PASS: PHP syntax/rendering, escaping, navigation, local CSS and screenshot metadata')
+
+# Public plugin metadata reflects the independent manifests and actual defaults.
+essential={'Calc','Clock','Memory','FileFinder','SystemCommands','DosTools'}
+for plugin in catalog['plugins']:
+    folder=ROOT/plugin['path']
+    manifest=(folder/(folder.name+'.plugin')).read_text()
+    assert 'PLUGIN_VERSION='+plugin['version']+'\n' in manifest
+    assert plugin['default_enabled']==(folder.name in essential)
+assert b'Application shortcuts' in rendered['index.php']
+assert b'Nine sections' not in rendered['index.php']
+assert b'About Beam68' not in rendered['screenshots.php']
+assert b'Inside Beam68 0.2' not in rendered['screenshots.php']
+assert b'0.2 views' not in rendered['screenshots.php']
+
+assert b'Earlier versions &amp; additional themes' not in rendered['screenshots.php']
+assert all(shot.get('version')=='0.2' for shot in json.loads((WEB/'images/screenshots.json').read_text()))
+assert rendered['index.php'].count(b'<details>')==14
+assert b'wiki:Amiga' in rendered['index.php'] and b'whd:enigma' in rendered['index.php']
+
+assert not any('about' in shot['file'] for shot in json.loads((WEB/'images/screenshots.json').read_text()))
+assert 'Search Wikipedia'.encode() in rendered['screenshots.php']
+assert 'Read article summaries'.encode() in rendered['screenshots.php']
+assert b'0.2' not in rendered['screenshots.php'].split(b'<main id="main">')[1].split(b'</main>')[0]
+
+plugin_section=rendered['marketplace.php'].split(b'<section id="plugins"',1)[1].split(b'<section id="themes"',1)[0]
+assert b'Off by default' not in plugin_section and b'On by default' not in plugin_section
+assert b'Documentation' not in plugin_section and b'<code>' not in plugin_section
+assert b'rexx:list' not in plugin_section and b'<a ' not in plugin_section
+
+assert "What’s new in 0.2".encode() not in rendered['index.php']
+assert b'/releases/tag/0.2' not in rendered['index.php']
