@@ -105,10 +105,10 @@ for item in catalog['plugins']+catalog['themes']:
 assert {x['path'] for x in catalog['plugins']}=={str(p.parent.relative_to(ROOT)) for p in (ROOT/'Plugins').glob('*/*.plugin')}
 aminet=next(x for x in catalog['plugins'] if x['NAME']=='Aminet Browser')
 assert aminet['default_enabled'] is False and aminet['introduced']=='0.2'
-assert b'0.2' in rendered['index.php'] and b'18' in rendered['index.php']
+assert b'0.3' in rendered['index.php'] and b'18' in rendered['index.php']
 assert all(x['NAME'].encode() in rendered['marketplace.php'] for x in catalog['plugins'])
 assert b'Aminet asks before downloading' in rendered['index.php']
-assert (ROOT/'VERSION').read_text('ascii').strip()=='0.2'
+assert (ROOT/'VERSION').read_text('ascii').strip()=='0.3'
 print('PASS: PHP syntax/rendering, escaping, navigation, local CSS and screenshot metadata')
 
 # Public plugin metadata reflects the independent manifests and actual defaults.

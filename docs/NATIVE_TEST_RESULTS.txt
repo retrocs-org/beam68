@@ -94,3 +94,29 @@ and recovery, bounded request admission and preview delay parsing.
 The launcher produced a passing JUnit report and native assertion log.
 Live network checks deferred at the user’s request because of the current LAN.
 Saved Workbench data and bridge configuration were not changed.
+
+Beam68 0.3 graphical installer validation — 16 November 2026
+
+Used Amiga Workbench's documented disposable test mode, Workbench 3.2.1,
+68060. Tested the actual packaged Install script and installed binaries.
+GUI choices were made by the user; native assertions checked the outcomes.
+The test resumed from installed/settings fixtures across sessions. An initial
+uninstall attempt selected update instead; the checker rejected it, and the
+uninstall was repeated with the intended choice. No uninstall pass was inferred
+from that rejected attempt.
+
+PASS: fresh Novice install; launcher/Preferences present; resident reports 0.3.
+PASS: update retains a deliberately configured shortcut and reports it correctly.
+PASS: Keep settings uninstall stops resident, removes program and retains settings.
+PASS: reinstall with kept settings starts the installed resident.
+PASS: Remove settings uninstall stops resident and clears saved/temporary config.
+PASS: subsequent fresh install completes without the earlier reported crash.
+PASS: fresh configuration registers 18 plugins, with exactly six essential local
+plugins enabled and the twelve optional plugins disabled.
+PASS: final default shortcut is Ctrl+Alt+Space; user confirmed opening, hiding
+with Escape and reopening. Remaining tests used the default shortcut only.
+PASS: final resident shutdown; launcher emitted a passing JUnit result.
+
+Scope: current 0.3 Novice install and maintenance paths, including same-version
+update. Not certification of every earlier release upgrade, Intermediate/Expert
+choices, physical hardware or small-screen layout. No saved desktop changes.

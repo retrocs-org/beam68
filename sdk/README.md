@@ -199,7 +199,7 @@ to delete the installed files.
 
 ### Cancellation and late replies
 
-Beam68 0.2 detaches outstanding requests when the query changes, the window
+Beam68 0.3 detaches outstanding requests when the query changes, the window
 closes or plugins reload. Echo the supplied serial unchanged. A detached or
 expired reply is ignored, including when the user later types the same query.
 Cancellation does not forcibly terminate your process; keep plugin work
@@ -207,7 +207,7 @@ bounded and close your own resources. Publish one complete reply with valid
 row kinds, nonempty labels and terminated, control-free buffers. ARexx replies
 must be published atomically as exactly one TEXT= or ERROR= line.
 
-### Outstanding-request limit in Beam68 0.2
+### Outstanding-request limit in Beam68 0.3
 
 The launcher admits at most three uncompleted requests, preserving the last
 slot for manual runs when automatic previews fill the first two. Cancellation
@@ -228,14 +228,14 @@ bundled plugins additionally use the checked version workflow in
 
 ## Activation and independent versions
 
-Beam68 0.2 enables six essential local plugins on a fresh installation.
+Beam68 0.3 enables six essential local plugins on a fresh installation.
 Network and optional integrations start disabled; updates preserve saved choices.
 Plugin versions are independent of the launcher version. Start a new plugin at
 0.1 and increment its version when changing its implementation. The bundled
 version-check script verifies compiled inputs. Import third-party packages in
 Preferences; bundled plugins can be toggled but cannot be removed.
 
-## Manual request confirmations in Beam68 0.2
+## Manual request confirmations in Beam68 0.3
 
 SYSTEM plugins remain manual-only and normally require a second Enter. The
 launcher recognizes the bundled Wikipedia and Music Library identities: Wikipedia

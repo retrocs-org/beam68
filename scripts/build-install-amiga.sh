@@ -124,7 +124,7 @@ for relative_path in $runtime_data; do
     chmod 644 "$application_dir/$relative_path"
 done
 
-echo "Beam68: staged AmigaOS 0.2 runtime package in:"
+echo "Beam68: staged AmigaOS 0.3 runtime package in:"
 echo "$application_dir"
 echo "With the amigaos-dev_020 profile, run Bin:Beam68/Beam68 or"
 echo "CD Bin:Beam68 and Execute scripts/Install-Beam68."

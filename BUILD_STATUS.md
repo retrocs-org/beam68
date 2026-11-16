@@ -1,8 +1,8 @@
 # Beam68 validation status
 
-## Current version: 0.2
+## Current version: 0.3
 
-Updated 16 November 2026. The application version remains 0.2. Plugins have
+Updated 16 November 2026. The application version is 0.3; this release has not been published. Plugins have
 independent versions; the current inventory contains 18 bundled plugins.
 
 ## Automated release checks
@@ -47,10 +47,20 @@ T:Beam68 configuration and its backup, preventing an old session override.
 The isolated Installer QA package redirects saved, live and temporary settings
 into its own RAM tree. It checks all 18 registrations and all default activation
 states. Its file-operation tests deliberately do not certify real launcher
-startup/shutdown. The final-build GUI install/update/remove/reinstall cycle and small-display
-Preferences review remain incomplete because the desktop window was inaccessible
-on 16 November. Prepared QA tools are in Builds. Record their actual results
-before claiming native validation.
+startup/shutdown. The real 0.3 graphical installer was exercised through Amiga Workbench's
+supported disposable test mode on Workbench 3.2.1 / 68060 on 16 November.
+Fresh Novice installation, update, uninstall keeping settings, reinstall,
+uninstall removing settings and final fresh installation passed across resumed
+test sessions. The checks verified installed files, a responding 0.3 resident,
+shutdown before uninstall completion, settings retention/removal, and all 18
+plugin defaults. The final clean installation enabled exactly six essential
+plugins and restored Ctrl+Alt+Space. The user confirmed opening, Escape hiding
+and reopening with that shortcut. Remove-settings uninstall returned normally
+and the subsequent installation completed without the reported crash.
+
+This validates the exercised Novice maintenance paths; Intermediate/Expert
+choices, upgrade from every older layout and small-display Preferences review
+remain separate checks. The saved desktop was not used as the test target.
 
 Physical 68000/minimum-memory testing, every supported OS version and translated
 layout, third-party players, Directory Opus interoperability, real full disks and

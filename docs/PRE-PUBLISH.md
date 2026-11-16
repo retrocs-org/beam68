@@ -1,9 +1,9 @@
-# Before publishing Beam68 0.2
+# Before publishing Beam68 0.3
 
 Work from the reviewed Git checkout. Commit the final source and documentation
-before publication. The app stays at 0.2 unless its version is explicitly changed.
-Existing published 0.2 packages may predate current changes; build and verify the
-final bytes before deliberately replacing assets on GitHub, GitLab and Aminet.
+before publication. The app stays at 0.3 unless its version is explicitly changed.
+Version 0.3 is a new release. Build and verify new packages for its own tag;
+keep published 0.2 assets and release history unchanged.
 
 ## Automated gates
 

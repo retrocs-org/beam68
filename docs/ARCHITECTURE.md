@@ -1,4 +1,4 @@
-# Beam68 architecture — 0.2
+# Beam68 architecture — 0.3
 
 ```text
 Workbench launch (WBStartup/Beam68Start Project)
@@ -172,7 +172,7 @@ After about 30 seconds the wait expires but the AmigaDOS child is not killed,
 so abandoned files and runaway third-party processes remain an OS-level
 limitation. Native manifests and reply messages both declare public Protocol 1.
 
-The project **application version is 0.2**. Keep it at 0.2 until explicitly requested otherwise.
+The project **application version is 0.3**. Keep it at 0.3 until explicitly requested otherwise.
 
 ## Custom themes, memory fallback and recovery (version 0.1)
 
@@ -366,7 +366,7 @@ Pre-release plugin formats are not retained as compatibility versions.
 - **Manuals**: AmigaGuide files checked by `tests/test_guides.py`
   (balanced nodes, links, the per-page nodes Beam68Prefs opens).
 
-## Search responsiveness in 0.2
+## Search responsiveness in 0.3
 
 Raw key releases and unmapped keys no longer split queued text into extra
 searches. Result-dependent actions flush the pending query, including
@@ -378,7 +378,7 @@ load only after a selection settles for approximately 100–150 ms.
 Matcher scoring is unchanged; substring searches stop after the first best
 word-boundary hit and typo-prefix checks inspect only the required prefix.
 
-## Startup and index memory in 0.2
+## Startup and index memory in 0.3
 
 Duplicate launches return before loading configuration, libraries or catalogs;
 the existing later resident check is retained. The diskfont library opens only
@@ -396,7 +396,7 @@ and follows the existing index-full behavior; growth temporarily needs both
 old and new pool allocations. With the default 512-item setting, the initial
 pool reservation falls from 28 KiB to 4 KiB; larger populated indexes grow.
 
-## Low-memory recovery and rescan consistency in 0.2
+## Low-memory recovery and rescan consistency in 0.3
 
 Index allocation and growth failures preserve existing paths, hashes and
 metadata. Existing titles are replaced by building a compact replacement
@@ -427,7 +427,7 @@ write failures and both replacement rename failures. These hooks are absent
 from the native binary; memory and undefined-behavior sanitizers cover the
 same growth, compaction and rollback cases on the host.
 
-## Plugin request lifecycle in 0.2
+## Plugin request lifecycle in 0.3
 
 Text edits immediately detach the current plugin request, even when a later
 edit restores the same text. Programmatic query changes are also checked before
@@ -460,7 +460,7 @@ running; request detachment is not process isolation or termination. Optional
 first-use package caching and OS filesystem/program-loading calls retain their
 normal filesystem latency; plugin execution itself remains asynchronous.
 
-## User data during 0.2 installation
+## User data during 0.3 installation
 
 Both installers treat an existing portable Beam68.cfg, Aliases.txt and each
 bundled theme file as user-owned. New binaries and manuals update normally;
@@ -472,7 +472,7 @@ missing ENVARC settings from an installed package-local or legacy flat .cfg
 before using shipped defaults. Persistent favorites and history files are not
 installation targets, and their 0.1 formats remain readable and writable.
 
-## Per-plugin preview controls in 0.2
+## Per-plugin preview controls in 0.3
 
 Preferences -> Plugins -> Details -> Preview provides Toggle, Faster, Slower,
 Delay... and Default. Controls edit the in-memory configuration; Use/Save retain their
@@ -496,7 +496,7 @@ added slots and keeps policy across package updates. Scheduling checks the
 current override both when arming and when firing a preview; settings reload
 already detaches the preceding request and clears the old timer.
 
-## Bounded plugin requests in 0.2
+## Bounded plugin requests in 0.3
 
 The visible BeamPluginJob and a three-slot outstanding-request table have
 separate lifetimes. Ending the visible job never implicitly frees the table
@@ -526,7 +526,7 @@ target, without heap allocation. This bounds uncompleted protocol requests,
 not hostile third-party code or process lifetime after a terminal response.
 Actual process-exit supervision remains separate from request completion.
 
-## Interrupted cache-save recovery in 0.2
+## Interrupted cache-save recovery in 0.3
 
 Loading tries the fully validated primary cache first, then .old, then .bak.
 Every candidate must pass the same schema, indexing-settings fingerprint,
@@ -556,7 +556,7 @@ recovery state until a successful load repairs it. All cache files stay next
 to the launcher rather than in ENV/ENVARC; recovery adds disk storage, not a
 second persistent RAM index. Filesystem corruption can still require a rescan.
 
-## Request visibility in 0.2
+## Request visibility in 0.3
 
 REQUESTS reports the count, admission limits and latest-preview waiting flag.
 REQUEST 1..3 reports a stable slot snapshot: captured plugin name, serial,
@@ -592,7 +592,7 @@ and overflow before modifying its output. The shared timer still rounds the
 effective wait upward to its 50ms granularity; the exact requested value is
 preserved in preferences.
 
-## Editable theme palettes (0.2)
+## Editable theme palettes (0.3)
 
 Mocha is the fresh-install default. Every theme, including Workbench and Rose,
 can be edited in Appearance. Overrides are independent per theme and persisted

@@ -1,4 +1,4 @@
-# Beam68 0.2 Preferences
+# Beam68 0.3 Preferences
 
 Open Beam68Prefs from SYS:Prefs or press F5 in the launcher.
 

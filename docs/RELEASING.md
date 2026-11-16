@@ -29,9 +29,9 @@ credential setup are covered below. Aminet follows the submission rules in this 
 ### Version and tag
 
 - VERSION, the application, Preferences, package metadata and release notes must
-  identify the same release. Beam68 remains 0.2 until a version change is agreed.
-- Use the exact version as the public tag, for example `0.2`, without a `v`
-  prefix. The default tag is VERSION; pass `--tag 0.2` explicitly for clarity.
+  identify the same release. Beam68 remains 0.3 until a version change is agreed.
+- Use the exact version as the public tag, for example `0.3`, without a `v`
+  prefix. The default tag is VERSION; pass `--tag 0.3` explicitly for clarity.
 - Both services must receive the same annotated tag object and source commit.
   Never move, force-push or recreate a published release tag.
 - Release titles use the exact tag. The release description contains the complete
@@ -50,7 +50,7 @@ The top-level Features section summarizes the whole app; the Features subsection
 inside Version Changelog lists only newly added functionality for this version.
 
 ```markdown
-# Beam68 0.2
+# Beam68 0.3
 
 Short application description.
 
@@ -60,7 +60,7 @@ Short application description.
 
 ## Installation
 
-Download Beam68-0.2.lha, unpack it and open Install.
+Download Beam68-0.3.lha, unpack it and open Install.
 Include requirements, setup guidance and the manual location.
 
 ## Source and Licence
@@ -69,7 +69,7 @@ Link to the source repository, exact tagged release and licence.
 
 ## Version Changelog
 
-### 0.2
+### 0.3
 
 #### Features
 
@@ -100,10 +100,10 @@ performance claims, private paths, credentials and internal development notes.
 Upload exactly these four assets, substituting VERSION in each name:
 
 ```text
-Beam68-0.2.lha
-Beam68-0.2.lha.sha256
-Beam68-0.2-plugin-sdk.zip
-Beam68-0.2-plugin-sdk.zip.sha256
+Beam68-0.3.lha
+Beam68-0.3.lha.sha256
+Beam68-0.3-plugin-sdk.zip
+Beam68-0.3-plugin-sdk.zip.sha256
 ```
 
 - Repository assets include the version. Only Aminet uses stable filenames.
@@ -133,21 +133,21 @@ Beam68-0.2-plugin-sdk.zip.sha256
 5. Publish explicitly to the intended services, using the same output directory,
    tag and notes throughout. Keep receipts and verify the public release links.
 
-Example for 0.2, with a fresh output directory:
+Example for 0.3, with a fresh output directory:
 
 ```sh
 python3 scripts/release.py source --to gitlab,github --dry-run
 python3 scripts/release.py source --to gitlab,github --confirm-push
-python3 scripts/release.py build --output outputs/release-0.2-new
-python3 scripts/release.py check --output outputs/release-0.2-new
-python3 scripts/release.py prepare --output outputs/release-0.2-new \
-  --tag 0.2 --notes docs/RELEASE-NOTES.md
-python3 scripts/release.py publish --output outputs/release-0.2-new \
-  --tag 0.2 --notes docs/RELEASE-NOTES.md \
+python3 scripts/release.py build --output outputs/release-0.3-new
+python3 scripts/release.py check --output outputs/release-0.3-new
+python3 scripts/release.py prepare --output outputs/release-0.3-new \
+  --tag 0.3 --notes docs/RELEASE-NOTES.md
+python3 scripts/release.py publish --output outputs/release-0.3-new \
+  --tag 0.3 --notes docs/RELEASE-NOTES.md \
   --to gitlab,github --confirm-publish
 ```
 
-This example is for a new tag; it does not replace an existing 0.2 release.
+This example is for a new tag; it does not replace the published 0.2 release.
 Do not run it to bypass conflicting published assets. Confirm native testing
 separately before publishing. Website deployment remains a separate manual task.
 
@@ -295,15 +295,15 @@ To keep a new version separate from earlier artifacts and publication receipts,
 choose an output directory under `outputs/`:
 
 ```sh
-python3 scripts/release.py build --output outputs/release-0.2 --verbose
-python3 scripts/release.py check --output outputs/release-0.2
-python3 scripts/release.py prepare --output outputs/release-0.2 --tag 0.2
+python3 scripts/release.py build --output outputs/release-0.3 --verbose
+python3 scripts/release.py check --output outputs/release-0.3
+python3 scripts/release.py prepare --output outputs/release-0.3 --tag 0.3
 ```
 
-Pass the same `--output outputs/release-0.2` when publishing those artifacts.
+Pass the same `--output outputs/release-0.3` when publishing those artifacts.
 The four release assets go directly into that directory. Logs, manifests and
 receipts go into its `release/` subdirectory, including
-`outputs/release-0.2/release/build.log`. Without `--output`, the existing layout
+`outputs/release-0.3/release/build.log`. Without `--output`, the existing layout
 is unchanged. `outputs/release/` itself remains reserved for the original
 release state and cannot be selected as an artifact destination.
 
@@ -318,10 +318,10 @@ the prepared release stale. Native runtime certification remains a separate task
 The only files packaged at the top level of outputs/ and uploaded to GitHub
 and GitLab tagged releases are:
 
-- Beam68-0.2.lha
-- Beam68-0.2.lha.sha256
-- Beam68-0.2-plugin-sdk.zip
-- Beam68-0.2-plugin-sdk.zip.sha256
+- Beam68-0.3.lha
+- Beam68-0.3.lha.sha256
+- Beam68-0.3-plugin-sdk.zip
+- Beam68-0.3-plugin-sdk.zip.sha256
 
 Names derive from VERSION. The LHA contains the runtime, bundled plugins,
 themes and notices. The SDK ZIP contains the standalone SDK, C/ARexx examples,
@@ -396,8 +396,8 @@ build. The default selection is gitlab,github. Distinct names are required. Omit
 remote tags, existing assets and Aminet receipts are preflighted before mutations.
 All destinations must use the same annotated tag object pointing to the prepared
 commit. Tags are never forced. The version and default unprefixed tag derive from VERSION.
-Beam68 uses explicit unprefixed tags: pass `prepare --tag 0.2` and
-`publish --tag 0.2` for the current release.
+Beam68 uses explicit unprefixed tags: pass `prepare --tag 0.3` and
+`publish --tag 0.3` for the current release.
 `--tag-message` sets its annotation and must match between preparation and publication.
 Package filenames and embedded app versions do not change with a tag override.
 Release titles use the exact tag. Update version-specific website links before

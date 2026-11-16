@@ -4,7 +4,7 @@ if (!defined('BEAM68_PAGE')) {
     http_response_code(404);
     exit;
 }
-const BEAM68_SITE_VERSION = '0.2';
+const BEAM68_SITE_VERSION = '0.3';
 function marketplace_catalog(): array {
     static $catalog;
     if ($catalog === null) {

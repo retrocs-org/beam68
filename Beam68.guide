@@ -1,11 +1,11 @@
 @database Beam68.guide
-@$VER: Beam68.guide 0.2 (14.11.2026)
+@$VER: Beam68.guide 0.3 (16.11.2026)
 @author "Beam68 contributors"
 @(c) "MIT License"
 @wordwrap
-@node MAIN "Beam68 0.2 - Manual"
+@node MAIN "Beam68 0.3 - Manual"
 
-                    @{b}Beam68 0.2@{ub}
+                    @{b}Beam68 0.3@{ub}
      A keyboard application launcher for AmigaOS 3.x
 
   @{" Introduction       " link INTRO}  What Beam68 does

@@ -23,7 +23,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 CAT = ROOT / "catalogs"
 VERSION = (ROOT / "VERSION").read_text(encoding="ascii").strip()
-DATE = "14.11.2026"
+DATE = "16.11.2026"
 PLACEHOLDER = re.compile(r"%[-+ 0#]*[0-9]*(?:\.[0-9]+)?l?[dusxXc%]")
 
 

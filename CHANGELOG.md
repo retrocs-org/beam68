@@ -1,41 +1,30 @@
 # Changelog
 
-## 0.2
+## 0.3
 
 ### Features
 
-- Added Wikipedia 0.1: Wikipedia searches, selectable articles, native summary windows, language settings and full-article opening through OpenURL.
+- Added Wikipedia: Wikipedia searches, selectable articles, native summary windows, language settings and full-article opening through OpenURL.
 
 - Added unlimited directory scan depth, with heap-backed traversal and link-loop avoidance.
+
 - WHDLoad now discovers games in its own background worker using the shared directories, exclusions and depth. Enabling the plugin activates game indexing and launch actions.
 
-- Added WHDLoad 0.1 and DOpus 0.1 plugins with their own settings and normal search-result action integration.
+- Added WHDLoad and DOpus plugins with their own settings and normal search-result action integration.
 
-- Added Music Library 0.1: separate module searches with configurable music drawer and player command; removed music indexing controls from Sources.
+- Added Music Library: separate module searches with configurable music drawer and player command; removed music indexing controls from Sources.
 
 - Independently editable palettes for every theme, with a Restore original palette
   control. The reddish Custom theme is now named Rose.
 
-- Aminet Browser plugin with search, package details, paged readmes, confirmed
-  downloads and archive-opening installation preparation.
-- Preferences About window showing the Preferences build and the actual version
-  of the running Beam68 launcher.
-- Per-plugin preview controls, including enable/disable and direct numeric delay
-  entry with validation and Cancel support.
-- Outstanding-request diagnostics showing the plugin, request age and timeout state.
-- Resettable responsiveness measurements and a report script for repeatable
-  startup, typing and result-display checks.
-- Installer QA package for separate installation, update and uninstall tests,
-  with file checks, settings-preservation checks and a readable report.
-- Release-script `--output` option for separate artifact directories, logs,
-  manifests and publication receipts for each release.
-
 ### Enhancements
 
 - Removed redundant SYSTEM confirmation for bundled Wikipedia search/summary and Music Library searches; music playback and other SYSTEM actions retain confirmation. Updated Wikipedia to 0.2 and Music Library to 0.7.
-- Refreshed release-readiness documentation for the 18-plugin 0.2 inventory and current packaging requirements.
+
+- Refreshed release-readiness documentation for the 18-plugin inventory and current packaging requirements.
 
 - Renamed Applications to Application shortcuts, added an explanation, and updated translations and help.
+
 - Refreshed the PHP website with a complete modern midnight-blue redesign with horizontal navigation, centred app showcase, new overview structure, image-led gallery, download panels and documentation layouts, shorter pages, clearer downloads, current defaults and documentation. Simplified the marketplace plugin list to names and descriptions. Added practical plugin feature summaries and an expanded FAQ; removed older-version and About screenshots. Added fresh Wikipedia search and summary, File Finder, Date Utilities, Calculator and Memory captures with feature-based captions instead of version labels.
 
 - Fresh installations enable six essential local tools; network and optional plugins start disabled. Existing saved choices are preserved during updates.
@@ -54,8 +43,10 @@
   bundled identities and canonical paths protected even when manifests are unreadable.
 
 - Aligned plugin headings with row text and numbered priority in matching order.
+
 - Kept selected plugin rows highlighted, simplified controls to Toggle and
   explicit priority buttons, and replaced paged Details with one larger view.
+
 - Removed fixed post-install startup delays; readiness is checked immediately.
 
 - Aligned plugin name, independent version, state and key columns in Preferences.
@@ -63,6 +54,54 @@
 
 - Installed all bundled plugins automatically at every installer user level;
   advanced setup focuses on destination and autostart, with plugin choices in Preferences.
+
+- Novice installation uses automatic defaults and reuses the existing installation
+  location. Novice uninstall offers a choice to keep or remove settings.
+
+- Added GitHub download counts for the application and plugin SDK to the website, using the existing cached release API response.
+
+### Bugs
+
+- Regenerated translated catalogue version metadata for the 0.3 application.
+
+- Isolated temporary settings in the Installer QA package so test cleanup cannot remove the live session configuration; expanded checks to cover every bundled plugin default.
+
+- Fixed fresh graphical installations enabling every plugin by omitting default-disabled entries.
+
+- Clear temporary Use configuration and its backup when removing settings or creating a fresh configuration, preventing old activation choices from overriding fresh defaults.
+
+- Fixed live settings reload being rejected by an uninitialised hotkey expression version. Unchanged hotkeys are retained, and Preferences waits for confirmation before closing after Use/Save.
+
+- Avoided recursive live ENV: settings removal during uninstall on linked
+  environment setups; remove live files before their saved backing tree.
+
+- Kept launcher shutdown visible until final cleanup and settings writes complete.
+
+- Started the launcher in the background after installation and displayed the
+  actual configured shortcut in the final confirmation, including preserved settings.
+
+- Restored Mocha as the default palette for new installations.
+
+
+## 0.2
+
+### Features
+
+- Aminet Browser plugin with search, package details, paged readmes, confirmed
+  downloads and archive-opening installation preparation.
+- Preferences About window showing the Preferences build and the actual version
+  of the running Beam68 launcher.
+- Per-plugin preview controls, including enable/disable and direct numeric delay
+  entry with validation and Cancel support.
+- Outstanding-request diagnostics showing the plugin, request age and timeout state.
+- Resettable responsiveness measurements and a report script for repeatable
+  startup, typing and result-display checks.
+- Installer QA package for separate installation, update and uninstall tests,
+  with file checks, settings-preservation checks and a readable report.
+- Release-script `--output` option for separate artifact directories, logs,
+  manifests and publication receipts for each release.
+
+### Enhancements
 
 - Earlier display of search results during indexing, with more frequent input checks.
 - More responsive typing through coalesced input, immediate query feedback and
@@ -75,27 +114,13 @@
 - Startup timing includes library, configuration and metadata loading.
 - Beam68Prefs can be found with ordinary preferences and settings searches.
 - Novice installation uses automatic defaults and reuses the existing installation
-  location. Novice uninstall offers a choice to keep or remove settings.
+  location. Novice uninstall removes programs while retaining saved settings.
 - The Shell installer stops the resident before copying, starts the installed
   launcher and checks its reported version before showing the search window.
 - System Commands is enabled by default. Aminet Browser is installed but disabled
   until enabled in Preferences; updates retain saved plugin choices.
 
 ### Bugs
-
-- Isolated temporary settings in the Installer QA package so test cleanup cannot remove the live session configuration; expanded checks to cover every bundled plugin default.
-
-- Fixed fresh graphical installations enabling every plugin by omitting default-disabled entries.
-- Clear temporary Use configuration and its backup when removing settings or creating a fresh configuration, preventing old activation choices from overriding fresh defaults.
-
-- Fixed live settings reload being rejected by an uninitialised hotkey expression version. Unchanged hotkeys are retained, and Preferences waits for confirmation before closing after Use/Save.
-
-- Avoided recursive live ENV: settings removal during uninstall on linked
-  environment setups; remove live files before their saved backing tree.
-- Kept launcher shutdown visible until final cleanup and settings writes complete.
-- Started the launcher in the background after installation and displayed the
-  actual configured shortcut in the final confirmation, including preserved settings.
-- Restored Mocha as the default palette for new installations.
 
 - Fixed stack corruption when Preferences returns from its private application stack.
 - Fixed Novice mode being unavailable in the installer and QA uninstaller.
