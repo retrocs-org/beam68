@@ -359,7 +359,9 @@ or slow CompactFlash.  (True "resident" programs must be re-entrant, which
 ordinary plugins are not, so each run still starts a fresh copy.)
 
 Press F1 in the launcher for the full list with examples.  Plugins marked
-@{b}SYSTEM@{ub} ask for a second Enter.  A plugin that fails three times in
+@{b}SYSTEM@{ub} normally ask for a second Enter. Bundled Wikipedia searches
+and summaries and Music Library searches skip this extra guard; music playback
+still asks for confirmation.  A plugin that fails three times in
 a row is quarantined until you enable it again in Beam68Prefs.
 
 Aminet Browser (new in 0.2): type aminet:search tracker to search Aminet,

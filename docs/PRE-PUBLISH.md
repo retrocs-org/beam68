@@ -1,39 +1,50 @@
-# Before the first public release
+# Before publishing Beam68 0.2
 
-The reviewed source directory is an extracted project, not a Git checkout.
-Its current files and distribution packages can be scanned, but there is no Git
-history here to audit. Import into a reviewed checkout or use the explicit source
-initialization workflow before publishing. Review any history imported from
-elsewhere; checking current files does not remove older committed secrets.
+Work from the reviewed Git checkout. Commit the final source and documentation
+before publication. The app stays at 0.2 unless its version is explicitly changed.
+Existing published 0.2 packages may predate current changes; build and verify the
+final bytes before deliberately replacing assets on GitHub, GitLab and Aminet.
 
 ## Automated gates
 
-- Public source selection excludes local settings, editor state, build output,
-  publication receipts and generated executables. Credential files are refused.
-- scripts/check-sensitive.py checks common token/key formats, credential-bearing
-  URLs and machine-specific paths without printing matched values. It also checks
-  against credential values already present in the process environment. It does
-  not retrieve credentials to perform a scan and cannot identify every secret.
-- Source pushes, unified build/check and complete-project packaging run this gate.
-- Website tests check repository link spelling and case, including on macOS.
-- Native build records, archive contents, prepared copies and checksums must match.
-- Publishing needs a clean committed checkout and an explicit confirmation flag.
+- Run the release build with a fresh output directory, then check that same
+  directory. Review its release/build.log and build.json.
+- Sensitive-input scanning excludes local settings, editor state, build output
+  and publication receipts, and refuses common credential formats and unsafe
+  paths. A clean scan cannot prove that no possible secret exists in history.
+- Plugin versions, translation catalogs, native build hashes, SDK packages,
+  archive contents and checksums must match. Website checks cover rendered PHP,
+  navigation, metadata, screenshots and offline release-service behaviour.
+- Publishing requires a clean committed checkout and explicit confirmation.
+  Never reuse stale build metadata after source or documentation changes.
 
-## Operator checks still required
+## Final native checks
 
-1. Run the native app and all bundled plugins on the intended Amiga setup,
-   including Protocol 1 replies, previews, error handling and installation/update.
-   Physical minimum-memory and 68000 certification remain open.
-2. Verify project-specific credential fields and repository permissions. Do not
-   reuse another project's scoped token. Confirm repository visibility and the
-   exact source commit/tag before the first source upload or release.
-3. Exercise publishing adapters against dedicated test repositories before using
-   a production tag. Offline mocks do not certify live hosting configuration.
-4. If submitting to Aminet, configure and review a real uploader contact and the
-   readme. A successful submission awaits moderator approval.
-5. Review outputs/release/manifest.json and all prepared files. The website's
-   planned download links assume 0.1 and exact package filenames. Update its
-   awaiting-publication text only when the actual release is available.
+1. Using the final installer, test Novice install, update while the resident is
+   running, uninstall with Remove settings, and reinstall. Verify six enabled
+   local plugins, every network plugin off, no crash, no stale temporary settings,
+   background startup and the actual configured shortcut.
+2. Confirm Use and Save change the running configuration. Review Preferences on
+   a smaller display, including Appearance and independent plugin settings.
+3. Wikipedia search/summary and Music Library searches should not need a second
+   SYSTEM confirmation. Music playback and other SYSTEM actions retain their
+   confirmation. Network requests remain manual and optional plugins stay off
+   by default.
+4. Use the isolated Installer QA package for file-operation checks. Its saved,
+   environment and temporary settings all stay under RAM:Beam68InstallerQA; it
+   never stops the live launcher. This is additional coverage, not a substitute
+   for actual startup/shutdown testing.
 
-See RELEASING.md for commands and receipt recovery. No source pushes or public
-uploads are performed by build/check/prepare or ordinary automated tests.
+Record actual outcomes and any limitations in BUILD_STATUS.md. Do not claim
+physical 68000/minimum-memory certification from host tests or screenshots.
+
+## Publication review
+
+Check the exact commit/tag, repository permissions, asset names, checksums and
+release description. GitHub/GitLab releases are normal stable/latest releases.
+Use Features, Enhancements and Bugs in the shared version changelog. Aminet uses
+a real uploader contact; submission success still awaits moderation. Deploy the
+website separately, after reviewing its manual-upload archive.
+
+See [RELEASING.md](RELEASING.md) for commands and replacement/receipt recovery.
+Build/check/prepare and automated tests do not push source or publish assets.

@@ -54,7 +54,7 @@ static int fetch(unsigned long serial)
     }
     if(attempt==32){strcpy(error,"Cannot create a temporary Wikipedia download drawer.");return 0;}
     beam_plugin_copy(temporary,directory,sizeof(temporary));AddPart(temporary,(STRPTR)"reply.json",sizeof(temporary));
-    sprintf(command,"\"%s\" -fsS --max-time 20 --connect-timeout 10 --max-filesize 65536 --proto =https --tlsv1.2 -A \"Beam68Wikipedia/0.1 (https://beam68.retrocs.org)\" -o \"%s\" \"%s\"",curl,temporary,url);
+    sprintf(command,"\"%s\" -fsS --max-time 20 --connect-timeout 10 --max-filesize 65536 --proto =https --tlsv1.2 -A \"Beam68Wikipedia/0.2 (https://beam68.retrocs.org)\" -o \"%s\" \"%s\"",curl,temporary,url);
     if(strlen(command)>=512)strcpy(error,"Wikipedia search is too long; try fewer words.");
     else if(SystemTags((STRPTR)command,SYS_Input,0,SYS_Output,0,TAG_DONE)!=0)
         strcpy(error,"Wikipedia request failed. Check the TCP/IP stack and curl HTTPS support.");

@@ -14,8 +14,9 @@ for uninstall in (False, True):
     text = qa.review_script(source, uninstall)
     # Strip comments and check the executable script, including translated paths.
     code = "\n".join(line for line in text.splitlines() if not line.lstrip().startswith(";"))
-    for assign in ("SYS:", "ENV:", "ENVARC:", "LOCALE:"):
+    for assign in ("SYS:", "ENV:", "ENVARC:", "LOCALE:", "T:Beam68/"):
         assert assign not in code, assign
+    assert qa.QA_ROOT + "/Session/Beam68.cfg" in code
     assert qa.QA_ROOT + "/completed-install" in code
     assert qa.QA_ROOT + "/completed-uninstall" in code
     assert "(askdir" not in code
@@ -42,3 +43,9 @@ assert 'if(choice==0 || choice==5)break;' in runner
 assert '"AVERAGE"' not in runner
 assert '"NOVICE","NOVICE"' in runner
 print("Installer QA: fixed test destinations, no live assignments or resident control: PASS")
+
+assert 'check(count>=18,' in runner
+assert 'has_line(disabled)==(i>=6)' in runner
+for suffix in ('', '.bak', '.new'):
+    assert '"/Session/Beam68.cfg'+suffix+'"' in runner
+assert 'seed_session();' in runner

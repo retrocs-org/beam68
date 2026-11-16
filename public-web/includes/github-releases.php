@@ -23,7 +23,10 @@ function release_normalize(array $raw): ?array {
         $expected = BEAM68_GITHUB . '/releases/download/' . rawurlencode($tag) . '/' . rawurlencode($name);
         if (($asset['browser_download_url'] ?? '') !== $expected || ($asset['state'] ?? '') !== 'uploaded' ||
             !is_int($asset['size'] ?? null) || $asset['size'] < 0) continue;
-        $assets[$name] = ['name' => $name, 'url' => $expected, 'size' => $asset['size']];
+        // Missing or invalid counts stay unknown; zero is a valid count.
+        $count = $asset['download_count'] ?? null;
+        $assets[$name] = ['name' => $name, 'url' => $expected, 'size' => $asset['size'],
+            'download_count' => is_int($count) && $count >= 0 ? $count : null];
     }
     $runtime = array_values(array_filter($assets, fn($a) => (bool)preg_match('/^Beam68-\d+(?:\.\d+)+(?:-[A-Za-z0-9.-]+)?\.lha$/D', $a['name'])));
     $sdk = array_values(array_filter($assets, fn($a) => (bool)preg_match('/^Beam68-\d+(?:\.\d+)+(?:-[A-Za-z0-9.-]+)?-plugin-sdk\.zip$/D', $a['name'])));
@@ -158,4 +161,8 @@ function release_page_data(): array {
 
 function release_size(int $size): string {
     return $size >= 1048576 ? number_format($size / 1048576, 1) . ' MiB' : number_format($size / 1024, 1) . ' KiB';
+}
+
+function release_downloads(int $count): string {
+    return number_format($count) . ($count === 1 ? ' download on GitHub' : ' downloads on GitHub');
 }

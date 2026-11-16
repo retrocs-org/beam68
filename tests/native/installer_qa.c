@@ -19,6 +19,7 @@ static char config_text[65536];
 static BPTR report;
 static int failures,checks;
 static const char *protected_files[]={CFG,ROOT "/Environment/Beam68/Beam68.cfg",
+    ROOT "/Session/Beam68.cfg",ROOT "/Session/Beam68.cfg.bak",ROOT "/Session/Beam68.cfg.new",
     ROOT "/Saved/Beam68/Aliases.txt",ROOT "/Saved/Beam68/Snippets.txt",
     APP "/Aliases.txt",APP "/Themes/Amber.theme",APP "/Themes/GreenScreen.theme",
     APP "/Themes/MagicGrey.theme",APP "/Themes/Paper.theme",APP "/Plugins/QAExtra/keep.txt"};
@@ -43,7 +44,7 @@ static int prepare(void)
 {
     static const char *paths[]={ROOT,ROOT "/System",ROOT "/System/Utilities",
         ROOT "/System/Prefs",ROOT "/System/WBStartup",ROOT "/Saved",
-        ROOT "/Environment",ROOT "/Locale",ROOT "/Locale/Catalogs"};
+        ROOT "/Environment",ROOT "/Session",ROOT "/Locale",ROOT "/Locale/Catalogs"};
     unsigned int i;for(i=0;i<sizeof(paths)/sizeof(paths[0]);i++)if(!directory(paths[i]))return 0;
     return 1;
 }
@@ -61,6 +62,15 @@ static int hash_file(const char *path,ULONG *hash)
     while((n=Read(f,buf,sizeof(buf)))>0)for(i=0;i<n;i++)value=(value^buf[i])*16777619UL;
     Close(f);if(n<0)return 0;*hash=value;return 1;
 }
+static void seed_session(void)
+{
+    static const char *files[]={ROOT "/Session/Beam68.cfg",ROOT "/Session/Beam68.cfg.bak",ROOT "/Session/Beam68.cfg.new"};
+    unsigned int i;BPTR f;
+    for(i=0;i<sizeof(files)/sizeof(files[0]);i++){
+        f=Open((STRPTR)files[i],MODE_NEWFILE);
+        if(f){FPuts(f,"QA temporary settings: must survive update, disappear on Remove settings.\n");Close(f);}
+    }
+}
 static void snapshot(void)
 {
     unsigned int i;BPTR f;
@@ -69,6 +79,7 @@ static void snapshot(void)
         f=Open((STRPTR)APP "/Plugins/QAExtra/keep.txt",MODE_NEWFILE);
         if(f){FPuts(f,"Third-party QA data: preserve during update.\n");Close(f);}
     }
+    seed_session();
     for(i=0;i<PROTECTED_COUNT;i++)had_file[i]=(unsigned char)hash_file(protected_files[i],&before[i]);
 }
 static int has_line(const char *line)
@@ -89,6 +100,11 @@ static void inspect(int preserve,int removed)
         check(!file_exists(ROOT "/System/Prefs/Beam68Prefs"),"Preferences removed from QA destination");
         check(!file_exists(ROOT "/System/WBStartup/Beam68Start"),"QA startup entry removed");
         check(!file_exists(ROOT "/System/WBStartup/Beam68Start.info"),"QA startup icon removed");
+        if(!file_exists(CFG)){
+            check(!file_exists(ROOT "/Session/Beam68.cfg"),"Temporary Use settings removed");
+            check(!file_exists(ROOT "/Session/Beam68.cfg.bak"),"Temporary backup removed");
+            check(!file_exists(ROOT "/Session/Beam68.cfg.new"),"Temporary pending save removed");
+        }
     }else{
         static const char *required[]={APP "/Beam68",APP "/Beam68.info",APP "/Beam68Ctl",
             ROOT "/System/Prefs/Beam68Prefs",ROOT "/System/Prefs/Beam68Prefs.info",
@@ -115,14 +131,18 @@ static void inspect(int preserve,int removed)
             }
             p=strchr(p,'\n');if(!p)break;p++;
         }
-        check(count>0,"At least one selected plugin registered");
+        check(count>=18,"All 18 bundled plugins registered");
         if(!preserve){
-            check(!has_line("PLUGIN_DISABLED=PROGDIR:Plugins/SystemCommands/SystemCommands.plugin"),"System Commands enabled by default");
-            check(has_line("PLUGIN_DISABLED=PROGDIR:Plugins/AminetBrowser/AminetBrowser.plugin"),"Aminet Browser disabled by default");
+            static const char *names[]={"Calc","Clock","Memory","FileFinder","SystemCommands","DosTools","TaskManager","ClipboardTools","DateUtilities","WindowSwitcher","DeveloperTools","ARexxRunner","MusicControls","AminetBrowser","MusicLibrary","WHDLoad","DOpus","Wikipedia"};
+            char disabled[256];
+            for(i=0;i<18;i++){
+                sprintf(disabled,"PLUGIN_DISABLED=PROGDIR:Plugins/%s/%s.plugin",names[i],names[i]);
+                check(has_line(disabled)==(i>=6),names[i]);
+            }
         }
         if(preserve)for(i=0;i<PROTECTED_COUNT;i++)if(had_file[i])
             check(hash_file(protected_files[i],&hash) && hash==before[i],protected_files[i]);
-        sprintf(summary,"Selected plugins checked: %u / 14 bundled.\n",count);FPuts(report,summary);
+        sprintf(summary,"Selected plugins checked: %u / 18 bundled.\n",count);FPuts(report,summary);
     }
     sprintf(summary,"%d checks: %d passed, %d failed.\nReport: " REPORT,checks,checks-failures,failures);
     FPuts(report,summary);FPuts(report,"\nScope: installer files only; application launch/shutdown are not exercised.\n");Close(report);report=0;

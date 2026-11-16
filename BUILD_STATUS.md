@@ -1,52 +1,70 @@
 # Beam68 validation status
 
-## 0.2 development checks — 14 November 2026
+## Current version: 0.2
 
-- Aminet Browser is the fourteenth bundled plugin. It builds for 68000 with
-  warnings treated as errors and passes the SDK package validator.
-- Full portable tests, Aminet parser/header/signature sanitizers and source
-  hygiene checks pass. The published 0.1 website still describes its 13 plugins.
-- Native network QA passes live search, readme parsing, complete archive
-  transfer, response-size rejection and cancellation cleanup. Downloaded code
-  was not executed. See docs/NATIVE_TEST_RESULTS.txt for the recorded results.
-- Interactive Aminet download-window, destination-conflict, disk-full and archive
-  handler checks remain open. Download completion does not certify installation.
+Updated 16 November 2026. The application version remains 0.2. Plugins have
+independent versions; the current inventory contains 18 bundled plugins.
 
-## 0.1 validation record
+## Automated release checks
 
-Updated 11 November 2026.
+The release build runs portable C/Python checks, translation freshness, the
+sensitive-input scan, independent plugin-version checks, native 68000 compilation
+with warnings treated as errors, SDK validation, archive inventory and checksum
+verification. Publishing requires a clean committed checkout and release metadata
+matching the exact source fingerprint. Rebuild after changing source or release
+documentation; an older output directory is not ready merely because its binaries
+still run. Use one output directory for build, check, prepare and publish.
 
-- All 17 runtime HUNK executables build for `-m68000` using AmigaDev GCC 16.2
-  and libnix. `-Wall -Wextra -Werror` passes with classic string-pointer
-  signedness compatibility warnings disabled.
-- 38 portable C tests and Python checks pass, including memory instrumentation,
-  bundled manifest loading, search ranking, archive validation, preset rollback,
-  configuration, catalogue freshness, guides, icons and website links.
-- Source-only checkout checks pass with `BEAM68_SOURCE_ONLY=1`. Release
-  packaging always requires the real runtime files and matching build hashes.
-- Runtime checks cover search, calculator output, command help, Preferences,
-  compact plugin Details and all 13 bundled plugin manifests (zero load errors).
-- Isolated native filesystem tests cover injected disk-full writes, failed commit
-  renames, truncated preset input and independent settings save/reload/removal.
-  These are controlled failure simulations, not power-loss certification.
-- A synthetic positive-prefix matcher workload preserves its result checksums
-  while avoiding unnecessary alias scoring. No universal throughput is claimed.
-- Tests and native release builds run locally; repository uploads do not start
-  GitHub Actions or GitLab CI jobs.
+The latest results are recorded in the selected output's release/build.log and
+build.json. These local checks do not publish packages or change tagged releases.
+No automatic GitHub Actions or GitLab CI configuration is included.
 
-Physical 68000/minimum-memory testing, a full clean-OS GUI install/update/remove
-cycle, all translated layouts, other supported OS versions, third-party players,
-Directory Opus interoperability and every archive-extractor/filesystem combination
-remain validation work. Actual full disks and interrupted installs need separate
-checks. Capability declarations do not isolate native plugins.
+## Native observations
 
-The responsive PHP website in public-web/ uses shared page components, local
-CSS and app-window images. PHP CLI rendering checks pass. It is ready for manual upload to
-https://beam68.retrocs.org/. The repository address is
-https://github.com/retrocs-org/beam68. Build scripts do not publish either one.
+- The running launcher and native Preferences have been exercised during 0.2
+  development, including actual running-version reporting and plugin loading.
+- Live Wikipedia search and its native summary window were exercised on
+  16 November. File Finder, Date Utilities, Calculator and Memory results were
+  captured from the running application. Screenshots describe features and are
+  cropped to application windows; they are not certification of every workflow.
+- Earlier native Aminet checks covered search, readme parsing, complete archive
+  transfer, response-size rejection and cancellation cleanup. The progress
+  window and launcher handoff were also observed during development.
+- Disposable Workbench 3.2.1 / 68060 recovery tests passed on 16 November: disk-full
+  writes, failed renames, truncated presets, settings reload/removal, allocation
+  recovery, interrupted cache saves and request admission. Live network checks
+  were deferred because the current LAN connection is unavailable.
+- Portable regressions cover bounded requests, stale replies, timeouts, low-memory
+  recovery, interrupted cache-save recovery and confirmed Use/Save reloads.
 
-All bundled native plugins now use public Protocol 1 selectable-result messages.
-The SDK validates routing and bounded serials, and reports delivery failures
-without a file fallback. ARexx scripts retain the documented text transport.
-Website captures retain the hashes of the build used when they were captured;
-they are illustrative views and do not certify a newer executable.
+## Installer checks and limits
+
+Fresh installs must enable exactly Calculator, Clock, Memory, File Finder,
+System Commands, and Assigns and Volumes. All network and other optional plugins
+start disabled. Updates preserve explicit settings. Removing settings clears
+T:Beam68 configuration and its backup, preventing an old session override.
+
+The isolated Installer QA package redirects saved, live and temporary settings
+into its own RAM tree. It checks all 18 registrations and all default activation
+states. Its file-operation tests deliberately do not certify real launcher
+startup/shutdown. The final-build GUI install/update/remove/reinstall cycle and small-display
+Preferences review remain incomplete because the desktop window was inaccessible
+on 16 November. Prepared QA tools are in Builds. Record their actual results
+before claiming native validation.
+
+Physical 68000/minimum-memory testing, every supported OS version and translated
+layout, third-party players, Directory Opus interoperability, real full disks and
+interrupted installations remain separate validation work. Capability labels do
+not isolate native code. See docs/TEST_PLAN.md for the current regression checklist.
+
+## Website and release assets
+
+The PHP website has current feature descriptions, a simple plugin inventory,
+feature-captioned application captures and automatic published-release downloads.
+Its source is public-web/. Deploy it manually to https://beam68.retrocs.org/.
+Website updates do not replace already published 0.2 application packages.
+
+GitHub and GitLab receive the versioned LHA and plugin SDK ZIP, each with a
+SHA-256 file. Aminet receives Beam68.lha and Beam68.readme without a version in
+the filenames. All bundled native plugins use public Protocol 1. Publication
+instructions and recovery procedures are in docs/RELEASING.md.

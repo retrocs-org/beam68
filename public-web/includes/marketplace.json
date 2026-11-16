@@ -75,7 +75,7 @@
       "path": "Plugins/DOpus",
       "introduced": "0.2",
       "default_enabled": false,
-      "version": "0.3"
+      "version": "0.4"
     },
     {
       "NAME": "Date Utilities",
@@ -141,7 +141,7 @@
       "path": "Plugins/MusicLibrary",
       "introduced": "0.2",
       "default_enabled": false,
-      "version": "0.6"
+      "version": "0.7"
     },
     {
       "NAME": "System Commands",
@@ -174,7 +174,7 @@
       "path": "Plugins/WHDLoad",
       "introduced": "0.2",
       "default_enabled": false,
-      "version": "0.5"
+      "version": "0.6"
     },
     {
       "NAME": "Wikipedia",
@@ -185,7 +185,7 @@
       "path": "Plugins/Wikipedia",
       "introduced": "0.2",
       "default_enabled": false,
-      "version": "0.1"
+      "version": "0.2"
     },
     {
       "NAME": "Workbench Windows",

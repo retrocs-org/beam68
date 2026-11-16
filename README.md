@@ -122,6 +122,12 @@ exclusions and depth when enabled. Music Library has its own music drawer.
 Plugin settings open separately with their own Save and Cancel controls.
 See [Preferences](docs/PREFERENCES.md) for configuration and defaults.
 
+Wikipedia searches and article summaries run on explicit Enter without an extra
+SYSTEM confirmation. Music Library searches behave the same way; playing a
+selected module still requires confirmation. Other SYSTEM plugins retain their
+confirmation flow. These rules describe trusted bundled integrations, not a
+security boundary for native plugins.
+
 ## Plugins and themes
 
 Bundled plugins: Calculator, Clock, Memory, File Finder, System Commands,

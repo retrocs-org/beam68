@@ -22,6 +22,10 @@ int beam_requests_find(const struct BeamPluginRequests *requests,unsigned long s
 int beam_requests_reserve(struct BeamPluginRequests *requests,unsigned long serial,int preview);
 int beam_requests_complete(struct BeamPluginRequests *requests,unsigned long serial);
 
+/* Known bundled read-only requests skip the SYSTEM double-Enter guard.
+ * Music playback and unknown SYSTEM plugins retain confirmation. */
+int beam_plugin_needs_confirmation(const char *id,const char *input,int system);
+
 struct BeamPluginJob {
     unsigned int age;
     unsigned int timeout_ticks;

@@ -20,8 +20,8 @@
     "version": "0.1"
   },
   "DOpus": {
-    "sha256": "4adfa2e96d2297f958d949e5cacd3eaa017cd2b478f42208dd26d3342419d99f",
-    "version": "0.3"
+    "sha256": "692b2a29dd52c317635ca77c2583886fa25c444404a6ca2944430c9ad795c349",
+    "version": "0.4"
   },
   "DateUtilities": {
     "sha256": "39fdd1721b67956a8235a3c920b98f5efe34683cc8715888e72222509d55e28c",
@@ -48,8 +48,8 @@
     "version": "0.1"
   },
   "MusicLibrary": {
-    "sha256": "415e52c874bdbfcfbef84fe92bf292b1cc1141312735a1f85f81c4122744818f",
-    "version": "0.6"
+    "sha256": "46738e7f0e1d7673cf71b43f8691cc2ab64281fce2d83ddabea1a29e88e85ccc",
+    "version": "0.7"
   },
   "SystemCommands": {
     "sha256": "cb4b9b18845ee1db2a83d0048f971a70dc37fb37e6f01543fd1f51b21fcad3d7",
@@ -60,12 +60,12 @@
     "version": "0.1"
   },
   "WHDLoad": {
-    "sha256": "ffb654c6b3ae1d67381045ac044f1f6fb2f54cdf7888ce65484d47b422c31d07",
-    "version": "0.5"
+    "sha256": "4d3c1a5d553d0b02963a88649b4d586d709188422e7745202d690cc3fea7c180",
+    "version": "0.6"
   },
   "Wikipedia": {
-    "sha256": "6c96a1986b3efcb06a6fd6f2e26d6c56b10f3b62edef3a26aae7a0edce45d6a4",
-    "version": "0.1"
+    "sha256": "9f137c1f7cb6018edfaab6383771184ef1e547a62ca97d491c25127365597258",
+    "version": "0.2"
   },
   "WindowSwitcher": {
     "sha256": "abada4a19322992bd66f64e6b7456961cde5cc9cc432baf716a36adae41d814d",

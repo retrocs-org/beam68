@@ -67,3 +67,9 @@ Mocha is the default theme. Rose is the reddish theme previously named Custom.
 Every theme has an editable palette and Restore original palette. Imported and
 exported theme files use five RGB colours; restoring one theme does not reset
 another theme's saved palette.
+
+## Read-only plugin requests
+
+Wikipedia searches and summaries, and Music Library searches, run when explicitly
+requested without an extra SYSTEM confirmation. Music playback still asks for
+confirmation. Automatic previews remain unavailable for these SYSTEM integrations.

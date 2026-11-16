@@ -1,4 +1,4 @@
-# WHDLoad 0.1
+# WHDLoad 0.6
 
 Find and launch installed WHDLoad games.
 

@@ -113,6 +113,18 @@ int main(void)
     char hex[BEAM_PLUGIN_MAX_INPUT*2+2],out[BEAM_PLUGIN_MAX_RESULT+1],decoded[BEAM_PLUGIN_MAX_INPUT+1];
     char oversized[BEAM_PLUGIN_MAX_INPUT+2];
     int error,i;
+    assert(!beam_plugin_needs_confirmation("org.beam68.wikipedia","Amiga",1));
+    assert(!beam_plugin_needs_confirmation("org.beam68.wikipedia","article en 1980",1));
+    assert(!beam_plugin_needs_confirmation("org.beam68.musiclibrary","enigma",1));
+    assert(!beam_plugin_needs_confirmation("org.beam68.musiclibrary","playful",1));
+    assert(!beam_plugin_needs_confirmation("org.beam68.musiclibrary","p",1));
+    assert(beam_plugin_needs_confirmation("org.beam68.musiclibrary","play Work:Music/mod.demo",1));
+    assert(beam_plugin_needs_confirmation("org.beam68.musiclibrary","  PLAY\tWork:Music/mod.demo",1));
+    assert(beam_plugin_needs_confirmation("org.beam68.musiclibrary","play",1));
+    assert(beam_plugin_needs_confirmation("org.thirdparty.tool","search",1));
+    assert(beam_plugin_needs_confirmation(NULL,"search",1));
+    assert(beam_plugin_needs_confirmation("org.beam68.wikipedia",NULL,1));
+    assert(!beam_plugin_needs_confirmation(NULL,NULL,0));
     test_stale_and_recovery();
     test_outstanding_request_limit();
     test_request_diagnostics();

@@ -21,6 +21,8 @@ class Releases(unittest.TestCase):
                 str(ROOT/'tests/fixtures/github-release.json'),folder],capture_output=True,text=True)
             self.assertEqual(result.returncode,0,result.stderr)
             self.assertEqual(result.stderr,'')
+    def test_download_counts_validate_and_survive_cache(self):
+        self.run_php("$r['assets'][0]['download_count']=1234;$r['assets'][2]['download_count']=0;$fetch=fn($etag)=>['status'=>200,'body'=>json_encode($r),'etag'=>'counts'];$a=latest_release($fetch,$d,$t);$b=latest_release($good,$d,$t+1);expect($a===$b&&$b['release']['runtime']['download_count']===1234);expect(release_downloads(1234)==='1,234 downloads on GitHub'&&release_downloads(1)==='1 download on GitHub'&&release_downloads(0)==='0 downloads on GitHub');foreach([-1,'12',1.5,true,null]as$count){$raw=$r;$raw['assets'][0]['download_count']=$count;expect(release_normalize($raw)['runtime']['download_count']===null);}")
     def test_fresh_cache_avoids_repeated_api_requests(self):
         self.run_php("$a=latest_release($good,$d,$t);$b=latest_release($good,$d,$t+1);expect($calls===1&&$a===$b&&$a['release']['tag']==='0.1');")
     def test_changed_release_is_discovered_after_ttl(self):

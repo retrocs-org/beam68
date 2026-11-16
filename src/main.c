@@ -143,6 +143,7 @@ struct Device *TimerBase;
 /* The launcher keeps only the plugin fields it uses.  Settings-page
  * definitions are a Preferences concern (~1.6 KB per plugin). */
 struct BeamLauncherPlugin {
+    char id[64];
     char name[BEAM_MAX_NAME];
     char command[BEAM_MAX_PATH];
     char description[96];
@@ -2691,7 +2692,8 @@ static void execute_plugin(struct BeamLauncherPlugin *p)
         beam_copy(plugin_active_name,p->name,sizeof(plugin_active_name));
         plugin_status(beam_str(MSG_PLUGIN_IS_QUARANTINED));render();return;
     }
-    if (beam_capability_list_has(p->capabilities,"SYSTEM") &&
+    if (beam_plugin_needs_confirmation(p->id,q,
+            beam_capability_list_has(p->capabilities,"SYSTEM")) &&
         (plugin_confirm!=plugin_index || !beam_equal(plugin_confirm_query,query))) {
         plugin_confirm=plugin_index;
         beam_copy(plugin_confirm_query,query,sizeof(plugin_confirm_query));
@@ -3454,6 +3456,7 @@ static void plugin_to_launcher(struct BeamLauncherPlugin *d,
     beam_copy(d->icon,p->icon,sizeof(d->icon));
     beam_copy(d->example,p->example,sizeof(d->example));
     beam_copy(d->help,p->help,sizeof(d->help));
+    beam_copy(d->id,p->id,sizeof(d->id));
     beam_copy(d->capabilities,p->capabilities,sizeof(d->capabilities));
     d->trigger=p->trigger;
     d->protocol=p->protocol;

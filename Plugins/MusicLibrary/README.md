@@ -1,8 +1,9 @@
-# Music Library 0.1
+# Music Library 0.7
 
 Music Library searches module files without adding them to Beam68's application index.
 Use `mod:<name>` (or `;<name>`) and press Enter. Up to eight matches are returned;
-select a match and press Enter to choose it, then Enter again to play it.
+select a match and press Enter to choose it, then Enter again to request playback.
+Searches skip the extra SYSTEM confirmation; playback still asks for confirmation.
 
 In Preferences → Plugins → Music Library → Settings, set the music drawer and
 player command. Leave the drawer empty to search the main configured drawers.

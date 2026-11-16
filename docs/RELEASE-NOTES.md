@@ -62,6 +62,9 @@ Beam68 uses the MIT licence. See LICENSE in the archive for the full text.
 
 #### Enhancements
 
+- Removed redundant SYSTEM confirmation for bundled Wikipedia search/summary and Music Library searches; music playback and other SYSTEM actions retain confirmation. Updated Wikipedia to 0.2 and Music Library to 0.7.
+- Refreshed release-readiness documentation for the 18-plugin 0.2 inventory and current packaging requirements.
+
 - Renamed Applications to Application shortcuts, added an explanation, and updated translations and help.
 - Refreshed the PHP website with a complete modern midnight-blue redesign with horizontal navigation, centred app showcase, new overview structure, image-led gallery, download panels and documentation layouts, shorter pages, clearer downloads, current defaults and documentation. Simplified the marketplace plugin list to names and descriptions. Added practical plugin feature summaries and an expanded FAQ; removed older-version and About screenshots. Added fresh Wikipedia search and summary, File Finder, Date Utilities, Calculator and Memory captures with feature-based captions instead of version labels.
 
@@ -109,6 +112,8 @@ Beam68 uses the MIT licence. See LICENSE in the archive for the full text.
   until enabled in Preferences; updates retain saved plugin choices.
 
 #### Bugs
+
+- Isolated temporary settings in the Installer QA package so test cleanup cannot remove the live session configuration; expanded checks to cover every bundled plugin default.
 
 - Fixed fresh graphical installations enabling every plugin by omitting default-disabled entries.
 - Clear temporary Use configuration and its backup when removing settings or creating a fresh configuration, preventing old activation choices from overriding fresh defaults.

@@ -194,3 +194,22 @@ int beam_request_format(unsigned int slot,unsigned long serial,const char *name,
     if (strlen(line)>=capacity) return 0;
     strcpy(out,line);return 1;
 }
+
+int beam_plugin_needs_confirmation(const char *id,const char *input,int system)
+{
+    unsigned int i;
+    static const char play[]="play";
+    if (!system) return 0;
+    if (!id || !input) return 1;
+    /* Wikipedia requests only fetch search results or article summaries.
+     * Opening a browser is an explicit button in its own summary window. */
+    if (!strcmp(id,"org.beam68.wikipedia")) return 0;
+    if (strcmp(id,"org.beam68.musiclibrary")) return 1;
+    while (*input==' ' || *input=='\t') ++input;
+    for (i=0;i<4;i++) {
+        unsigned char c=(unsigned char)input[i];
+        if (c>='A' && c<='Z') c=(unsigned char)(c-'A'+'a');
+        if (c!=(unsigned char)play[i]) return 0;
+    }
+    return !input[4] || input[4]==' ' || input[4]=='\t';
+}

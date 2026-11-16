@@ -94,3 +94,13 @@ Plugin versions are independent of the launcher version. Start a new plugin at
 0.1 and increment its version when changing its implementation. The bundled
 version-check script verifies compiled inputs. Import third-party packages in
 Preferences; bundled plugins can be toggled but cannot be removed.
+
+## Manual request confirmations in Beam68 0.2
+
+SYSTEM plugins remain manual-only and normally require a second Enter. The
+launcher recognizes the bundled Wikipedia and Music Library identities: Wikipedia
+search/summary fetches and Music Library search requests skip that extra guard.
+Music Library PLAY actions still require confirmation. Wikipedia's full-article
+browser action is an explicit button in its own summary window. Other SYSTEM
+plugins retain the existing guard. This changes no Protocol 1 message fields and
+provides no isolation or trust guarantee for arbitrary native code.

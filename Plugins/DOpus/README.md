@@ -1,4 +1,4 @@
-# DOpus 0.1
+# DOpus 0.4
 
 Open drawers and reveal selected results in Directory Opus.
 

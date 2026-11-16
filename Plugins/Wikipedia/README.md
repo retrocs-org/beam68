@@ -1,4 +1,4 @@
-# Wikipedia 0.1
+# Wikipedia 0.2
 
 Enable Wikipedia in Beam68 Preferences -> Plugins, then Use or Save.
 Type `wiki:Amiga` and press Enter. Select a result and press Enter to choose
@@ -8,7 +8,8 @@ the summary; Beam68 remains available through its hotkey.
 
 Plugin Settings select the Wikipedia language, HTTPS-capable curl executable
 (default C:curl), and OpenURL executable (default C:OpenURL). A running TCP/IP
-stack is required. The plugin is disabled by default and searches run on Enter.
+stack is required. Search and summary requests do not require a second
+SYSTEM confirmation; Open article remains an explicit button. The plugin is disabled by default and searches run on Enter.
 Search terms and selected article identifiers are sent to the chosen Wikipedia
 language edition. HTTPS certificate checks stay enabled. No account is needed.
 

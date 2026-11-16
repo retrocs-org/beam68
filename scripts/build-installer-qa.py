@@ -55,7 +55,8 @@ def review_script(source, uninstall=False):
         form = text[start:finish]
         default = "#parent" if "(default #parent)" in form else "#dest"
         text = text[:start] + default + text[finish:]
-    for old, new in (("ENVARC:", QA_ROOT + "/Saved/"),
+    for old, new in (("T:Beam68/", QA_ROOT + "/Session/"),
+                     ("ENVARC:", QA_ROOT + "/Saved/"),
                      ("ENV:", QA_ROOT + "/Environment/"),
                      ("LOCALE:", QA_ROOT + "/Locale/"),
                      ("SYS:", QA_ROOT + "/System/")):
@@ -99,14 +100,15 @@ def build(destination, cc):
     (destination / "ReadMe.txt").write_text("""Beam68 Installer QA 0.2
 
 Double-click Beam68 Installer QA. Choose Install / update, then a user level.
-Novice installs automatically. Average and Expert expose the normal choices;
+Novice installs automatically. Intermediate and Expert expose the normal choices;
 QA destination selection is fixed inside RAM:Beam68InstallerQA for every level.
 
 Choose Check to inspect the installed copy. Choose Install / update again to
 check that settings, aliases, snippets, themes and an extra plugin survive.
-Choose Uninstall to test removal. Novice removes the test programs automatically
-and keeps saved settings; Average and Expert retain the manual choices.
-Choose Check afterward to verify program removal. The QA menu's Report button
+Choose Uninstall to test removal. Every level asks whether to keep or remove settings; choose Remove to test
+temporary configuration cleanup as well.
+The checker seeds temporary settings before update and uninstall, then checks
+preservation or removal as appropriate. Choose Check afterward to verify program removal. The QA menu's Report button
 shows the latest results. The full log is RAM:Beam68InstallerQA/report.txt.
 
 All test installation files live inside RAM:Beam68InstallerQA. The real SYS:

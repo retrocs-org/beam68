@@ -100,3 +100,8 @@ those fields in sync with manifests and the installer.
 The overview includes four grouped plugin feature summaries and fourteen
 collapsible FAQ answers. Keep examples and dependencies consistent with the
 corresponding plugin manifests and documentation.
+
+Application and SDK downloads display GitHub’s per-asset download counts when
+available, refreshed with the existing ten-minute release cache. These counts
+cover GitHub asset downloads only, not Aminet, GitLab or unique users. Unknown
+counts are omitted; a reported zero is displayed.

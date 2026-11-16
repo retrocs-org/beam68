@@ -66,3 +66,31 @@ Preferences About / running launcher version — 14 November 2026
 - Full make host-test PASS (one expected Python skip). Catalog generation and
   validation PASS for English, German and Swedish About strings.
 - About requester visual layout on all target displays remains unchecked.
+
+Release-readiness polish — 16 November 2026
+
+Portable request-confirmation regressions PASS, including address/undefined-
+behaviour instrumentation. Wikipedia search/summary and Music Library search
+skip the extra SYSTEM guard; Music Library PLAY and unknown SYSTEM requests
+retain confirmation. SYSTEM preview restrictions remain in force.
+
+Installer QA generation/isolation checks PASS and the native QA runner builds
+with warnings treated as errors. All 18 bundled registrations/default states
+are checked. Temporary QA session files are seeded to test update preservation
+and Remove-settings cleanup, with paths confined to the QA RAM tree.
+
+Final-build interactive install/update/remove/reinstall and 640-pixel Preferences
+visual review have not yet been completed: the desktop window was inaccessible
+when automation attempted to connect. Prepared tools are available in Builds.
+Compilation, host regressions and old captures are not a substitute for these
+interactive outcomes. The existing session was not restarted or reconfigured.
+
+Amiga Workbench supported test mode — 16 November 2026
+
+Beam68ReleaseQA PASS on disposable Workbench 3.2.1 / 68060.
+Native assertions passed for disk-full writes, commit rename rollback, truncated
+presets, settings save/reload/removal, allocation retry, cache backup promotion
+and recovery, bounded request admission and preview delay parsing.
+The launcher produced a passing JUnit report and native assertion log.
+Live network checks deferred at the user’s request because of the current LAN.
+Saved Workbench data and bridge configuration were not changed.

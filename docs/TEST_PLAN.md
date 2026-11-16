@@ -6,6 +6,11 @@ See BUILD_STATUS.md for completed checks and outstanding coverage.
 
 ## Current 0.2 regression checks
 
+Wikipedia searches/summaries and Music Library searches should run on explicit
+Enter without another SYSTEM guard. Music Library PLAY and other SYSTEM plugins
+still require confirmation. The isolated installer runner must preserve its
+seeded temporary settings on update and remove them with Remove settings.
+
 - Novice uninstall with Remove settings, then Novice install: only Calculator,
   Clock, Memory, File Finder, System Commands, and Assigns and Volumes are ON.
   Repeat with an existing temporary Use configuration and its backup.
