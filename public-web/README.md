@@ -86,14 +86,17 @@ no effect on HTTP requests. Website updates do not replace published packages.
 
 ## Design and content
 
-The site uses a neutral charcoal-and-white palette, a compact shared header,
-short overview copy, plain plugin rows and responsive application screenshots.
-The stylesheet is rebuilt from scratch without the earlier decorative layouts. It has no third-party
-fonts or scripts. Main navigation has no external GitHub link. Release downloads
+The site uses a midnight-navy background, bright blue actions and modern
+sans-serif typography. A compact horizontal navigation replaces the earlier
+sidebar. The overview has a centred introduction, a real application showcase,
+a three-step workflow and a toolkit list. The gallery uses image-and-caption
+rows; downloads use distinct application and SDK panels. Developer and source
+pages use a dedicated documentation layout. There are no external fonts or
+scripts. Main navigation has no external GitHub link. Release downloads
 remain separate from build instructions and SDK documentation. The plugin list shows only names and short descriptions. Independent versions,
 examples and default activation states remain in its internal metadata; keep
 those fields in sync with manifests and the installer.
 
-The overview includes six practical plugin feature summaries and fourteen
+The overview includes four grouped plugin feature summaries and fourteen
 collapsible FAQ answers. Keep examples and dependencies consistent with the
 corresponding plugin manifests and documentation.

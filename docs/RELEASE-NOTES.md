@@ -63,7 +63,7 @@ Beam68 uses the MIT licence. See LICENSE in the archive for the full text.
 #### Enhancements
 
 - Renamed Applications to Application shortcuts, added an explanation, and updated translations and help.
-- Refreshed the PHP website with a simple neutral charcoal-and-white layout, shorter pages, clearer downloads, current defaults and documentation. Simplified the marketplace plugin list to names and descriptions. Added practical plugin feature summaries and an expanded FAQ; removed older-version and About screenshots. Added fresh Wikipedia search and summary, File Finder, Date Utilities, Calculator and Memory captures with feature-based captions instead of version labels.
+- Refreshed the PHP website with a complete modern midnight-blue redesign with horizontal navigation, centred app showcase, new overview structure, image-led gallery, download panels and documentation layouts, shorter pages, clearer downloads, current defaults and documentation. Simplified the marketplace plugin list to names and descriptions. Added practical plugin feature summaries and an expanded FAQ; removed older-version and About screenshots. Added fresh Wikipedia search and summary, File Finder, Date Utilities, Calculator and Memory captures with feature-based captions instead of version labels.
 
 - Fresh installations enable six essential local tools; network and optional plugins start disabled. Existing saved choices are preserved during updates.
 

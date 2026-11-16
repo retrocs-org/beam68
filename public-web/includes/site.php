@@ -44,7 +44,7 @@ function page_start(string $title, string $description, string $page): void {
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="<?= escape($description) ?>">
-<meta name="theme-color" content="#121416">
+<meta name="theme-color" content="#080f1f">
 <meta property="og:type" content="website">
 <meta property="og:title" content="<?= escape($title) ?>">
 <meta property="og:description" content="<?= escape($description) ?>">
@@ -54,18 +54,20 @@ function page_start(string $title, string $description, string $page): void {
 <link rel="stylesheet" href="site.css">
 </head><body id="top">
 <a class="skip-link" href="#main">Skip to content</a>
-<header class="site-header wrap">
-<a class="brand" href="index.php" aria-label="Beam68 home">Beam68</a>
+<header class="site-header">
+<a class="brand" href="index.php" aria-label="Beam68 home">beam<span>68</span><span class="brand-symbol" aria-hidden="true">↗</span></a>
+
 <nav aria-label="Main navigation">
 <a href="index.php"<?= $page === 'home' ? ' aria-current="page"' : '' ?>>Overview</a>
 <a href="screenshots.php"<?= $page === 'screenshots' ? ' aria-current="page"' : '' ?>>Screenshots</a>
 <a href="get.php"<?= $page === 'download' ? ' aria-current="page"' : '' ?>>Get Beam68</a>
 <a href="developers.php"<?= $page === 'developers' ? ' aria-current="page"' : '' ?>>Developers</a>
 <a href="source.php"<?= $page === 'source' ? ' aria-current="page"' : '' ?>>Source</a>
-<a href="marketplace.php"<?= $page === 'marketplace' ? ' aria-current="page"' : '' ?>>Marketplace</a>
+<a href="marketplace.php"<?= $page === 'marketplace' ? ' aria-current="page"' : '' ?>>Plugins &amp; themes</a>
 </nav>
+
 </header>
-<main id="main">
+<main id="main" class="site-main">
 <?php }
 function page_end(): void { ?>
 </main>

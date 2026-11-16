@@ -132,7 +132,7 @@ assert b'wiki:Amiga' in rendered['index.php'] and b'whd:enigma' in rendered['ind
 assert not any('about' in shot['file'] for shot in json.loads((WEB/'images/screenshots.json').read_text()))
 assert 'Search Wikipedia'.encode() in rendered['screenshots.php']
 assert 'Read article summaries'.encode() in rendered['screenshots.php']
-assert b'0.2' not in rendered['screenshots.php'].split(b'<main id="main">')[1].split(b'</main>')[0]
+assert b'0.2' not in rendered['screenshots.php'].split(b'<main id="main"')[1].split(b'</main>')[0]
 
 plugin_section=rendered['marketplace.php'].split(b'<section id="plugins"',1)[1].split(b'<section id="themes"',1)[0]
 assert b'Off by default' not in plugin_section and b'On by default' not in plugin_section
