@@ -41,6 +41,7 @@ Plugins/MusicLibrary/MusicLibrary
 Plugins/WHDLoad/WHDLoad
 Plugins/DOpus/DOpus
 Plugins/Wikipedia/Wikipedia
+Plugins/AmiHASS/AmiHASS
 Plugins/AminetBrowser/AminetBrowser
 "
 
@@ -86,6 +87,8 @@ Plugins/MusicLibrary/MusicLibrary.plugin
 Plugins/WHDLoad/WHDLoad.plugin
 Plugins/DOpus/DOpus.plugin
 Plugins/Wikipedia/Wikipedia.plugin
+Plugins/AmiHASS/AmiHASS.plugin
+Plugins/AmiHASS/LICENSE
 Plugins/MusicControls/MusicControls.cfg
 Plugins/AminetBrowser/AminetBrowser.plugin
 Plugins/AminetBrowser/AminetBrowser.cfg
@@ -124,7 +127,7 @@ for relative_path in $runtime_data; do
     chmod 644 "$application_dir/$relative_path"
 done
 
-echo "Beam68: staged AmigaOS 0.3 runtime package in:"
+echo "Beam68: staged AmigaOS 0.4 runtime package in:"
 echo "$application_dir"
 echo "With the amigaos-dev_020 profile, run Bin:Beam68/Beam68 or"
 echo "CD Bin:Beam68 and Execute scripts/Install-Beam68."

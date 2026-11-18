@@ -82,7 +82,7 @@ FEATURES
 
 - Find applications, files, drawers and WHDLoad games from the keyboard.
 - Use favorites, aliases, recent items and searchable command help.
-- Use 18 bundled plugins, including opt-in Aminet and Wikipedia searches.
+- Use 19 bundled plugins, including opt-in Aminet and Wikipedia searches.
 - Start with six local tools; network and optional plugins are off.
 - Adjust indexed drawers, shortcuts, fonts, colors and portable themes.
 

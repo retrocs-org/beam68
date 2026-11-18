@@ -1,5 +1,5 @@
 @database AminetBrowser.guide
-@node MAIN "Aminet Browser for Beam68 0.2"
+@node MAIN "Aminet Browser for Beam68"
 Aminet Browser is an independent Beam68 Protocol 1 plugin.
 It does not require AmiGet and contains no AmiGet source code.
 
@@ -25,6 +25,8 @@ Use your archive tool and follow the package's installer or instructions.
 If no handler exists, the archive stays in the download drawer.
 
 Preferences -> Plugins -> Aminet Browser -> Settings selects DOWNLOAD_DIR.
+The saved plugin settings are used first; ENV is a fallback when no saved
+settings exist.
 Default: RAM:Beam68Downloads (temporary until reboot). Use a disk drawer
 for permanent downloads. Keep enough room for the complete archive.
 
@@ -49,4 +51,13 @@ Aminet: https://aminet.net
 This plugin is not affiliated with or endorsed by the Aminet operators.
 Archive downloads require a declared size and must match it before commit.
 Installation preparation also checks the archive signature before opening it.
+
+After downloading, the completion requester offers Open drawer, View readme,
+and Install for supported archives. Install verifies the archive signature
+before opening the archive handler. View readme saves a companion readme
+without overwriting an existing file and opens MultiView.
+
+A failed transfer removes partial data and its staging drawer. Retry starts
+a new download only when you choose it. Closing the transfer cancels it and
+opens nothing. Existing archives and readmes are preserved.
 @endnode

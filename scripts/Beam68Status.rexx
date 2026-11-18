@@ -1,4 +1,4 @@
-/* Beam68 0.3 - launch diagnostics, optional ARexx integration. */
+/* Beam68 0.4 - launch diagnostics, optional ARexx integration. */
 OPTIONS RESULTS
 IF ~SHOW('P','BEAM68') THEN DO
   SAY 'The Beam68 ARexx port is not available.'

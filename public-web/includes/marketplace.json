@@ -1,6 +1,28 @@
 {
   "plugins": [
     {
+      "NAME": "AmiHASS",
+      "DESCRIPTION": "Search Home Assistant entities, read states and confirm supported actions through the AmiHASS service.",
+      "PREFIX": "HA:",
+      "TRIGGER": "[",
+      "EXAMPLE": "ha:kitchen",
+      "path": "Plugins/AmiHASS",
+      "introduced": "0.4",
+      "default_enabled": false,
+      "version": "0.1"
+    },
+    {
+      "NAME": "Aminet Browser",
+      "DESCRIPTION": "Browse Aminet packages, read readmes, download archives and open them with your archive handler.",
+      "PREFIX": "AMINET:",
+      "TRIGGER": "]",
+      "EXAMPLE": "aminet:search tracker",
+      "path": "Plugins/AminetBrowser",
+      "introduced": "0.2",
+      "default_enabled": false,
+      "version": "0.6"
+    },
+    {
       "NAME": "ARexx Runner",
       "DESCRIPTION": "Run your configured ARexx macros from the launcher.",
       "PREFIX": "REXX:",
@@ -10,17 +32,6 @@
       "introduced": "0.1",
       "default_enabled": false,
       "version": "0.1"
-    },
-    {
-      "NAME": "Aminet Browser",
-      "DESCRIPTION": "Search Aminet, read package information and readmes, and download archives.",
-      "PREFIX": "AMINET:",
-      "TRIGGER": "]",
-      "EXAMPLE": "aminet:search tracker",
-      "path": "Plugins/AminetBrowser",
-      "introduced": "0.2",
-      "default_enabled": false,
-      "version": "0.5"
     },
     {
       "NAME": "Assigns and Volumes",
@@ -57,7 +68,7 @@
     },
     {
       "NAME": "Clock",
-      "DESCRIPTION": "Check the local date and time.",
+      "DESCRIPTION": "Check the local time, with optional seconds.",
       "PREFIX": "",
       "TRIGGER": "@",
       "EXAMPLE": "@",
@@ -65,17 +76,6 @@
       "introduced": "0.1",
       "default_enabled": true,
       "version": "0.1"
-    },
-    {
-      "NAME": "DOpus",
-      "DESCRIPTION": "Open drawers and reveal files in Directory Opus.",
-      "PREFIX": "DOPUS:",
-      "TRIGGER": "}",
-      "EXAMPLE": "dopus:SYS:Prefs",
-      "path": "Plugins/DOpus",
-      "introduced": "0.2",
-      "default_enabled": false,
-      "version": "0.4"
     },
     {
       "NAME": "Date Utilities",
@@ -100,6 +100,17 @@
       "version": "0.1"
     },
     {
+      "NAME": "DOpus",
+      "DESCRIPTION": "Open drawers and reveal files in Directory Opus.",
+      "PREFIX": "DOPUS:",
+      "TRIGGER": "}",
+      "EXAMPLE": "dopus:SYS:Prefs",
+      "path": "Plugins/DOpus",
+      "introduced": "0.3",
+      "default_enabled": false,
+      "version": "0.6"
+    },
+    {
       "NAME": "File Finder",
       "DESCRIPTION": "Find files across your configured directories.",
       "PREFIX": "FIND:",
@@ -108,7 +119,7 @@
       "path": "Plugins/FileFinder",
       "introduced": "0.1",
       "default_enabled": true,
-      "version": "0.7"
+      "version": "0.9"
     },
     {
       "NAME": "Memory",
@@ -139,9 +150,9 @@
       "TRIGGER": ";",
       "EXAMPLE": "mod:enigma",
       "path": "Plugins/MusicLibrary",
-      "introduced": "0.2",
+      "introduced": "0.3",
       "default_enabled": false,
-      "version": "0.7"
+      "version": "0.9"
     },
     {
       "NAME": "System Commands",
@@ -172,9 +183,9 @@
       "TRIGGER": "{",
       "EXAMPLE": "whd:enigma",
       "path": "Plugins/WHDLoad",
-      "introduced": "0.2",
+      "introduced": "0.3",
       "default_enabled": false,
-      "version": "0.6"
+      "version": "0.8"
     },
     {
       "NAME": "Wikipedia",
@@ -183,9 +194,9 @@
       "TRIGGER": "\\",
       "EXAMPLE": "wiki:Amiga",
       "path": "Plugins/Wikipedia",
-      "introduced": "0.2",
+      "introduced": "0.3",
       "default_enabled": false,
-      "version": "0.2"
+      "version": "0.3"
     },
     {
       "NAME": "Workbench Windows",

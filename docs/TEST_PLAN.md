@@ -745,3 +745,75 @@ one dedicated RAM drawer, omits resident shutdown and does not start installed
 applications. It exercises installer file operations; use the production
 installer separately for application startup/shutdown and arbitrary destinations.
 `CHECK` runs the native file checker from Shell without opening the menu.
+
+## 0.4 regression checks
+
+- `Beam68Prefs LAYOUTQA`: read-only native 640x200 gadget bounds/overlap check.
+- `Beam68Prefs SETTINGSQA`: save/reload all declared bundled settings in a new
+  temporary drawer; verify unknown keys survive. Normal Preferences is unchanged.
+- `help`, `help:` and an enabled prefix such as `aminet:`: selectable examples,
+  with no request launched merely by displaying suggestions. Preserve `?` Memory,
+  `@` Clock and calculator trigger behavior.
+- Missing TCP/IP or Wikipedia downloader: actionable local error; optional
+  OpenURL/player requirements remain specific to the action that needs them.
+- Ctrl+F2 / `scan:cancel`: retain results, close directory frames, clear pending
+  scan work and do not persist incomplete results through game indexing.
+- Published 0.3 to 0.4 graphical update: preserve config, aliases, snippets, edited
+  themes, added plugins and autostart; verify actual running version and shutdown.
+
+## Plugin import review and settings defaults
+
+Build native `Beam68PluginImportQA` with scripts/build-native-qa.sh. Run it as
+a synchronous command through the native test launcher in a disposable guest.
+It uses a fresh T: tree and a test-only consent callback; production builds
+always use the native review requesters. It checks both cancellation stages,
+file review, initially disabled imports, duplicate-reference refusal, activation
+preservation and rejection of a manifest changed during consent.
+
+Host plugin-catalog tests validate canonical defaults and atomic rejection of
+invalid defaults. In the dialog, check Restore defaults followed by Cancel, then
+Restore defaults followed by Save for text, checkbox and choice settings.
+
+## AmiHASS integration
+
+Run `build/Beam68AmiHASSQA` for fake-service search, paging, read-only states,
+confirmation cancellation, state confirmation, unconfirmed actions, unsupported
+entities and missing-service handling. `build/Beam68AmiHASSTransportQA` exercises
+the real SDK transport with an isolated local fake service: envelopes, concurrent
+request rejection, malformed replies and abandoned late-response ownership.
+Neither test contacts Home Assistant or controls real devices. For a live setup,
+enable AmiHASS, search an entity, cancel an action, then explicitly confirm an
+action on a suitable test device and inspect its reported state.
+
+## Search, history, favorites and download completion
+
+Host tests cover path selection after reordering/compaction, plugin row identity
+with changing state labels, query-command safety, separate history files,
+legacy history filtering, favorite-query pooling/cache round trips, and removing
+an indexed query while preserving pending scan entries. Native syntax uses the
+68000 target with warnings treated as errors.
+
+`Beam68AminetCompletionQA` uses fixture transfers and simulated requester choices
+in a disposable Workbench guest. It exercises interrupted transfer retry, archive
+commit, all completion choices, companion readme fetch, cancellation cleanup and
+cancelled initial consent; it never downloads or executes external code.
+
+`Beam68AmiHASSLiveQA <explicit-light-entity> off` is opt-in and requires an
+operator-authorized light that is initially off and a configured running service.
+It checks live connection, discovery and states, briefly turns the light on,
+then restores and verifies off even when an intermediate check fails. Never run
+it automatically against an arbitrary entity. Credentials remain in the private
+AmiHASS configuration; do not retain guest profiles or credential copies in
+published test artifacts.
+
+Run `Beam68PolishQA` directly with Amiga Workbench's isolated --test workflow.
+It waits synchronously for QueryState, AminetCompletion, AmiHASS behavior and
+transport QA programs and writes AutoRun:polish-proof.txt plus individual logs.
+A shell Execute handoff by itself is not proof that its children completed.
+
+The opt-in live test is also a direct executable. Its private Builds mount must
+contain AmiHASS.cfg, AmiHASSService and curl. It copies these into the disposable
+guest and starts that service; run it only in an isolated test guest, never in a
+saved desktop. Retain redacted proof logs, then remove the disposable profile
+and private credential copies. Use a current service with valid all-area
+catalogue templates; old malformed templates fail discovery with HTTP 400.

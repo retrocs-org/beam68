@@ -20,6 +20,9 @@ int beam_plugin_install_candidate(const char *path);
 /* Returns 1 on success (msg says what happened), 0 on failure or cancel. */
 int beam_plugin_install(struct Window *win, struct BeamConfig *c,
                         const char *source, char *msg, unsigned int cap);
+/* Review a bare manifest reference before registering it, without copying. */
+int beam_plugin_review_reference(struct Window *win,const struct BeamConfig *c,
+    const char *path,char *msg,unsigned int cap);
 /* For a PROGDIR:Plugins/<Drawer>/<file> spec, the absolute package drawer.
  * Returns 0 for plugins that are not installed packages. */
 int beam_plugin_package_dir(const struct BeamConfig *c, const char *spec,

@@ -18,6 +18,8 @@
 #define BEAM_SCOPE_WEB 13      /* browser bookmarks */
 #define BEAM_SCOPE_SNIPPET 14  /* text snippets */
 #define BEAM_SCOPE_PREFS 15    /* preference programs (SYS:Prefs) */
+#define BEAM_SCOPE_HEALTH 17
+#define BEAM_SCOPE_SCAN_FAILURES 18
 #define BEAM_SCOPE_STATS 16    /* most-launched items (live list) */
 
 /* Returns a BEAM_SCOPE_* value and points text at the part after the prefix.

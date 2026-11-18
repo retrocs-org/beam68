@@ -169,6 +169,7 @@ static int cache_load_into(const struct BeamConfig *c,struct BeamIndex *x,const 
             ((kind==BEAM_ITEM_VOLUME)!=(root==BEAM_ROOT_NONE)) ||
             !unescape_path(path_text,item_path,sizeof(item_path)) ||
             strchr(item_path,'"') || strchr(item_path,'*')) goto out;
+        if (kind==BEAM_ITEM_QUERY && (strncmp(item_path,"QUERY:",6) || !item_title[0])) goto out;
         if (kind==BEAM_ITEM_SNIPPET && !item_title[0]) goto out;
         index=beam_index_add(x,item_path,kind,(int)root,&created);
         if (index<0 || !created) {
@@ -286,6 +287,7 @@ int beam_cache_save(const struct BeamConfig *c,const struct BeamIndex *x,
             it->kind==BEAM_ITEM_ASSIGN ||
             !it->path || !it->path[0] ||
             strchr(it->path,'"') || strchr(it->path,'*')) { ok=0; break; }
+        if(it->kind==BEAM_ITEM_QUERY && (strncmp(it->path,"QUERY:",6) || !it->title || !it->title[0])){ok=0;break;}
         escape_path(it->path,escaped);
         sprintf(line,"%d\t%u\t%s",(int)it->kind,(unsigned int)it->root,escaped);
         if (it->title) {

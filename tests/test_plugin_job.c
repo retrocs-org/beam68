@@ -109,12 +109,19 @@ static void test_request_diagnostics(void)
 
 int main(void)
 {
+    assert(beam_job_row_same(2,"ha:entity light.a","Light: off",2,"ha:entity light.a","Light: on"));
+    assert(!beam_job_row_same(2,"ha:entity light.a","Light",2,"ha:entity light.b","Light"));
+    assert(!beam_job_row_same(2,"a","Row",1,"a","Row"));
+    assert(beam_job_row_same(0,"","Same",0,"","Same"));
+    assert(!beam_job_row_same(0,"","Old",0,"","New"));
+
     struct BeamPluginJob job={0,0,0};
     char hex[BEAM_PLUGIN_MAX_INPUT*2+2],out[BEAM_PLUGIN_MAX_RESULT+1],decoded[BEAM_PLUGIN_MAX_INPUT+1];
     char oversized[BEAM_PLUGIN_MAX_INPUT+2];
     int error,i;
     assert(!beam_plugin_needs_confirmation("org.beam68.wikipedia","Amiga",1));
     assert(!beam_plugin_needs_confirmation("org.beam68.wikipedia","article en 1980",1));
+    assert(!beam_plugin_needs_confirmation("org.beam68.amihass","kitchen",1));
     assert(!beam_plugin_needs_confirmation("org.beam68.musiclibrary","enigma",1));
     assert(!beam_plugin_needs_confirmation("org.beam68.musiclibrary","playful",1));
     assert(!beam_plugin_needs_confirmation("org.beam68.musiclibrary","p",1));

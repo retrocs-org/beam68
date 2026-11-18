@@ -1,6 +1,6 @@
-# Beam68 0.3
+# Beam68 0.4
 
-This source tree is being prepared for Beam68 0.3. Published downloads are available on the website.
+This source tree contains Beam68 0.4. The website identifies the latest published download.
 
 A keyboard-driven application launcher for classic AmigaOS, with a resident
 Commodities hotkey and a separate native Preferences application.
@@ -20,8 +20,8 @@ Commodities hotkey and a separate native Preferences application.
   refresh the index after filesystem changes.
 - Launch Workbench tools, projects and WHDLoad games; cycle result actions to
   open a drawer, supply arguments, show information or copy a path.
-- Use 18 bundled plugins for calculations, files, clipboard, dates, memory,
-  system tools, ARexx macros, music, WHDLoad, DOpus, Aminet and Wikipedia.
+- Use 19 bundled plugins for calculations, files, clipboard, dates, memory,
+  system tools, ARexx macros, music, WHDLoad, DOpus, Aminet, Wikipedia and AmiHASS.
 - Choose fonts, spacing, compact layouts and themes, with independently editable, restorable
   five-color palettes and four portable theme files.
 - Configure applications, indexing, favorites, plugins and appearance in
@@ -95,7 +95,7 @@ commands, plugin examples, aliases and shortcuts.
 | F1 / Help | Browse commands and help |
 | F2 / F3 / Shift+F3 | Reindex / reload settings / reload plugins |
 | F5 / F6 | Open Preferences / pin or unpin a favorite |
-| F7 / Shift+F7 | Browse query history |
+| F7 / Shift+F7 | Recall older/newer queries for the current plugin, or application history |
 | Esc | Cancel a plugin wait or close the launcher |
 
 Temporary **Use** settings are read first from `T:Beam68/Beam68.cfg`.
@@ -124,7 +124,8 @@ See [Preferences](docs/PREFERENCES.md) for configuration and defaults.
 
 Wikipedia searches and article summaries run on explicit Enter without an extra
 SYSTEM confirmation. Music Library searches behave the same way; playing a
-selected module still requires confirmation. Other SYSTEM plugins retain their
+selected module still requires confirmation. AmiHASS reads states without an extra
+prompt and confirms device actions in its own requester. Other SYSTEM plugins retain their
 confirmation flow. These rules describe trusted bundled integrations, not a
 security boundary for native plugins.
 
@@ -132,7 +133,7 @@ security boundary for native plugins.
 
 Bundled plugins: Calculator, Clock, Memory, File Finder, System Commands,
 Assigns and Volumes, Task Manager, Clipboard Tools, Date Utilities, Workbench
-Windows, Developer Tools, ARexx Runner, Music Controls, Music Library, Aminet Browser, WHDLoad, DOpus and Wikipedia.
+Windows, Developer Tools, ARexx Runner, Music Controls, Music Library, Aminet Browser, WHDLoad, DOpus, Wikipedia and AmiHASS.
 
 All bundled native plugins use **Protocol 1**, with up to eight selectable
 text, path or query results delivered in one message. ARexx scripts use the
@@ -176,3 +177,49 @@ Fresh installs enable Calculator, Clock, Memory, File Finder, System Commands
 and Assigns and Volumes. Network and optional plugins start disabled. Saved
 plugin choices are preserved on update. Enable Wikipedia for `wiki:Amiga`;
 its Settings select language, HTTPS-capable curl and OpenURL executables.
+
+In the 0.4 source tree, type `help` to discover enabled plugins, or enter a
+plugin prefix such as `aminet:` to select an example before running it. Use F1
+for full command help. `scan:status` reports indexing progress; `scan:cancel`
+or Ctrl+F2 cancels indexing while retaining existing results. F2 or `scan:start`
+starts another scan. Indexing Preferences separates directories from scan options.
+
+Plugin Import reviews identity, version, access and package contents before
+copying. New imports start disabled; updates preserve activation choices.
+Plugin settings offer Restore defaults, with changes applied only by Save.
+
+Use `health:` to inspect plugin outcomes and error/timeout counts. Enter prepares
+a retry for an enabled plugin and clears quarantine; review and press Enter again
+to execute. Disabled plugins remain disabled. `scan:failures` lists up to 16
+failed locations from this session; Enter retries the associated configured root
+while retaining existing results. Failure locations are session history.
+
+AmiHASS integration (disabled by default) searches Home Assistant entities with
+`ha:kitchen`, reads states and confirms basic device actions. Install, configure
+and start AmiHASS first; connection settings and credentials stay in AmiHASS.
+See [plugin instructions](Plugins/AmiHASS/README.md).
+
+### Saved plugin searches
+
+F7 and Shift+F7 recall read-only searches for the current bundled plugin,
+separately from application history. Each plugin keeps up to 12 entries under
+`ENVARC:Beam68/PluginQueries/<plugin-id>.txt`. Typing previews are not recorded.
+Device actions, downloads, music playback and ARexx macro execution are excluded.
+History recall only fills the query field; press Enter to run it.
+
+Press F6 on a read-only plugin query or a selectable search/entity row to pin it.
+Saved queries appear alongside application favorites and in `fav:` groups.
+Selecting one, including through a favorite shortcut, opens Beam68 and fills
+its query field. It never executes automatically. Enable the plugin before use.
+Actions and unknown third-party commands cannot be pinned as query shortcuts.
+
+Plugin requests display Searching/Working, a distinct no-match response, or an
+error with a selectable Retry for supported read-only commands. Result selection
+stays on the same item when indexing or plugin responses reorder the list.
+
+Aminet download completion offers Open drawer, View readme and Install for
+supported archives. Install opens your archive handler after checking the file
+signature; follow the package's own instructions. View readme saves a companion
+readme without overwriting an existing one, then opens MultiView. Failed
+transfers remove partial data and offer an explicit restart; cancellation closes
+the transfer without opening anything. Files already present are preserved.

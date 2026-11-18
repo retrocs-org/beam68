@@ -1,8 +1,8 @@
 #ifndef BEAM68_H
 #define BEAM68_H
 /* Release version, compared against a plugin manifest's MIN_BEAM68. */
-#define BEAM68_VERSION "0.3"
-#define BEAM68_VERSION_DATE "16.11.2026"
+#define BEAM68_VERSION "0.4"
+#define BEAM68_VERSION_DATE "17.11.2026"
 #define BEAM_MAX_DIRS 16
 #define BEAM_MAX_PLUGINS 32
 #define BEAM_MAX_ITEMS_LIMIT 2048
@@ -39,7 +39,8 @@
 #define BEAM_ITEM_MODULE 9   /* music module (played via MODULE_COMMAND) */
 #define BEAM_ITEM_BOOKMARK 10 /* browser bookmark: path is the URL */
 #define BEAM_ITEM_SNIPPET 11 /* text snippet: path SNIPPET:<name>, title=text */
-#define BEAM_ITEM_KIND_MAX 11
+#define BEAM_ITEM_QUERY 12 /* saved read-only plugin query; Enter loads text only */
+#define BEAM_ITEM_KIND_MAX 12
 
 #define BEAM_COMPACT_AUTO 0
 #define BEAM_COMPACT_ALWAYS 1

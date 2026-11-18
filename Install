@@ -1,4 +1,4 @@
-; $VER: Install-Beam68 0.3 (16.11.2026)
+; $VER: Install-Beam68 0.4 (17.11.2026)
 ;
 ; Beam68 GUI installer for the AmigaOS "Installer" utility (Installer 42.x
 ; ships with AmigaOS 3.1+; Installer 43.3 for older systems is on Aminet).
@@ -11,12 +11,12 @@
 ; scripted installs.
 
 (set @app-name "Beam68")
-(set #version "0.3")
+(set #version "0.4")
 (set #default-parent "SYS:Utilities")
 (set #default-dest "SYS:Utilities/Beam68")
 (set #startup "SYS:WBStartup/Beam68Start")
-(set #plugin-count 18)
-(set #plugin-mask 262143)
+(set #plugin-count 19)
+(set #plugin-mask 524287)
 (set #default-enabled-mask 63)
 (set #pluginlines "")
 (set #ctl (expandpath "Beam68Ctl"))
@@ -188,7 +188,7 @@
     (select #i "Calc" "Clock" "Memory" "FileFinder" "SystemCommands"
                "DosTools" "TaskManager" "ClipboardTools" "DateUtilities"
                "WindowSwitcher" "DeveloperTools" "ARexxRunner"
-               "MusicControls" "AminetBrowser" "MusicLibrary" "WHDLoad" "DOpus" "Wikipedia"))
+               "MusicControls" "AminetBrowser" "MusicLibrary" "WHDLoad" "DOpus" "Wikipedia" "AmiHASS"))
 )
 
 ; Ask a running launcher to quit and wait until it has gone: QUITWAIT
@@ -410,6 +410,12 @@
         (if (= (exists (cat "Plugins/" #plugin "/" #plugin ".guide") (noreq)) 1)
           (
             (set #src (cat "Plugins/" #plugin "/" #plugin ".guide")) (P_COPY)
+          )
+        )
+        ; Preserve third-party notices supplied by plugin packages.
+        (if (= (exists (cat "Plugins/" #plugin "/LICENSE") (noreq)) 1)
+          (
+            (set #src (cat "Plugins/" #plugin "/LICENSE")) (P_COPY)
           )
         )
         ; Default settings only when the user has none yet.

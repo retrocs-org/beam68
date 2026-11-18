@@ -172,7 +172,7 @@ static int run(int argc,char **argv)
     if(!*query)return beam_plugin_text(argc,argv,"Use wiki:Amiga, select a result, then Enter again for its summary.");
     if(!beam_wiki_search_url(language,query,url,sizeof(url)))return beam_plugin_error(argc,argv,"Wikipedia search is too long or invalid.");
     if(!fetch(serial))return beam_plugin_error(argc,argv,error);
-    if(!results.count)return beam_plugin_error(argc,argv,"No matching Wikipedia articles found.");
+    if(!results.count)return beam_plugin_text(argc,argv,"No matching Wikipedia articles found. Try another search.");
     beam68_rows_begin();
     for(i=0;i<results.count;i++) {
         sprintf(command,"wiki:article %s %lu",language,results.pages[i].id);

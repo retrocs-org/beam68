@@ -1,11 +1,11 @@
 @database Beam68.guide
-@$VER: Beam68.guide 0.3 (16.11.2026)
+@$VER: Beam68.guide 0.4 (17.11.2026)
 @author "Beam68 contributors"
 @(c) "MIT License"
 @wordwrap
-@node MAIN "Beam68 0.3 - Manual"
+@node MAIN "Beam68 0.4 - Manual"
 
-                    @{b}Beam68 0.3@{ub}
+                    @{b}Beam68 0.4@{ub}
      A keyboard application launcher for AmigaOS 3.x
 
   @{" Introduction       " link INTRO}  What Beam68 does
@@ -23,6 +23,7 @@
   @{" More sources       " link SOURCES}  Modules, bookmarks, snippets
 
   @{" Plugins            " link PLUGINS}  Calculator, clock and more
+  @{" Plugin queries     " link PLUGINQUERIES}  History, favorites and downloads
   @{" Plugin packages    " link PACKAGES}  Installing third-party plugins
   @{" Preferences        " link PREFS}  Beam68Prefs, page by page
   @{" Configuration file " link CONFIG}  Every Beam68.cfg setting
@@ -319,8 +320,13 @@ You can also search with whd:<name>. INDEX_GAMES retains generic game indexing.
 @{b}Plugins@{ub}
 
 Fresh installations enable six essential local tools. Network and optional
-plugins, including music, WHDLoad, DOpus and Wikipedia, start disabled.
+plugins, including music, WHDLoad, DOpus, Wikipedia and AmiHASS, start disabled.
 Saved choices are retained on updates. Enable each plugin you want to use.
+
+
+AmiHASS: enable this optional plugin, then use ha:kitchen to find entities
+or ha:status for connection status. Select an entity for states and confirmed
+actions. Install, configure and start AmiHASS first; it owns the credentials.
 
 Wikipedia: wiki:Amiga searches; select an article and press Enter again for
 its native summary window. Settings select the language, HTTPS-capable curl
@@ -696,3 +702,20 @@ WHDLoad is by Bert Jahn.
 ; Plugin UI: the selected row remains highlighted. Priority up/down changes
 ; matching order. Details shows the complete document without Next buttons;
 ; small screens can scroll. Typing preview controls automatic typing results.
+
+@node PLUGINQUERIES "Plugin history, favorites and downloads"
+
+PLUGIN SEARCH HISTORY AND FAVORITES
+F7 / Shift+F7 recall older/newer read-only queries for the current plugin.
+Application history is separate. Each plugin keeps 12 entries under
+ENVARC:Beam68/PluginQueries/. Preview typing and action commands are not saved.
+F6 pins a read-only plugin query or entity row as a favorite. Opening the
+favorite fills the query field; press Enter to search. It never runs an action
+automatically. Enable the plugin before using its saved queries.
+
+AMINET DOWNLOAD COMPLETION
+After downloading, choose Open drawer, View readme or Install. Install opens
+an archive handler after checking the archive signature; follow the package's
+own instructions. View readme uses MultiView. Interrupted transfers remove
+partial data and offer Retry; cancellation opens nothing. Existing files stay.
+@endnode

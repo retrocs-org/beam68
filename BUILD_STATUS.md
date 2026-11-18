@@ -1,9 +1,21 @@
 # Beam68 validation status
 
-## Current version: 0.3
+## Current version: 0.4
 
-Updated 16 November 2026. The application version is 0.3; this release has not been published. Plugins have
-independent versions; the current inventory contains 18 bundled plugins.
+Updated 18 November 2026. The application version is 0.4; release preparation and the final installer lifecycle checks passed.
+The 0.3 validation results below are historical. On 18 November, native 0.4
+640x200 gadget geometry and all seven declared plugin-settings transactions
+passed. A SHA-256-verified published 0.3 package was installed and upgraded to
+0.4; native assertions confirmed user files, an edited theme, an additional
+plugin and autostart preservation. See docs/NATIVE_TEST_RESULTS.txt for scope. Plugins have
+independent versions; the current inventory contains 19 bundled plugins.
+
+The final 0.4 installer passed Novice fresh install, resident update, uninstall
+keeping settings, reinstall, uninstall removing settings and fresh reinstall in
+a disposable Workbench 3.2.1 / 68060 guest. Final defaults contained 19 plugins,
+exactly six essentials enabled, network plugins disabled and Ctrl+Alt+Space.
+The resident reported 0.4 and shut down cleanly. These results do not extend
+the physical-machine or minimum-memory validation scope.
 
 ## Automated release checks
 
@@ -32,10 +44,18 @@ No automatic GitHub Actions or GitLab CI configuration is included.
   window and launcher handoff were also observed during development.
 - Disposable Workbench 3.2.1 / 68060 recovery tests passed on 16 November: disk-full
   writes, failed renames, truncated presets, settings reload/removal, allocation
-  recovery, interrupted cache saves and request admission. Live network checks
-  were deferred because the current LAN connection is unavailable.
+  recovery, interrupted cache saves and request admission. Those earlier network
+  checks were deferred; later live AmiHASS checks are described below.
 - Portable regressions cover bounded requests, stale replies, timeouts, low-memory
   recovery, interrupted cache-save recovery and confirmed Use/Save reloads.
+
+On 18 November, direct native programs verified stable result identities,
+separate plugin query histories, safe query favorites and cache compaction,
+Aminet completion/retry/cancellation fixtures, and AmiHASS behavior and transport
+recovery. Direct live AmiHASS checks passed authenticated connection, discovery,
+authorized light control and confirmed restoration using the corrected service.
+Fixture tests simulate external viewer/installer launches; they do not certify
+all third-party archive handlers. See docs/NATIVE_TEST_RESULTS.txt for details.
 
 ## Installer checks and limits
 
@@ -45,7 +65,7 @@ start disabled. Updates preserve explicit settings. Removing settings clears
 T:Beam68 configuration and its backup, preventing an old session override.
 
 The isolated Installer QA package redirects saved, live and temporary settings
-into its own RAM tree. It checks all 18 registrations and all default activation
+into its own RAM tree. It checks the bundled registrations and all default activation
 states. Its file-operation tests deliberately do not certify real launcher
 startup/shutdown. The real 0.3 graphical installer was exercised through Amiga Workbench's
 supported disposable test mode on Workbench 3.2.1 / 68060 on 16 November.

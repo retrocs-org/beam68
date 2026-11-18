@@ -42,6 +42,8 @@ int beam_job_accept_reply(const struct BeamPluginJob *job,unsigned long expected
 /* Validate a protocol-1 row without reading past either fixed buffer. */
 int beam_job_validate_row(unsigned int kind,const char *text,unsigned int text_cap,
                           const char *value,unsigned int value_cap);
+int beam_job_row_same(int kind_a,const char *value_a,const char *text_a,
+                      int kind_b,const char *value_b,const char *text_b);
 void beam_job_end(struct BeamPluginJob *job);
 /* 1 when expired; zero while running. */
 int beam_job_tick(struct BeamPluginJob *job);

@@ -94,11 +94,30 @@ static void test_low_memory_and_reconcile(void)
     beam_index_free(&x);
 }
 
+static void test_saved_query_title(void)
+{
+    struct BeamIndex x;int i;char name[120];
+    assert(beam_index_init(&x,64));
+    assert(beam_index_add(&x,"QUERY:ha:entity sensor.kitchen",BEAM_ITEM_QUERY,BEAM_ROOT_SOURCES,NULL)==0);
+    assert(beam_index_set_title(&x,0,"ha:entity sensor.kitchen"));
+    for(i=0;i<50;++i){sprintf(name,"SYS:Long drawer name/Folder%03d/Some application",i);assert(beam_index_add(&x,name,BEAM_ITEM_FILE,0,NULL)>=0);}
+    assert(x.items[0].name==x.items[0].title&&!strcmp(x.items[0].name,"ha:entity sensor.kitchen"));
+    beam_index_mark_stale(&x,1UL,0);assert(beam_index_sweep(&x)==50);
+    assert(x.items[0].kind==BEAM_ITEM_QUERY&&x.items[0].name==x.items[0].title);
+    {int tracked[2]={0,-1};
+     assert(beam_index_add(&x,"SYS:Pending scan",BEAM_ITEM_FILE,0,NULL)==1);
+     x.items[1].flags|=BEAM_ITEM_FLAG_STALE;tracked[1]=1;
+     assert(beam_index_remove(&x,"QUERY:ha:entity sensor.kitchen",tracked,2)==1);
+     assert(x.count==1&&tracked[0]==-1&&tracked[1]==0&&(x.items[0].flags&BEAM_ITEM_FLAG_STALE));
+    }
+    beam_index_free(&x);
+}
 int main(void)
 {
     struct BeamIndex x;
     int created,i;
     char path[64];
+    test_saved_query_title();
     test_pool_growth();
     test_low_memory_and_reconcile();
     assert(beam_index_init(&x,64));

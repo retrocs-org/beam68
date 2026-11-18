@@ -1,5 +1,5 @@
 @database Beam68PluginSDK.guide
-@$VER: Beam68PluginSDK.guide 0.3 (16.11.2026)
+@$VER: Beam68PluginSDK.guide 0.4 (17.11.2026)
 @author "Beam68 contributors"
 @(c) "MIT License"
 @wordwrap
@@ -170,7 +170,7 @@ Declare what the plugin does; users see it before installing.
   SYSTEM      may reboot, signal tasks or change the system;
               Beam68 asks for a second Enter before each run
 
-Beam68 0.3 recognizes read-only requests from bundled Wikipedia and Music
+Beam68 0.4 recognizes read-only requests from bundled Wikipedia and Music
 Library plugins and skips their extra SYSTEM confirmation. Music playback
 and other SYSTEM plugins retain the guard. Requests remain manual; the
 Protocol 1 message format and third-party capability handling are unchanged.

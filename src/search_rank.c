@@ -1,5 +1,6 @@
 #include "search_rank.h"
 #include "matcher.h"
+#include "beam.h"
 
 const char *beam_search_builtin_alias(const char *name)
 {
@@ -147,4 +148,19 @@ unsigned long beam_query_marks(const char *query,const char *name)
         marks|=beam_match_marks(term,name);
     }
     return marks;
+}
+
+static int same_path(const char *a,const char *b)
+{
+    while(*a&&*b){unsigned char x=(unsigned char)*a++,y=(unsigned char)*b++;
+        if(x>='A'&&x<='Z')x+=32;
+        if(y>='A'&&y<='Z')y+=32;
+        if(x!=y)return 0;
+    }return !*a&&!*b;
+}
+int beam_search_selection(const struct BeamItem *items,int count,const int *results,int n,const char *path)
+{
+    int i;if(!items||!results||!path||!*path)return 0;
+    for(i=0;i<n;++i)if(results[i]>=0&&results[i]<count&&same_path(items[results[i]].path,path))return i;
+    return 0;
 }

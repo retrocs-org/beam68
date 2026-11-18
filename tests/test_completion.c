@@ -6,6 +6,12 @@
 int main(void)
 {
     struct BeamCompletions list;
+    assert(beam_completion_prefix_only("AMINET:","aminet:"));
+    assert(beam_completion_prefix_only("wiki: \t","WIKI:"));
+    assert(!beam_completion_prefix_only("wiki:Amiga","WIKI:"));
+    assert(!beam_completion_prefix_only("wik","WIKI:"));
+    assert(!beam_completion_prefix_only("?",""));
+    assert(!beam_completion_prefix_only(NULL,"WIKI:"));
     beam_completion_reset(&list);
     assert(beam_completion_add(&list,"sh","shell:dir "));
     assert(beam_completion_add(&list,"sh","shell:list "));

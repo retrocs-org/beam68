@@ -5,6 +5,12 @@
 int main(void)
 {
     const char *text;
+    assert(beam_search_scope_parse("health:clock",&text)==BEAM_SCOPE_HEALTH && !strcmp(text,"clock"));
+    assert(beam_search_scope_parse("scan:failures",&text)==BEAM_SCOPE_SCAN_FAILURES);
+    assert(beam_search_scope_parse("help",&text)==BEAM_SCOPE_PLUGIN && !*text);
+    assert(beam_search_scope_parse("help:wiki",&text)==BEAM_SCOPE_PLUGIN && !strcmp(text,"wiki"));
+    assert(beam_search_scope_parse("?",&text)==BEAM_SCOPE_ALL);
+    assert(beam_search_scope_parse("helpful",&text)==BEAM_SCOPE_ALL);
     static char excluded[BEAM_MAX_EXCLUDED_DIRS][BEAM_MAX_PATH];
     assert(beam_search_scope_parse("app: screen",&text)==BEAM_SCOPE_APP);
     assert(!strcmp(text,"screen"));

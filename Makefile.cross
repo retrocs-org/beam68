@@ -5,7 +5,7 @@ CFLAGS ?= -O2 -cpu=68000
 INC = -Iinclude -Isdk/include
 COMMON = src/config.c src/control.c
 PLUGIN_COMMON = src/protocol.c src/plugin_common.c src/plugin_locale.c src/beam68plugins_strings.c sdk/src/beam68plugin.c
-NEW_PLUGINS = Plugins/Wikipedia/Wikipedia Plugins/WHDLoad/WHDLoad Plugins/DOpus/DOpus Plugins/MusicLibrary/MusicLibrary Plugins/FileFinder/FileFinder Plugins/SystemCommands/SystemCommands Plugins/DosTools/DosTools Plugins/TaskManager/TaskManager Plugins/ClipboardTools/ClipboardTools Plugins/DateUtilities/DateUtilities Plugins/WindowSwitcher/WindowSwitcher Plugins/DeveloperTools/DeveloperTools Plugins/ARexxRunner/ARexxRunner Plugins/MusicControls/MusicControls Plugins/AminetBrowser/AminetBrowser
+NEW_PLUGINS = Plugins/AmiHASS/AmiHASS Plugins/Wikipedia/Wikipedia Plugins/WHDLoad/WHDLoad Plugins/DOpus/DOpus Plugins/MusicLibrary/MusicLibrary Plugins/FileFinder/FileFinder Plugins/SystemCommands/SystemCommands Plugins/DosTools/DosTools Plugins/TaskManager/TaskManager Plugins/ClipboardTools/ClipboardTools Plugins/DateUtilities/DateUtilities Plugins/WindowSwitcher/WindowSwitcher Plugins/DeveloperTools/DeveloperTools Plugins/ARexxRunner/ARexxRunner Plugins/MusicControls/MusicControls Plugins/AminetBrowser/AminetBrowser
 
 .PHONY: all clean
 
@@ -83,3 +83,6 @@ Plugins/DOpus/DOpus: Plugins/DOpus/DOpus.c src/config.c src/appearance.c src/rex
 
 Plugins/Wikipedia/Wikipedia: Plugins/Wikipedia/Wikipedia.c src/wikipedia.c src/launcher_ui.c src/control.c src/stack_guard.c $(PLUGIN_COMMON) Plugins/Wikipedia/version.c
 	$(VC) $(CFLAGS) $(INC) -o $@ Plugins/Wikipedia/Wikipedia.c src/wikipedia.c src/launcher_ui.c src/control.c src/stack_guard.c $(PLUGIN_COMMON) Plugins/Wikipedia/version.c
+
+Plugins/AmiHASS/AmiHASS: Plugins/AmiHASS/AmiHASS.c Plugins/AmiHASS/client.c $(PLUGIN_COMMON) Plugins/AmiHASS/version.c
+	$(VC) $(CFLAGS) $(INC) -o $@ Plugins/AmiHASS/AmiHASS.c Plugins/AmiHASS/client.c $(PLUGIN_COMMON) Plugins/AmiHASS/version.c

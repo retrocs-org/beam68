@@ -4,7 +4,7 @@ CFLAGS ?= -O2 -m68000 -mcrt=nix20 -Wno-pointer-sign -Wall -Wextra
 INC = -Iinclude -Isdk/include
 COMMON = src/config.c src/control.c
 PLUGIN_COMMON = src/protocol.c src/plugin_common.c src/plugin_locale.c src/beam68plugins_strings.c sdk/src/beam68plugin.c
-NEW_PLUGINS = Plugins/Wikipedia/Wikipedia Plugins/WHDLoad/WHDLoad Plugins/DOpus/DOpus Plugins/MusicLibrary/MusicLibrary Plugins/FileFinder/FileFinder Plugins/SystemCommands/SystemCommands Plugins/DosTools/DosTools Plugins/TaskManager/TaskManager Plugins/ClipboardTools/ClipboardTools Plugins/DateUtilities/DateUtilities Plugins/WindowSwitcher/WindowSwitcher Plugins/DeveloperTools/DeveloperTools Plugins/ARexxRunner/ARexxRunner Plugins/MusicControls/MusicControls Plugins/AminetBrowser/AminetBrowser
+NEW_PLUGINS = Plugins/AmiHASS/AmiHASS Plugins/Wikipedia/Wikipedia Plugins/WHDLoad/WHDLoad Plugins/DOpus/DOpus Plugins/MusicLibrary/MusicLibrary Plugins/FileFinder/FileFinder Plugins/SystemCommands/SystemCommands Plugins/DosTools/DosTools Plugins/TaskManager/TaskManager Plugins/ClipboardTools/ClipboardTools Plugins/DateUtilities/DateUtilities Plugins/WindowSwitcher/WindowSwitcher Plugins/DeveloperTools/DeveloperTools Plugins/ARexxRunner/ARexxRunner Plugins/MusicControls/MusicControls Plugins/AminetBrowser/AminetBrowser
 
 all: Beam68 Beam68Prefs Beam68Ctl CreateIcons Plugins/Calc/Calc Plugins/Clock/Clock Plugins/Memory/Memory $(NEW_PLUGINS)
 
@@ -217,3 +217,6 @@ Plugins/DOpus/DOpus: Plugins/DOpus/DOpus.c src/config.c src/appearance.c src/rex
 
 Plugins/Wikipedia/Wikipedia: Plugins/Wikipedia/Wikipedia.c src/wikipedia.c src/launcher_ui.c src/control.c src/stack_guard.c $(PLUGIN_COMMON) Plugins/Wikipedia/version.c
 	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/Wikipedia/Wikipedia.c src/wikipedia.c src/launcher_ui.c src/control.c src/stack_guard.c $(PLUGIN_COMMON) Plugins/Wikipedia/version.c
+
+Plugins/AmiHASS/AmiHASS: Plugins/AmiHASS/AmiHASS.c Plugins/AmiHASS/client.c $(PLUGIN_COMMON) Plugins/AmiHASS/version.c
+	$(CC) $(CFLAGS) $(INC) -o $@ Plugins/AmiHASS/AmiHASS.c Plugins/AmiHASS/client.c $(PLUGIN_COMMON) Plugins/AmiHASS/version.c

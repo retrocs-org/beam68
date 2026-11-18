@@ -208,7 +208,7 @@ static int replace_title(struct BeamIndex *x,int index,const char *title)
             n=(unsigned long)strlen(text)+1UL;
             memcpy(pool+used,text,(size_t)n);
             it->title=pool+used;used+=n;
-            if (it->kind==BEAM_ITEM_BOOKMARK) it->name=it->title;
+            if ((it->kind==BEAM_ITEM_BOOKMARK || it->kind==BEAM_ITEM_QUERY)) it->name=it->title;
         } else it->title=NULL;
     }
     INDEX_FREE(x->pool);x->pool=pool;x->pool_size=size;x->pool_used=used;
@@ -236,7 +236,7 @@ int beam_index_set_title(struct BeamIndex *x,int index,const char *title)
     it->title=x->pool+x->pool_used;
     x->pool_used+=n;
     /* A bookmark is found and shown by its title, not its URL. */
-    if (it->kind==BEAM_ITEM_BOOKMARK) it->name=it->title;
+    if ((it->kind==BEAM_ITEM_BOOKMARK || it->kind==BEAM_ITEM_QUERY)) it->name=it->title;
     return 1;
 }
 
@@ -254,7 +254,7 @@ void beam_index_mark_stale(struct BeamIndex *x,unsigned long root_mask,
     }
 }
 
-int beam_index_reconcile(struct BeamIndex *x,int complete,int *tracked,unsigned int tracked_count)
+static int reconcile(struct BeamIndex *x,int complete,int *tracked,unsigned int tracked_count,int remove_index,int keep_stale)
 {
     int i,out=0,removed=0;
     unsigned int j;
@@ -265,8 +265,8 @@ int beam_index_reconcile(struct BeamIndex *x,int complete,int *tracked,unsigned 
     for (i=0;i<x->count;i++) {
         struct BeamItem it=x->items[i];
         unsigned long n,name_offset;
-        if (!complete) it.flags&=(unsigned char)~BEAM_ITEM_FLAG_STALE;
-        if (it.flags&BEAM_ITEM_FLAG_STALE) {
+        if (!complete && !keep_stale) it.flags&=(unsigned char)~BEAM_ITEM_FLAG_STALE;
+        if (i==remove_index || (!keep_stale && (it.flags&BEAM_ITEM_FLAG_STALE))) {
             for (j=0;j<tracked_count;j++) if (tracked[j]==i) tracked[j]=-1;
             ++removed;continue;
         }
@@ -296,6 +296,14 @@ int beam_index_reconcile(struct BeamIndex *x,int complete,int *tracked,unsigned 
         x->hash[slot]=(unsigned short)(i+1);
     }
     return removed;
+}
+
+int beam_index_reconcile(struct BeamIndex *x,int complete,int *tracked,unsigned int tracked_count)
+{return reconcile(x,complete,tracked,tracked_count,-1,0);}
+int beam_index_remove(struct BeamIndex *x,const char *path,int *tracked,unsigned int tracked_count)
+{
+    int index=beam_index_find(x,path);
+    return index<0?0:reconcile(x,1,tracked,tracked_count,index,1);
 }
 
 int beam_index_sweep(struct BeamIndex *x)

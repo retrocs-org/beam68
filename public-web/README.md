@@ -38,9 +38,9 @@ fonts, responsive layouts and reduced-motion preferences. Navigation and gallery
 links work without scripting; extra reference images use native details controls.
 
 The gallery describes features rather than displaying version labels. It includes
-application search, command help, Aminet browsing, launcher settings, and fresh
+application search, command help, Aminet browsing, and
 Wikipedia search and native article-summary captures, File Finder results and
-Date Utilities weekday lookup, Calculator results and available-memory checks. The About screenshot and
+Date Utilities weekday lookup, Calculator results and available-memory checks. The About screenshot, outdated nine-section Preferences capture and
 older-version reference gallery have been removed. Every screenshot is cropped
 to the application window. images/screenshots.json retains internal capture
 provenance and dimensions without adding version labels to public captions.
@@ -97,11 +97,27 @@ remain separate from build instructions and SDK documentation. The plugin list s
 examples and default activation states remain in its internal metadata; keep
 those fields in sync with manifests and the installer.
 
-The overview includes four grouped plugin feature summaries and fourteen
-collapsible FAQ answers. Keep examples and dependencies consistent with the
+The overview includes six grouped feature summaries and twenty collapsible
+FAQ answers. Keep examples and dependencies consistent with the
 corresponding plugin manifests and documentation.
 
 Application and SDK downloads display GitHub’s per-asset download counts when
 available, refreshed with the existing ten-minute release cache. These counts
 cover GitHub asset downloads only, not Aminet, GitLab or unique users. Unknown
 counts are omitted; a reported zero is displayed.
+
+## Current content
+
+The overview, footer and plugin list describe 0.4. The download page queries
+GitHub for the latest stable package; source-version copy never selects a
+download asset or marks an unpublished package as available. On 18 November 2026 the latest stable
+tag was 0.3. Do not hard-code that tag into download links.
+
+Current feature copy covers scoped F7 history, F6 query favorites, stable result
+selection, read-only retry feedback, Aminet completion choices, optional AmiHASS,
+scan controls, import review and plugin Restore defaults. The plugin list remains
+names and short descriptions only. Screenshots retain their original provenance;
+no new capture or current-layout claim is implied. Native test scope and remaining
+physical-machine limits are described on Source and in BUILD_STATUS.md.
+
+Website edits are prepared locally for manual upload; do not deploy automatically.

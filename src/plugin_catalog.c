@@ -179,10 +179,10 @@ int beam_catalog_is_bundled(const struct BeamConfig *c,int index,const struct Be
         "org.beam68.filefinder","org.beam68.systemcommands","org.beam68.dostools",
         "org.beam68.taskmanager","org.beam68.clipboardtools","org.beam68.dateutilities",
         "org.beam68.windowswitcher","org.beam68.developertools","org.beam68.arexxrunner",
-        "org.beam68.musiccontrols","org.beam68.aminetbrowser","org.beam68.musiclibrary","org.beam68.whdload","org.beam68.dopus","org.beam68.wikipedia"};
+        "org.beam68.musiccontrols","org.beam68.aminetbrowser","org.beam68.musiclibrary","org.beam68.whdload","org.beam68.dopus","org.beam68.wikipedia","org.beam68.amihass"};
     static const char *drawers[]={"Calc","Clock","Memory","FileFinder","SystemCommands",
         "DosTools","TaskManager","ClipboardTools","DateUtilities","WindowSwitcher",
-        "DeveloperTools","ARexxRunner","MusicControls","AminetBrowser","MusicLibrary","WHDLoad","DOpus","Wikipedia"};
+        "DeveloperTools","ARexxRunner","MusicControls","AminetBrowser","MusicLibrary","WHDLoad","DOpus","Wikipedia","AmiHASS"};
     char actual[BEAM_MAX_PATH],expected[BEAM_MAX_PATH],spec[BEAM_MAX_PATH];
     unsigned int i;
     if(!c || index<0 || index>=c->plugin_file_count)return 0;
@@ -229,4 +229,16 @@ int beam_catalog_setting_value(const struct BeamPluginSetting *d,const char *val
     } else if(d->type!=BEAM_PLUGIN_SETTING_TEXT)return 0;
     if(strlen(s)>=cap)return 0;
     beam_copy(out,s,cap);return 1;
+}
+
+int beam_catalog_setting_defaults(const struct BeamPlugin *p,
+    char values[BEAM_MAX_PLUGIN_SETTINGS][64])
+{
+    char pending[BEAM_MAX_PLUGIN_SETTINGS][64];unsigned int i;
+    if(!p || !values || p->setting_count>BEAM_MAX_PLUGIN_SETTINGS)return 0;
+    memset(pending,0,sizeof(pending));
+    for(i=0;i<p->setting_count;i++)
+        if(!beam_catalog_setting_value(&p->setting_defs[i],p->setting_defs[i].default_value,
+            pending[i],sizeof(pending[i])))return 0;
+    memcpy(values,pending,sizeof(pending));return 1;
 }

@@ -9,6 +9,7 @@ page_start('Get Beam68 — Downloads for AmigaOS.', 'Download the latest publish
 ?>
 <section class="page-intro wrap"><p class="eyebrow">DOWNLOAD</p><h1>Get Beam68.</h1><p>Download the app or the plugin SDK. Latest stable release details are loaded automatically from GitHub.</p>
 <?php if ($release): ?><div class="page-meta"><span>Latest release · <?= escape($release['tag']) ?></span><span>Published <?= escape(gmdate('j F Y', (int)strtotime($release['published_at']))) ?></span><span>Free · MIT License</span></div><?php endif; ?></section>
+<p class="wrap release-note">The overview and plugin list describe the <?= escape(BEAM68_SITE_VERSION) ?> source. Downloads below are published stable packages; their release notes describe the features included.</p>
 <section class="wrap get-downloads" aria-labelledby="downloads-title"><h2 id="downloads-title" class="visually-hidden">Downloads</h2>
 <?php if (!$release): ?><div class="download-notice" role="status"><h3><?= $data['state'] === 'missing' ? 'No release details are available.' : 'Check GitHub for the latest download.' ?></h3><p><?= $data['state'] === 'missing' ? 'The release service did not return a published release. Check the GitHub releases page for available packages.' : 'Release details are temporarily unavailable. You can still view and download published packages directly on GitHub.' ?></p><a class="button button-primary" href="https://github.com/retrocs-org/beam68/releases">View GitHub releases ↗</a></div>
 <?php else: ?>

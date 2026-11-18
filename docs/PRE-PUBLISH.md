@@ -1,9 +1,9 @@
-# Before publishing Beam68 0.3
+# Before publishing Beam68 0.4
 
 Work from the reviewed Git checkout. Commit the final source and documentation
-before publication. The app stays at 0.3 unless its version is explicitly changed.
-Version 0.3 is a new release. Build and verify new packages for its own tag;
-keep published 0.2 assets and release history unchanged.
+before publication. The app stays at 0.4 unless its version is explicitly changed.
+Version 0.4 is a new release. Build and verify new packages for its own tag;
+keep published 0.3 assets and release history unchanged.
 
 ## Automated gates
 
@@ -48,3 +48,12 @@ website separately, after reviewing its manual-upload archive.
 
 See [RELEASING.md](RELEASING.md) for commands and replacement/receipt recovery.
 Build/check/prepare and automated tests do not push source or publish assets.
+
+## AmiHASS dependency
+
+Use the stable AmiHASS 0.1 release published 18 November 2026 or later. Its
+tagged source includes the all-area catalogue template correction required for
+entity discovery. Older local builds bearing 0.1 may lack this correction;
+update from the published package when catalogue requests fail. The plugin is
+optional and disabled by default. See NATIVE_TEST_RESULTS.txt for verification
+scope and the distinction between the live test build and published binary.

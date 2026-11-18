@@ -18,4 +18,8 @@ void beam_query_masks_build(const char *query,struct BeamQueryMasks *m);
 int beam_query_masks_reject(const struct BeamQueryMasks *m,unsigned long item_mask);
 /* Highlight positions of name for a (possibly multi-word) query. */
 unsigned long beam_query_marks(const char *query,const char *name);
+struct BeamItem;
+/* Resolve the selected path after result reordering or index compaction. */
+int beam_search_selection(const struct BeamItem *items,int count,const int *results,
+                          int result_count,const char *path);
 #endif

@@ -120,3 +120,89 @@ PASS: final resident shutdown; launcher emitted a passing JUnit result.
 Scope: current 0.3 Novice install and maintenance paths, including same-version
 update. Not certification of every earlier release upgrade, Intermediate/Expert
 choices, physical hardware or small-screen layout. No saved desktop changes.
+
+0.4 development validation — 18 November 2026
+
+PASS: Preferences LAYOUTQA opens all pages and both Indexing views on a
+640x200 native screen and checks gadget bounds and overlapping controls.
+This checks control rectangles, not every translated label or physical display.
+PASS: SETTINGSQA validates, saves and reloads all seven bundled manifests with
+declared settings fields, preserving comments and unrecognized keys. Writes use
+a fresh temporary drawer; other plugin files are not edited.
+PASS: published 0.3 archive downloaded and verified against its published SHA-256.
+PASS: real Novice 0.3 install followed by real 0.4 Update in a disposable guest.
+The user operated installer dialogs; the native checker verified both running
+versions and unchanged preferences, aliases, snippets, edited theme, additional
+plugin files and autostart choice. Ctrl+Alt+Space was retained throughout.
+PASS: final 0.4 resident shutdown and launcher test result.
+
+The initial settings QA resolved manifests against a missing installed location;
+the test entry point was corrected to resolve the staged package, then passed.
+No saved Workbench installation was used as the upgrade target.
+
+Plugin import review — 18 November 2026
+
+PASS: native import file-operation test in a disposable Workbench 3.2.1 guest.
+Cancelling either consent step changes neither installation nor registration.
+The file list is shown before final approval; new imports start disabled and
+duplicate bare references are rejected. Updates retain enabled/disabled choices.
+A source manifest changed during review is rejected with the old package intact.
+The test-only consent callback is compiled out of the production application.
+Host integration tests cover canonical default restoration and atomic rejection
+of invalid defaults. Interactive Restore/Cancel/Save appearance remains a visual
+check; the production reset handler stages gadget values without file writes.
+
+2026-11-18: Beam68 0.4 plugin polish
+
+The complete host suite, 68000 native compilation and archive checks passed.
+Amiga Workbench 3.2.1 / 68060 ran a native synchronous runner which waited for
+all four programs and recorded their exit codes (all zero):
+- Query-state: selection identity, saved-query cache, scan-safe removal,
+  favorite groups, read-only command policy and separate histories.
+- Aminet completion fixtures: interrupted transfer retry, completion choices,
+  readme fetch, cancellation, malformed archive rejection and commit-race
+  preservation of existing files. External viewers/installers were simulated.
+- AmiHASS behavior: search, paging, states, confirmation cancellation,
+  confirmed/unconfirmed actions and unavailable-service handling.
+- AmiHASS transport: envelope validation, single-request limit, malformed
+  replies and ownership-safe timeout/late-reply cleanup.
+
+A separate direct native live test verified authenticated Home Assistant
+connection, discovery and an authorized Living Room 1 light. It confirmed on,
+then restored and confirmed the original off state. The test exposed an
+AmiHASS service bug: literal all-area templates contained doubled percent
+signs. The corrected service source and regression tests passed AmiHASS host
+checks, the exact template returned HTTP 200, and the rebuilt private service
+passed the direct native live test. Installed AmiHASS files were not replaced.
+
+Only direct native results with explicit completion proof are retained as
+final evidence; earlier Execute-wrapped results were excluded. Reports are in
+outputs/testing/0.4-six-improvements/. Disposable credential copies were removed.
+
+2026-11-18: Released AmiHASS dependency verification
+
+The public stable AmiHASS 0.1 release, published 18 November 2026, includes
+both corrected all-area catalogue template literals in tagged src/core.c.
+The tag contains two correct single-percent literals and no malformed doubled-
+percent literals. The earlier direct live test used a private build of the fix;
+the published service binary has not been independently rerun in that test.
+The published LHA checksum was verified, and its extracted AmiHASSService
+contains the correct all-area literal and no malformed doubled-percent literal.
+Published LHA SHA-256:
+8072538603ca0e36c30d0b343fec77bcf23d05cb6ff7a95bc06cc9c495f5b04e
+Release: https://github.com/retrocs-org/amihass/releases/tag/0.1
+
+2026-11-18: Final 0.4 installer lifecycle
+
+PASS: actual unmodified packaged Install script, launched synchronously by a
+native test runner in a disposable Workbench 3.2.1 / 68060 guest. Manual Novice
+choices covered fresh install, Update while resident, Uninstall / Keep settings,
+reinstall, Uninstall / Remove settings and fresh reinstall. The runner checked
+running 0.4, exact saved-config preservation, program removal, saved/session
+config removal and clean resident shutdown. Post-run assertions verified all
+19 installed plugins, exactly six essential local plugins enabled, network
+plugins disabled and the default Ctrl+Alt+Space shortcut.
+Tested LHA SHA-256: cc67af3c77a986df2ab9746469ece45920809f58b4c9b4c05a80e8248cf279d5
+Reports and native runner: outputs/testing/0.4-final-installer/.
+Only release documentation changes followed this installer test; the final
+package rebuild must retain identical runtime executables and Install script.

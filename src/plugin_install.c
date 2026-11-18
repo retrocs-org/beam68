@@ -87,6 +87,10 @@ static int is_hunk_executable(const char *path)
 
 static int ask(struct Window *win,const char *title,const char *text,const char *buttons)
 {
+#ifdef BEAM_PLUGIN_INSTALL_QA
+    extern int beam_plugin_install_qa_ask(const char *,const char *,const char *);
+    (void)win;return beam_plugin_install_qa_ask(title,text,buttons);
+#else
     struct EasyStruct es;
     APTR args[1];
     es.es_StructSize=sizeof(es);
@@ -96,6 +100,7 @@ static int ask(struct Window *win,const char *title,const char *text,const char 
     es.es_GadgetFormat=(UBYTE *)buttons;
     args[0]=(APTR)text;
     return (int)EasyRequestArgs(win,&es,NULL,args);
+#endif
 }
 
 static int has_suffix_ci(const char *s,const char *suffix)
@@ -345,6 +350,36 @@ int beam_plugin_scan_installed(const struct BeamConfig *c,
     return count;
 }
 
+/* Bounded inventory also rejects links before Copy can follow them. */
+static char review_files[800];
+static unsigned long review_count,review_bytes,review_nodes;
+static int inventory(const char *root,const char *relative,unsigned int depth)
+{
+    char path[BEAM_MAX_PATH],child[BEAM_MAX_PATH];
+    BPTR lock;struct FileInfoBlock *fib;int ok=1;
+    if(depth>12 || ++review_nodes>4096 || !join(path,sizeof(path),root,relative))return 0;
+    lock=Lock((STRPTR)path,ACCESS_READ);if(!lock)return 0;
+    fib=AllocDosObject(DOS_FIB,NULL);if(!fib){UnLock(lock);return 0;}
+    if(!Examine(lock,fib))ok=0;
+    while(ok && ExNext(lock,fib)) {
+        const char *name=(const char *)fib->fib_FileName;
+        if(!safe_text(name) || !beam_package_zip_name_safe(name) ||
+           !join(child,sizeof(child),relative,name)){ok=0;break;}
+        if(fib->fib_DirEntryType==ST_USERDIR)ok=inventory(root,child,depth+1);
+        else if(fib->fib_DirEntryType==ST_FILE) {
+            unsigned int len;
+            if(++review_nodes>4096 || fib->fib_Size<0 ||
+               (unsigned long)fib->fib_Size>67108864UL-review_bytes){ok=0;break;}
+            review_bytes+=(unsigned long)fib->fib_Size;review_count++;
+            len=(unsigned int)strlen(review_files);
+            if(review_count<=6 && len+110<sizeof(review_files))
+                sprintf(review_files+len,"\n  %.96s",child);
+        } else ok=0;
+    }
+    if(ok && IoErr()!=ERROR_NO_MORE_ENTRIES)ok=0;
+    FreeDosObject(DOS_FIB,fib);UnLock(lock);return ok;
+}
+
 /* Index of the configured plugin with this ID, or -1. */
 static int installed_with_id(const struct BeamConfig *c,const char *id,char *version)
 {
@@ -359,6 +394,29 @@ static int installed_with_id(const struct BeamConfig *c,const char *id,char *ver
         }
     }
     return -1;
+}
+
+int beam_plugin_review_reference(struct Window *win,const struct BeamConfig *c,
+    const char *path,char *msg,unsigned int cap)
+{
+    char version[16];int existing;
+    if(!beam_plugin_read(&manifest_buf,path)) {
+        beam_copy(msg,"Cannot read a valid plugin manifest.",cap);return 0;
+    }
+    existing=installed_with_id(c,manifest_buf.id,version);
+    if(!manifest_buf.id[0] || !manifest_buf.plugin_version[0]) {
+        beam_copy(msg,"Import requires a plugin ID and version; use a complete plugin package.",cap);return 0;
+    }
+    if(existing>=0) {
+        beam_copy(msg,"This plugin ID is already registered. Import its package to review an update instead.",cap);return 0;
+    }
+    sprintf(body,"Register %.60s %.15s?\n\nID: %.63s\nAccess: %.63s\nCommand: %.160s\n\nThis adds a reference; no files are copied.\nIt starts disabled. Enable with Toggle after review.",
+        manifest_buf.name,manifest_buf.plugin_version,manifest_buf.id,
+        manifest_buf.capabilities[0]?manifest_buf.capabilities:"none declared",manifest_buf.command);
+    if(ask(win,pstr(PMSG_INST_TITLE),body,"Add reference|Cancel")!=1) {
+        beam_copy(msg,pstr(PMSG_INST_CANCELLED),cap);return 0;
+    }
+    return 1;
 }
 
 /* Another enabled plugin already uses this trigger or prefix. */
@@ -389,7 +447,7 @@ int beam_plugin_install(struct Window *win,struct BeamConfig *c,
     char manifest_name[BEAM_MAX_NAME],drawer_name[BEAM_MAX_NAME];
     char old_version[16],conflict_with[BEAM_MAX_NAME];
     const char *base;
-    int kind,is_dir=0,existing,conflict,ok=0,replaced=0,cmp=1,i;
+    int kind,is_dir=0,existing,conflict,ok=0,replaced=0,cmp=1,i,was_enabled=0;
     BPTR lock;
     if (!msg || !cap) return 0;
     msg[0]=0;
@@ -448,6 +506,12 @@ int beam_plugin_install(struct Window *win,struct BeamConfig *c,
     if (16+strlen(drawer_name)+1+strlen(manifest_name)+1>sizeof(spec)) { beam_copy(msg,pstr(PMSG_INST_PATH_LONG),cap); goto done; }
     sprintf(spec,"PROGDIR:Plugins/%.30s/%.63s",drawer_name,manifest_name);
     existing=installed_with_id(c,manifest_buf.id,old_version);
+    if(existing>=0) {
+        if(beam_catalog_is_bundled(c,existing,&manifest_buf)) {
+            beam_copy(msg,"Bundled plugins are updated with Beam68, not replaced through Import.",cap);goto done;
+        }
+        was_enabled=beam_plugin_enabled(c,c->plugin_files[existing]);
+    }
     /* A drawer of this name must belong to the same plugin ID. */
     if (exists(target,NULL)) {
         static char tmp_name[BEAM_MAX_NAME],tmp_path[BEAM_MAX_PATH];
@@ -459,7 +523,7 @@ int beam_plugin_install(struct Window *win,struct BeamConfig *c,
             beam_copy(msg,body,cap); goto done;
         }
     }
-    if (existing<0 && c->plugin_file_count>=BEAM_MAX_PLUGINS) {
+    if (existing<0 && (c->plugin_file_count>=BEAM_MAX_PLUGINS || c->disabled_plugin_count>=BEAM_MAX_PLUGINS)) {
         beam_copy(msg,pstr(PMSG_INST_FULL),cap); goto done;
     }
     if (existing>=0 && !beam_equal(c->plugin_files[existing],spec)) {
@@ -480,6 +544,17 @@ int beam_plugin_install(struct Window *win,struct BeamConfig *c,
             pstr(PMSG_INST_REINSTALL):pstr(PMSG_INST_DOWNGRADE),
         existing<0?"":old_version,existing<0?"":".",
         target);
+    review_count=review_bytes=review_nodes=0;review_files[0]=0;
+    if(!inventory(drawer,"",0)) {
+        beam_copy(msg,"Cannot review this package: unreadable files, links or package limits exceeded.",cap);goto done;
+    }
+    if (ask(win,pstr(PMSG_INST_TITLE),body,"Review files|Cancel")!=1) {
+        beam_copy(msg,pstr(PMSG_INST_CANCELLED),cap);goto done;
+    }
+    sprintf(body,"Files to install: %lu (%lu bytes)\n%s%s\n\n%s\nExisting saved plugin settings are retained.",
+        review_count,review_bytes,review_files,review_count>6?"\n  (additional files not shown)":"",
+        existing<0?"New imports start disabled. Enable with Toggle after review.":
+        was_enabled?"The existing activation choice is retained.":"This plugin stays disabled.");
     if (ask(win,pstr(PMSG_INST_TITLE),body,pstr(PMSG_INST_BUTTONS))!=1) {
         beam_copy(msg,pstr(PMSG_INST_CANCELLED),cap); goto done;
     }
@@ -503,6 +578,16 @@ int beam_plugin_install(struct Window *win,struct BeamConfig *c,
     if (!run(cmd,NULL) || !find_manifest(staging,manifest_name,sizeof(manifest_name))) {
         delete_tree(staging);
         beam_copy(msg,pstr(PMSG_INST_COPY_FAILED),cap); goto done;
+    }
+    {
+        char staged_manifest[BEAM_MAX_PATH],staged_executable[BEAM_MAX_PATH];
+        if(!join(staged_manifest,sizeof(staged_manifest),staging,manifest_name) ||
+           !beam_plugin_read(&other_buf,staged_manifest) ||
+           memcmp(&other_buf,&manifest_buf,sizeof(manifest_buf)) ||
+           !beam_plugindir_resolve(staged_manifest,other_buf.command,staged_executable,sizeof(staged_executable)) ||
+           !is_hunk_executable(staged_executable)) {
+            delete_tree(staging);beam_copy(msg,"Copied package differs from the reviewed manifest or executable is invalid; original retained.",cap);goto done;
+        }
     }
     if (exists(target,NULL)) {
         int moved=0;
@@ -543,9 +628,10 @@ int beam_plugin_install(struct Window *win,struct BeamConfig *c,
             beam_copy(c->plugin_files[c->plugin_file_count++],spec,BEAM_MAX_PATH);
         }
     }
-    beam_plugin_set_enabled(c,spec,!conflict);
+    beam_plugin_set_enabled(c,spec,existing>=0 && was_enabled && !conflict);
     sprintf(body,pstr(PMSG_INST_DONE),manifest_buf.name,
-            manifest_buf.plugin_version,conflict?pstr(PMSG_INST_DISABLED_NOTE):"");
+            manifest_buf.plugin_version,conflict?pstr(PMSG_INST_DISABLED_NOTE):
+            (existing<0 || !was_enabled)?" (disabled; use Toggle)":"");
     beam_copy(msg,body,cap);
     ok=1;
 done:

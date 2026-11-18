@@ -128,19 +128,5 @@
     "provenance": "Captured 15 November 2026 from the released Beam68 0.2 application.",
     "thumbnail": "release02-search-thumb.png",
     "processing": "Cropped to the app window; original pixel aspect restored and palette-compressed."
-  },
-  {
-    "file": "release02-general.png",
-    "title": "Configure your launcher",
-    "description": "Configure the hotkey, result count, ranking and index cache; launcher controls show that Beam68 is running.",
-    "width": 634,
-    "height": 242,
-    "app": "Beam68Prefs",
-    "version": "0.2",
-    "build_sha256": "59043507016b4d25750d7b7ada07caecb4943db0ce7935fa68bf23aba55a7959",
-    "build_record": "capture-build-0.2.json",
-    "provenance": "Captured 15 November 2026 from the released Beam68 0.2 application.",
-    "thumbnail": "release02-general-thumb.png",
-    "processing": "Cropped to the app window or dialog content; original pixel aspect restored, with a small thumbnail."
   }
 ]

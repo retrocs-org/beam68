@@ -580,3 +580,6 @@ App shortcuts
 
 PMSG_APPLICATION_SHORTCUTS_HELP (280//)
 Extra search words and custom launch actions.
+
+PMSG_RESTORE_DEFAULTS (281//)
+Restore defaults

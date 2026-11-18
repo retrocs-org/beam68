@@ -99,16 +99,16 @@ assert b'/blob/main/sdk/README.md' in rendered['developers.php']
 assert b'Release status' not in rendered['index.php']
 assert b'class="nav-source"' not in rendered['get.php']
 catalog=json.loads((WEB/'includes/marketplace.json').read_text())
-assert len(catalog['plugins'])==18 and len(catalog['themes'])==4
+assert len(catalog['plugins'])==19 and len(catalog['themes'])==4
 for item in catalog['plugins']+catalog['themes']:
     assert (ROOT/item['path']).exists()
 assert {x['path'] for x in catalog['plugins']}=={str(p.parent.relative_to(ROOT)) for p in (ROOT/'Plugins').glob('*/*.plugin')}
 aminet=next(x for x in catalog['plugins'] if x['NAME']=='Aminet Browser')
 assert aminet['default_enabled'] is False and aminet['introduced']=='0.2'
-assert b'0.3' in rendered['index.php'] and b'18' in rendered['index.php']
+assert b'0.4' in rendered['index.php'] and b'19' in rendered['index.php']
 assert all(x['NAME'].encode() in rendered['marketplace.php'] for x in catalog['plugins'])
 assert b'Aminet asks before downloading' in rendered['index.php']
-assert (ROOT/'VERSION').read_text('ascii').strip()=='0.3'
+assert (ROOT/'VERSION').read_text('ascii').strip()=='0.4'
 print('PASS: PHP syntax/rendering, escaping, navigation, local CSS and screenshot metadata')
 
 # Public plugin metadata reflects the independent manifests and actual defaults.
@@ -126,7 +126,7 @@ assert b'0.2 views' not in rendered['screenshots.php']
 
 assert b'Earlier versions &amp; additional themes' not in rendered['screenshots.php']
 assert all(shot.get('version')=='0.2' for shot in json.loads((WEB/'images/screenshots.json').read_text()))
-assert rendered['index.php'].count(b'<details>')==14
+assert rendered['index.php'].count(b'<details>')==20
 assert b'wiki:Amiga' in rendered['index.php'] and b'whd:enigma' in rendered['index.php']
 
 assert not any('about' in shot['file'] for shot in json.loads((WEB/'images/screenshots.json').read_text()))
@@ -141,3 +141,18 @@ assert b'rexx:list' not in plugin_section and b'<a ' not in plugin_section
 
 assert "What’s new in 0.2".encode() not in rendered['index.php']
 assert b'/releases/tag/0.2' not in rendered['index.php']
+
+# Release copy remains independent of the latest published assets.
+assert b'In development' not in rendered['index.php']
+assert b'source' in rendered['get.php'] and b'published stable packages' in rendered['get.php']
+assert b'source' in rendered['marketplace.php']
+for label in (b'Keep useful searches close', b'Home Assistant with AmiHASS',
+              b'Can I stop an index scan?', b'Can I restore a plugin',
+              b'What happens when I import a plugin?', b'View readme'):
+    assert label in rendered['index.php'],label
+assert b'SYSTEM integrations do not offer automatic typing previews' in rendered['developers.php']
+assert b'0.3 installation was upgraded to 0.4' in rendered['source.php']
+assert b'release02-general.png' not in rendered['screenshots.php']
+clock=next(x for x in catalog['plugins'] if x['NAME']=='Clock')
+assert 'date' not in clock['DESCRIPTION'].lower()
+assert next(x for x in catalog['plugins'] if x['NAME']=='Wikipedia')['introduced']=='0.3'

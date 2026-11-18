@@ -190,7 +190,7 @@ for existing, startup in (("", False), ("SYS:Beam68", False),
     values = {"#novice": True, "#existing": existing,
               "#default-parent": "SYS:Utilities",
               "#default-dest": "SYS:Utilities/Beam68",
-              "#startup": "SYS:WBStartup/Beam68Start", "#plugin-mask": 262143}
+              "#startup": "SYS:WBStartup/Beam68Start", "#plugin-mask": 524287}
     def novice_value(node):
         if not isinstance(node, list):
             if node.startswith('"'): return node[1:-1]
@@ -211,7 +211,7 @@ for existing, startup in (("", False), ("SYS:Beam68", False),
                 "#parent", "#dest", "#update", "#portable-settings", "#plugins", "#autostart"):
             values[form[1]] = novice_value(form[2])
     assert values["#dest"] == (existing or "SYS:Utilities/Beam68")
-    assert values["#plugins"] == 262143
+    assert values["#plugins"] == 524287
     assert values["#autostart"] == (int(startup) if existing else 1)
 print("Novice defaults: fresh install and custom-location updates without prompts: PASS")
 

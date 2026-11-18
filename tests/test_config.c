@@ -148,7 +148,7 @@ int main(void)
     assert(beam_config_valid(&d));
     assert(beam_config_write(&d,BEAM_CONFIG_SESSION));
     beam_config_defaults(&c);assert(beam_config_read_active(&c) && c.max_depth==-1);
-    assert(d.plugin_file_count==18 && d.disabled_plugin_count==12);
+    assert(d.plugin_file_count==19 && d.disabled_plugin_count==13);
     {int i;for(i=0;i<d.plugin_file_count;i++)assert(beam_plugin_enabled(&d,d.plugin_files[i])==(i<6));}
     assert(beam_plugin_set_enabled(&d,"PROGDIR:Plugins/AminetBrowser/AminetBrowser.plugin",1));
     assert(beam_config_write(&d,BEAM_CONFIG_SESSION));

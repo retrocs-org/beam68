@@ -1,6 +1,7 @@
 #include <exec/types.h>
 #include <exec/ports.h>
 #include <dos/dos.h>
+#include <dos/dostags.h>
 #include <intuition/intuition.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -21,6 +22,15 @@
 struct IntuitionBase *IntuitionBase;
 struct GfxBase *GfxBase;
 struct Library *WorkbenchBase;
+static LONG aminet_ask(struct Window *parent,struct EasyStruct *prompt,ULONG *args)
+{
+#ifdef BEAM_AMINET_QA
+    extern int beam_aminet_qa_ask(const struct EasyStruct *);
+    (void)parent;(void)args;return beam_aminet_qa_ask(prompt);
+#else
+    return EasyRequestArgs(parent,prompt,NULL,args);
+#endif
+}
 static struct Window *progress_window;
 static char input[121],path[401],temporary[240],error_text[121],text[121],value[240];
 static struct BeamAminetResults results;
@@ -184,7 +194,7 @@ static int show_readme(int argc,char **argv,const char *package,int offset,int o
 }
 static int download_directory(char *out)
 {
-    static const char *files[]={"ENV:Beam68/Plugins/AminetBrowser.cfg","ENVARC:Beam68/Plugins/AminetBrowser.cfg","PROGDIR:AminetBrowser.cfg",NULL};
+    static const char *files[]={"ENVARC:Beam68/Plugins/AminetBrowser.cfg","ENV:Beam68/Plugins/AminetBrowser.cfg","PROGDIR:AminetBrowser.cfg",NULL};
     BPTR file=0;char line[256];int i;unsigned int n;
     strcpy(out,"RAM:Beam68Downloads");
     for(i=0;files[i]&&!file;i++) file=Open((STRPTR)files[i],MODE_OLDFILE);
@@ -201,13 +211,81 @@ static int download_directory(char *out)
     }
     n=(unsigned int)strlen(out);
     if(!n || !strchr(out,':')) return 0;
-    for(i=0;out[i];i++) if((unsigned char)out[i]<32 || out[i]=='"' || out[i]=='*') return 0;
+    for(i=0;out[i];i++) if((unsigned char)out[i]<32 || out[i]=='"' || out[i]=='*' || out[i]=='`') return 0;
     return 1;
 }
 static int archive_type(const char *s)
 {
     const char *dot=strrchr(s,'.');
     return dot && (beam_ascii_equal(dot,".lha")||beam_ascii_equal(dot,".lzh")||beam_ascii_equal(dot,".zip")||beam_ascii_equal(dot,".tgz")||beam_ascii_equal(dot,".gz"));
+}
+static int open_download_object(const char *name)
+{
+#ifdef BEAM_AMINET_QA
+    extern int beam_aminet_qa_open(const char *);return beam_aminet_qa_open(name);
+#else
+    int ok;WorkbenchBase=OpenLibrary("workbench.library",44);
+    ok=WorkbenchBase && OpenWorkbenchObjectA((STRPTR)name,NULL);
+    if(WorkbenchBase){CloseLibrary(WorkbenchBase);WorkbenchBase=NULL;}
+    if(!ok)strcpy(error_text,"Cannot open this item. Open it manually from the download drawer (Workbench v44+ required).");
+    return ok;
+#endif
+}
+static int view_download_readme(const char *package,const char *directory)
+{
+    char remote[240],target[240],drawer[240],part[240],command[512];
+    const char *filename;BPTR lock,in,out;LONG rc;
+    if(!beam_aminet_readme_path(package,remote,sizeof(remote)))return 0;
+    filename=strrchr(remote,'/');filename=filename?filename+1:remote;
+    strcpy(target,directory);
+    if(!AddPart(target,(STRPTR)filename,sizeof(target))){strcpy(error_text,"Readme path is too long.");return 0;}
+    lock=Lock((STRPTR)target,ACCESS_READ);
+    if(lock)UnLock(lock);
+    else {
+        if(!reserve_drawer(directory,drawer,sizeof(drawer))){strcpy(error_text,"Cannot create a readme staging drawer.");return 0;}
+        strcpy(part,drawer);AddPart(part,"readme.part",sizeof(part));
+        beam_plugin_copy(progress_name,filename,sizeof(progress_name));last_progress=~0UL;cancelled=0;
+        if(!beam_aminet_fetch(remote,part,262144UL,30,0,progress,error_text,sizeof(error_text))){
+            DeleteFile((STRPTR)part);DeleteFile((STRPTR)drawer);return 0;
+        }
+        if(!Rename((STRPTR)part,(STRPTR)target)){
+            strcpy(error_text,"Cannot save readme; existing files were preserved.");
+            DeleteFile((STRPTR)part);DeleteFile((STRPTR)drawer);return 0;
+        }
+        DeleteFile((STRPTR)drawer);
+    }
+#ifdef BEAM_AMINET_QA
+    {extern int beam_aminet_qa_open(const char *);(void)command;(void)in;(void)out;(void)rc;
+     return beam_aminet_qa_open(target);}
+#else
+    lock=Lock("C:MultiView",ACCESS_READ);
+    if(!lock){strcpy(error_text,"Readme saved in the download drawer. MultiView is unavailable.");return 0;}UnLock(lock);
+    in=Open("NIL:",MODE_OLDFILE);out=Open("NIL:",MODE_NEWFILE);
+    if(!in||!out){if(in)Close(in);if(out)Close(out);strcpy(error_text,"Cannot open readme viewer streams.");return 0;}
+    sprintf(command,"C:MultiView \"%s\"",target);
+    rc=SystemTags(command,SYS_Input,in,SYS_Output,out,SYS_Asynch,TRUE,NP_StackSize,32768UL,TAG_DONE);
+    if(rc<0){Close(in);Close(out);strcpy(error_text,"Cannot start MultiView; the readme was saved.");return 0;}
+    return 1;
+#endif
+}
+static int verify_download_archive(const char *package,const char *target)
+{
+    unsigned char header[8];size_t n=0;FILE *file=fopen(target,"rb");
+    if(file){n=fread(header,1,sizeof(header),file);fclose(file);}
+    if(!beam_aminet_archive_header(package,header,(unsigned int)n)){
+        strcpy(error_text,"This file is not a supported archive. Open it manually from the download drawer.");return 0;
+    }return 1;
+}
+static void download_complete(const char *package,const char *target,const char *directory)
+{
+    struct EasyStruct prompt={sizeof(struct EasyStruct),0,"Aminet download complete","Downloaded:\n%s\nInstall opens your archive handler; follow the package instructions.",NULL};
+    ULONG args[1];int choice,ok,archive=archive_type(package);
+    prompt.es_GadgetFormat=(STRPTR)(archive?"Open drawer|View readme|Install...|Close":"Open drawer|View readme|Close");args[0]=(ULONG)target;
+    while((choice=aminet_ask(progress_window,&prompt,args))!=0){
+        ok=choice==1?open_download_object(directory):choice==2?view_download_readme(package,directory):
+            verify_download_archive(package,target)&&open_download_object(target);
+        if(!ok){struct EasyStruct error={sizeof(struct EasyStruct),0,"Aminet Browser",(STRPTR)error_text,"Close"};aminet_ask(progress_window,&error,NULL);}
+    }
 }
 static int download(int argc,char **argv,const char *package,int install)
 {
@@ -232,7 +310,7 @@ static int download(int argc,char **argv,const char *package,int install)
         "Download %s and open it with your archive handler?\nThen follow the package's own installer or instructions.\nNo installed files are replaced by Beam68.":
         "Download %s?\nExisting files will not be overwritten.");
     es.es_GadgetFormat=(STRPTR)"Download|Cancel";args[0]=(ULONG)package;
-    if(!EasyRequestArgs(NULL,&es,NULL,args)) { beam_plugin_text(argc,argv,"Aminet download cancelled.");delivered=1;goto cleanup; }
+    if(!aminet_ask(NULL,&es,args)) { beam_plugin_text(argc,argv,"Aminet download cancelled.");delivered=1;goto cleanup; }
     lock=Lock((STRPTR)directory,ACCESS_READ);
     if(!lock) lock=CreateDir((STRPTR)directory);
     if(!lock) { strcpy(error_text,"Cannot open or create the download drawer.");goto cleanup; }
@@ -240,17 +318,20 @@ static int download(int argc,char **argv,const char *package,int install)
     if(!AddPart(target,filename,sizeof(target))) { strcpy(error_text,"Download path is too long.");goto cleanup; }
     lock=Lock((STRPTR)target,ACCESS_READ);
     if(lock) { UnLock(lock);strcpy(error_text,"File already exists; rename it or select another download drawer.");goto cleanup; }
+retry_transfer:
     if(!reserve_drawer(directory,drawer,sizeof(drawer))) { strcpy(error_text,"Cannot reserve a download staging drawer.");goto cleanup; }
     strcpy(part,drawer);AddPart(part,"archive.part",sizeof(part));
-    progress_window=OpenWindowTags(NULL,WA_Title,(ULONG)"Aminet download - close to cancel",
+    if(!progress_window)progress_window=OpenWindowTags(NULL,WA_Title,(ULONG)"Aminet download - close to cancel",
         WA_Width,440,WA_Height,128,WA_DragBar,TRUE,WA_CloseGadget,TRUE,WA_Activate,TRUE,
         WA_IDCMP,IDCMP_CLOSEWINDOW|IDCMP_REFRESHWINDOW,TAG_DONE);
     if(!progress_window) { strcpy(error_text,"Cannot open the download window.");DeleteFile((STRPTR)drawer);goto cleanup; }
     /* The visible, individually cancellable transfer owns its lifecycle after
      * this acknowledgement. A separate public-port guard bounds it to one. */
-    if(beam_plugin_text(argc,argv,"Aminet download started. Close its window to cancel.")!=0) {
+#ifndef BEAM_AMINET_QA
+    if(!delivered && beam_plugin_text(argc,argv,"Aminet download started. Close its window to cancel.")!=0) {
         strcpy(error_text,"Cannot acknowledge the download request.");DeleteFile((STRPTR)drawer);goto cleanup;
     }
+#endif
     delivered=1;cancelled=0;last_progress=~0UL;progress_bytes=progress_total=0;
     beam_plugin_copy(progress_name,filename,sizeof(progress_name));draw_progress();
     /* Transfer owns its window now; leave a newer launcher query alone. */
@@ -266,16 +347,17 @@ static int download(int argc,char **argv,const char *package,int install)
     }
     if(ok && !Rename((STRPTR)part,(STRPTR)target)) { strcpy(error_text,"Cannot commit download; existing files are preserved.");ok=0; }
     DeleteFile((STRPTR)part);DeleteFile((STRPTR)drawer);
-    if(ok && install) {
-        WorkbenchBase=OpenLibrary("workbench.library",44);
-        if(!WorkbenchBase || !OpenWorkbenchObjectA((STRPTR)target,NULL)) {
-            strcpy(error_text,"Archive downloaded. Open it from the download drawer with your archive tool.");ok=0;
+    if(ok){
+        if(install && !open_download_object(target)){
+            struct EasyStruct warning={sizeof(struct EasyStruct),0,"Archive downloaded",(STRPTR)error_text,"Close"};aminet_ask(progress_window,&warning,NULL);
         }
-        if(WorkbenchBase) { CloseLibrary(WorkbenchBase);WorkbenchBase=NULL; }
+        download_complete(package,target,directory);
+    }else if(!cancelled){
+        es.es_TextFormat=(STRPTR)"%s\nPartial data removed; existing files preserved.\nRetry starts a new download.";
+        es.es_GadgetFormat=(STRPTR)"Retry|Close";args[0]=(ULONG)error_text;
+        if(aminet_ask(progress_window,&es,args)==1)goto retry_transfer;
     }
-    es.es_TextFormat=(STRPTR)(ok?"Download complete:\n%s":error_text);
-    es.es_GadgetFormat=(STRPTR)"Close";args[0]=(ULONG)target;
-    EasyRequestArgs(progress_window,&es,NULL,args);
+
 cleanup:
     if(progress_window) { CloseWindow(progress_window);progress_window=NULL; }
     if(GfxBase){CloseLibrary((struct Library *)GfxBase);GfxBase=NULL;}

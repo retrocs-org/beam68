@@ -1,4 +1,4 @@
-# Aminet Browser (Beam68 0.3)
+# Aminet Browser (Beam68 0.4)
 
 An independent Protocol 1 plugin, implemented for Beam68 without AmiGet code or
 an AmiGet dependency. It uses Aminet's public web listing and readme files.
@@ -45,7 +45,7 @@ truncated bodies fail explicitly. HTML layout changes may require a parser updat
 Build: `make Plugins/AminetBrowser/AminetBrowser` with the normal native toolchain.
 The portable parser/HTTP-header regression tests run as part of `make host-test`.
 The public website's published-release count remains 13 for 0.1; this plugin is new
-in the unreleased 0.3 source tree.
+in the unreleased 0.4 source tree.
 
 Archive downloads require a declared size and must match it before commit.
 Installation preparation also checks the archive signature before opening it.

@@ -10,6 +10,12 @@ static void write_data(const char *data)
 }
 int main(void)
 {
+    {struct BeamFavorites q;beam_favorites_clear(&q);
+     assert(beam_favorites_add(&q,"QUERY:ha:entity sensor.kitchen_temperature"));
+     assert(beam_favorites_contains(&q,"QUERY:ha:entity sensor.kitchen_temperature"));
+     assert(beam_favorites_toggle(&q,"QUERY:ha:entity sensor.kitchen_temperature")==0);
+    }
+
     static struct BeamFavorites a,b;
     unsigned int i;
     char path[64];

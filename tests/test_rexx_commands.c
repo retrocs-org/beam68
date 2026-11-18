@@ -57,6 +57,10 @@ int main(void)
     assert(!strcmp(b,"16 DISABLED path=a"));
     check(" INDEX ",BEAM_REXX_INDEX,-1);
     bad("INDEX foo");
+    assert(strstr(beam_plugin_requirements("org.beam68.wikipedia"),"HTTPS"));
+    assert(strstr(beam_plugin_requirements("org.beam68.aminetbrowser"),"TCP/IP"));
+    assert(!*beam_plugin_requirements(NULL));
+    assert(!*beam_plugin_requirements("third.party"));
     assert(strstr(beam_plugin_advice(BEAM_PLUGIN_MANIFEST_ERROR),"field lengths"));
     assert(strstr(beam_plugin_advice(BEAM_PLUGIN_QUARANTINED),"dependencies"));
     puts("rexx command and plugin diagnostic tests: PASS");

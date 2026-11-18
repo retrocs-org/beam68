@@ -202,8 +202,9 @@ int beam_plugin_needs_confirmation(const char *id,const char *input,int system)
     if (!system) return 0;
     if (!id || !input) return 1;
     /* Wikipedia requests only fetch search results or article summaries.
-     * Opening a browser is an explicit button in its own summary window. */
-    if (!strcmp(id,"org.beam68.wikipedia")) return 0;
+     * Opening a browser is an explicit button in its own summary window.
+     * AmiHASS confirms each action inside the plugin; search/state is read-only. */
+    if (!strcmp(id,"org.beam68.wikipedia") || !strcmp(id,"org.beam68.amihass")) return 0;
     if (strcmp(id,"org.beam68.musiclibrary")) return 1;
     while (*input==' ' || *input=='\t') ++input;
     for (i=0;i<4;i++) {
@@ -212,4 +213,13 @@ int beam_plugin_needs_confirmation(const char *id,const char *input,int system)
         if (c!=(unsigned char)play[i]) return 0;
     }
     return !input[4] || input[4]==' ' || input[4]=='\t';
+}
+
+/* Values identify query/path rows; a changing label (for example a device
+ * state) must not move the user's selection. Text-only rows use their text. */
+int beam_job_row_same(int ka,const char *va,const char *ta,int kb,const char *vb,const char *tb)
+{
+    if(ka!=kb||!va||!vb||!ta||!tb)return 0;
+    if(*va||*vb)return !strcmp(va,vb);
+    return !strcmp(ta,tb);
 }

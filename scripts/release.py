@@ -30,29 +30,21 @@ def need(condition, message):
     if not condition:
         raise ReleaseError(message)
 
-def validate_release_notes(root, version, text):
-    """Require the shared publication layout and the complete current changelog."""
-    need(text.startswith('# Beam68 '+version+'\n'), 'Release notes title/version differs')
-    need(not re.search(r'\b(in development|unreleased|TODO|TBD)\b', text, re.I),
-         'Release notes contain development placeholders')
-    headings = list(re.finditer(r'^## (.+)$', text, re.M))
-    need([m.group(1) for m in headings] ==
-         ['Features', 'Installation', 'Source and Licence', 'Version Changelog'],
-         'Release notes require Features, Installation, Source and Licence, Version Changelog in order')
-    for index, heading in enumerate(headings):
-        end = headings[index+1].start() if index+1 < len(headings) else len(text)
-        need(text[heading.end():end].strip(), 'Empty release notes section: '+heading.group(1))
-    changes = text[headings[-1].end():].strip()
-    need(changes.startswith('### '+version+'\n'), 'Release notes changelog version differs')
-    changes = changes.split('\n', 1)[1].strip()
+def changelog_notes(root, version):
+    """Render only one version's changes; the host displays the release title."""
     changelog = (root/'CHANGELOG.md').read_text()
     match = re.search(r'^## '+re.escape(version)+r'(?:[^\n]*)\n(.*?)(?=^## |\Z)',
                       changelog, re.M | re.S)
-    need(match is not None, 'Missing current version in CHANGELOG.md')
-    def normalized(value):
-        return ' '.join(re.sub(r'^#{3,4} ', '', value, flags=re.M).split())
-    need(normalized(changes) == normalized(match.group(1)),
-         'Release notes must contain the complete matching CHANGELOG.md section')
+    need(match is not None, 'Missing version in CHANGELOG.md: '+version)
+    return re.sub(r'^### ', '## ', match.group(1).strip(), flags=re.M)
+
+
+def validate_release_notes(root, version, text):
+    """Repository release descriptions contain the complete changelog only."""
+    need(not re.search(r'\b(in development|unreleased|TODO|TBD)\b', text, re.I),
+         'Release notes contain development placeholders')
+    need(' '.join(text.split()) == ' '.join(changelog_notes(root, version).split()),
+         'Release notes must contain only the complete matching CHANGELOG.md section')
 
 
 def load(path):
@@ -457,7 +449,7 @@ class GitHub:
         if release is None:
             release = self.api.json(self.base + '/releases', 'POST',
                                     {'tag_name': self.m['tag'], 'target_commitish': self.m['commit'],
-                                     'name': self.m['tag'], 'body': self.m['notes'],
+                                     'name': 'Beam68 ' + self.m['version'], 'body': self.m['notes'],
                                      'draft': True, 'prerelease': False})
         existing = self.verify(release)
         ident = str(release['id'])
@@ -470,7 +462,7 @@ class GitHub:
                      'GitHub did not verify uploaded asset: ' + name)
         self.verify(release, True)
         self.api.json(self.base + '/releases/' + ident, 'PATCH',
-                      {'draft': False, 'prerelease': False, 'make_latest': 'true'})
+                      {'name': 'Beam68 ' + self.m['version'], 'draft': False, 'prerelease': False, 'make_latest': 'true'})
         final = self.release()
         need(final and not final['draft'] and final.get('prerelease') is False,
              'GitHub release is not a normal published release')
@@ -538,10 +530,10 @@ class GitLab:
         if release:
             self.verify(release)
             self.api.json(self.base + '/releases/' + urllib.parse.quote(self.m['tag'], safe=''),
-                          'PUT', {'released_at': released_at})
+                          'PUT', {'name': 'Beam68 ' + self.m['version'], 'released_at': released_at})
         else:
             self.api.json(self.base + '/releases', 'POST', {'tag_name': self.m['tag'],
-                          'name': self.m['tag'], 'description': self.m['notes'],
+                          'name': 'Beam68 ' + self.m['version'], 'description': self.m['notes'],
                           'released_at': released_at, 'assets': {'links': self.links()}})
         final = self.release()
         self.verify(final)

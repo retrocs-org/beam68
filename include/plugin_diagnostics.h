@@ -9,6 +9,8 @@
 #define BEAM_PLUGIN_QUARANTINED 7
 const char *beam_plugin_diagnostic(int status);
 const char *beam_plugin_advice(int status);
+/* Bundled integrations: informative requirements, never automatic activation. */
+const char *beam_plugin_requirements(const char *id);
 /* Writes a compact, bounded human-readable record. 1 if successful. */
 int beam_plugin_diagnostic_line(int one_based_index, int state,
     char trigger, const char *manifest, char *out, unsigned int capacity);

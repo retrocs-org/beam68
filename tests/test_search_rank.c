@@ -3,6 +3,7 @@
 #include <string.h>
 #include "search_rank.h"
 #include "matcher.h"
+#include "beam.h"
 
 /* The mask reject must never drop an item the full ranker would accept. */
 static void mask_sound(const char *q,const char *name,const char *alias)
@@ -14,6 +15,16 @@ static void mask_sound(const char *q,const char *name,const char *alias)
 }
 int main(void)
 {
+    {struct BeamItem items[3];int result[3]={2,0,1};
+     memset(items,0,sizeof(items));items[0].path="SYS:A";items[1].path="SYS:B";items[2].path="SYS:C";
+     assert(beam_search_selection(items,3,result,3,"sys:b")==2);
+     result[0]=1;result[1]=2;result[2]=0;
+     assert(beam_search_selection(items,3,result,3,"SYS:B")==0);
+     /* Compaction changes item indices; the selected path remains the key. */
+     items[0].path="SYS:B";items[1].path="SYS:C";result[0]=1;result[1]=0;
+     assert(beam_search_selection(items,2,result,2,"SYS:B")==1);
+     assert(beam_search_selection(items,2,result,2,"SYS:Removed")==0);
+    }
     struct BeamQueryMasks prefs_masks;
     const char *prefs_words=beam_search_builtin_alias("Beam68Prefs");
     assert(prefs_words && !beam_search_builtin_alias("OtherPrefs"));

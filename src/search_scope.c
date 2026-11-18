@@ -14,6 +14,8 @@ static int prefix(const char *text,const char *word)
 int beam_search_scope_parse(const char *query,const char **text)
 {
     static const struct { const char *name; int scope; } scopes[]={
+        {"help:",BEAM_SCOPE_PLUGIN},{"help ",BEAM_SCOPE_PLUGIN},
+        {"health:",BEAM_SCOPE_HEALTH},{"scan:failures",BEAM_SCOPE_SCAN_FAILURES},
         {"app:",BEAM_SCOPE_APP},{"file:",BEAM_SCOPE_FILE},
         {"drawer:",BEAM_SCOPE_DRAWER},{"plugin:",BEAM_SCOPE_PLUGIN},
         {"recent:",BEAM_SCOPE_RECENT},{"volume:",BEAM_SCOPE_VOLUME},
@@ -24,6 +26,10 @@ int beam_search_scope_parse(const char *query,const char **text)
     };
     int i;
     if (!query) query="";
+    if (strlen(query)==4 && prefix(query,"help")) {
+        if(text)*text=query+4;
+        return BEAM_SCOPE_PLUGIN;
+    }
     for (i=0;scopes[i].name;i++) {
         unsigned int n=(unsigned int)strlen(scopes[i].name);
         if (strlen(query)>=n && prefix(query,scopes[i].name)) {

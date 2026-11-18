@@ -283,4 +283,5 @@ const char *const beam68prefs_strings[BEAM68PREFS_STRING_COUNT]={
     "Bundled plugins cannot be removed. Use Toggle to disable them.", /* PMSG_BUNDLED_KEEP */
     "App shortcuts", /* PMSG_APPLICATION_SHORTCUTS_NAV */
     "Extra search words and custom launch actions.", /* PMSG_APPLICATION_SHORTCUTS_HELP */
+    "Restore defaults", /* PMSG_RESTORE_DEFAULTS */
 };

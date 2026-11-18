@@ -1,6 +1,6 @@
 VERSION=1
 ID=org.beam68.musiclibrary
-PLUGIN_VERSION=0.7
+PLUGIN_VERSION=0.9
 MIN_BEAM68=0.2
 AUTHOR=Beam68 contributors
 LICENSE=MIT

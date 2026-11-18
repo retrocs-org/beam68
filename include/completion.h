@@ -9,6 +9,9 @@ struct BeamCompletions {
     unsigned char selected;
 };
 
+/* A nonempty prefix followed only by optional spaces/tabs. */
+int beam_completion_prefix_only(const char *query,const char *prefix);
+
 void beam_completion_reset(struct BeamCompletions *list);
 int beam_completion_add(struct BeamCompletions *list,const char *query,
                         const char *candidate);

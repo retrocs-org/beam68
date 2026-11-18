@@ -14,4 +14,10 @@ const char *beam_query_history_newer(struct BeamQueryHistory *h);
 void beam_query_history_end(struct BeamQueryHistory *h);
 int beam_query_history_load(struct BeamQueryHistory *h,const char *path);
 int beam_query_history_save(struct BeamQueryHistory *h,const char *path);
+/* Only known read-only commands may be stored as plugin query shortcuts. */
+int beam_plugin_query_readonly(const char *id,const char *input);
+int beam_plugin_query_scope(const char *query,char *id,unsigned int cap,const char **input);
+const char *beam_query_history_recall(struct BeamQueryHistory *h,int newer,int skip_plugins);
+int beam_plugin_query_parse(const char *query,char *id,unsigned int cap,const char **input);
+int beam_plugin_history_path(const char *id,char *out,unsigned int cap);
 #endif

@@ -55,6 +55,8 @@ int beam_index_set_title(struct BeamIndex *x, int index, const char *title);
 void beam_index_mark_stale(struct BeamIndex *x, unsigned long root_mask,
                            int include_volumes);
 /* Drop stale items, compact the pool, rebuild the hash.  Returns removed. */
+/* Remove one path without dropping stale entries of an unfinished scan. */
+int beam_index_remove(struct BeamIndex *x,const char *path,int *tracked,unsigned int tracked_count);
 int beam_index_sweep(struct BeamIndex *x);
 /* Display name for a path: the part after the last '/' or ':', or the whole
  * path for a volume root such as "RAM:". */

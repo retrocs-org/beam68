@@ -49,7 +49,7 @@ int main(void)
         assert(strlen(small)==3);
     }
     {
-        static const char *names[]={"Calc","Clock","Memory","FileFinder","SystemCommands","DosTools","TaskManager","ClipboardTools","DateUtilities","WindowSwitcher","DeveloperTools","ARexxRunner","MusicControls","AminetBrowser","MusicLibrary","WHDLoad","DOpus","Wikipedia"};
+        static const char *names[]={"Calc","Clock","Memory","FileFinder","SystemCommands","DosTools","TaskManager","ClipboardTools","DateUtilities","WindowSwitcher","DeveloperTools","ARexxRunner","MusicControls","AminetBrowser","MusicLibrary","WHDLoad","DOpus","Wikipedia","AmiHASS"};
         unsigned int n;
         for (n=0;n<sizeof(names)/sizeof(names[0]);n++) {
             char cmd[512],spec[160];
@@ -192,6 +192,21 @@ int main(void)
         assert(!beam_catalog_setting_value(&setting,"x\nBAD=YES",value,sizeof(value)));
         strcpy(value,"unchanged");
         assert(!beam_catalog_setting_value(&setting,"long",value,2) && !strcmp(value,"unchanged"));
+    }
+    {
+        struct BeamPlugin defaults;char values[BEAM_MAX_PLUGIN_SETTINGS][64];
+        memset(&defaults,0,sizeof(defaults));defaults.setting_count=2;
+        defaults.setting_defs[0].type=BEAM_PLUGIN_SETTING_BOOL;
+        strcpy(defaults.setting_defs[0].default_value,"true");
+        defaults.setting_defs[1].type=BEAM_PLUGIN_SETTING_CHOICE;
+        strcpy(defaults.setting_defs[1].choices,"Auto,Manual");
+        strcpy(defaults.setting_defs[1].default_value,"manual");
+        assert(beam_catalog_setting_defaults(&defaults,values));
+        assert(!strcmp(values[0],"YES") && !strcmp(values[1],"Manual"));
+        strcpy(defaults.setting_defs[1].default_value,"Invalid");
+        strcpy(values[0],"unsaved edit");
+        assert(!beam_catalog_setting_defaults(&defaults,values));
+        assert(!strcmp(values[0],"unsaved edit"));
     }
     puts("Plugin details, triggers, disabled, missing files, bundled discovery, safe settings path, install dir: PASS");
     return 0;

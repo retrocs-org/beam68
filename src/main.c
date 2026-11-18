@@ -183,7 +183,13 @@ static struct MsgPort *rexx_port;
 static struct MsgPort *wb_reply_port; /* WBStartup replies (OS 3.0/3.1) */
 static struct MsgPort *reply_port;    /* protocol-1 plugin replies */
 static struct Beam68ReplyRow plugin_rows[BEAM68_MAX_ROWS];
-static int plugin_row_count,rows_active;
+static int plugin_row_count,rows_active,plugin_retry_row;
+static char plugin_feedback[121],plugin_feedback_query[BEAM_QUERY_LEN+1];
+static struct BeamQueryHistory plugin_queries;
+static char plugin_queries_id[64],plugin_queries_path[160];
+static char selection_path[BEAM_MAX_PATH],selection_query[BEAM_QUERY_LEN+1];
+static int selection_is_item;
+
 static char rows_title[BEAM_MAX_NAME];
 /* One small diagnostic entry per configured manifest, not per search. */
 static UBYTE plugin_state[BEAM_MAX_PLUGINS];
@@ -239,6 +245,7 @@ static int timing_input_pending,timing_header_done,timing_first_pending;
 static unsigned long timing_window;
 
 static void plugin_abandon(void);
+static void reload_plugins_only(void);
 static void timing_edit_begin(const struct timeval *when)
 {
     plugin_abandon();
@@ -278,6 +285,7 @@ struct BeamHelpEntry {
 };
 static struct BeamHelpEntry help_entries[BEAM_HELP_CAP];
 static int help_count,help_mode;
+static int plugin_discovery=-1;
 
 /* An ExNext() iterator must retain both its lock and its own FileInfoBlock
  * across invocations, including while subdirectories are being examined. */
@@ -303,6 +311,17 @@ static unsigned long scan_roots;     /* roots (bit per DIR) being rescanned */
 static unsigned long notify_pending_roots;
 static int scan_full_rebuild;        /* volumes are part of this scan */
 static unsigned long scan_unreadable, scan_io_errors;
+#define SCAN_FAILURE_CAP 16
+static char scan_failed_paths[SCAN_FAILURE_CAP][BEAM_MAX_PATH];
+static unsigned char scan_failed_roots[SCAN_FAILURE_CAP];
+static int scan_failed_count;
+static void scan_failure(const char *path,int root)
+{
+    int i;for(i=0;i<scan_failed_count;i++)if(beam_equal(scan_failed_paths[i],path))return;
+    if(scan_failed_count==SCAN_FAILURE_CAP)return;
+    beam_copy(scan_failed_paths[scan_failed_count],path,BEAM_MAX_PATH);
+    scan_failed_roots[scan_failed_count++]=(unsigned char)root;
+}
 static int scan_cached;
 static struct MsgPort *notify_port;
 static struct NotifyRequest notify_requests[BEAM_MAX_DIRS];
@@ -482,6 +501,11 @@ static void help_build(void)
     help_add(BEAM_HELP_COMMAND,beam_str(MSG_HELP_SNIP_TITLE),"snip:",beam_str(MSG_HELP_SNIP));
     help_add(BEAM_HELP_COMMAND,beam_str(MSG_HELP_SCRIPT_TITLE),"script:",beam_str(MSG_HELP_SCRIPT));
     help_add(BEAM_HELP_COMMAND,beam_str(MSG_HELP_PREFS_TITLE),"prefs:",beam_str(MSG_HELP_PREFS));
+    help_add(BEAM_HELP_COMMAND,"Plugin health","health:","Failure and timeout history; Enter prepares a retry without running it.");
+    help_add(BEAM_HELP_COMMAND,"Failed scan locations","scan:failures","Enter retries the configured root. Up to 16 distinct locations are retained this session.");
+    help_add(BEAM_HELP_COMMAND,"Rescan directories","scan:start","Rescan configured directories while keeping current results usable.");
+    help_add(BEAM_HELP_COMMAND,"Indexing status","scan:status","Show scan progress and unavailable/skipped counts.");
+    help_add(BEAM_HELP_COMMAND,"Cancel indexing","scan:cancel","Stop the current scan and retain existing results.");
     help_add(BEAM_HELP_COMMAND,beam_str(MSG_HELP_STATS_TITLE),"stats:",beam_str(MSG_HELP_STATS));
     help_add(BEAM_HELP_COMMAND,beam_str(MSG_HELP_HIDDEN_TITLE),"hidden:",beam_str(MSG_HELP_HIDDEN));
     help_add(BEAM_HELP_COMMAND,beam_str(MSG_HELP_SHELL_TITLE),"shell:",beam_str(MSG_HELP_SHELL));
@@ -493,10 +517,16 @@ static void help_build(void)
     help_add(BEAM_HELP_SHORTCUT,"F3 / Shift-F3","",beam_str(MSG_KEY_F3));
     help_add(BEAM_HELP_SHORTCUT,"F4 / F5 / F6","",beam_str(MSG_KEY_F4));
     help_add(BEAM_HELP_SHORTCUT,"F7 / F8","",beam_str(MSG_KEY_F7));
-    for (i=0;i<plugin_count;i++)
+    for (i=0;i<plugin_count;i++) {
         help_add(BEAM_HELP_PLUGIN,plugins[i].name,
             plugins[i].example[0]?plugins[i].example:plugins[i].prefix,
             plugins[i].help[0]?plugins[i].help:plugins[i].description);
+        if(beam_equal(plugins[i].id,"org.beam68.aminetbrowser")) {
+            help_add(BEAM_HELP_PLUGIN,"Aminet package details","aminet:info util/wb/Beam68.lha","Read the package readme; replace the path with the package you want.");
+            help_add(BEAM_HELP_PLUGIN,"Aminet download","aminet:get util/wb/Beam68.lha","Download a package with progress; replace the path as needed.");
+            help_add(BEAM_HELP_PLUGIN,"Aminet install preparation","aminet:install util/wb/Beam68.lha","Download and open the archive; installation is not automatic.");
+        }
+    }
     for (i=0;i<(int)aliases.count;i++)
         help_add(BEAM_HELP_ALIAS,aliases.entries[i].words,
                  aliases.entries[i].words,aliases.entries[i].path);
@@ -682,6 +712,7 @@ static void cleanup_timer(void)
 
 
 static void search_items(void);
+static void prune_query_favorites(void);
 static void render(void);
 
 static void preview_clear(void)
@@ -1001,12 +1032,27 @@ static unsigned long timing_elapsed(const struct timeval *start)
 
 /* Index sources outside the drawer walk (only on full rebuilds): ARexx
  * scripts in REXX:, bookmarks from HTML hotlists, and text snippets. */
+static void index_query_favorites(void)
+{
+    int i,index;char owner[64];const char *payload;
+    prune_query_favorites();
+    for(i=0;i<item_count;++i)if(items[i].kind==BEAM_ITEM_QUERY)items[i].flags|=BEAM_ITEM_FLAG_HIDDEN;
+    for(i=0;i<favorites.count;++i)if(!strncmp(favorites.paths[i],"QUERY:",6)){
+        payload=favorites.paths[i]+6;
+        if(!beam_plugin_query_parse(payload,owner,sizeof(owner),NULL))continue;
+        index=index_add(favorites.paths[i],BEAM_ITEM_QUERY,BEAM_ROOT_SOURCES);
+        if(index>=0 && beam_index_set_title(&beam_index,index,payload)){
+            items[index].flags&=(unsigned char)~BEAM_ITEM_FLAG_HIDDEN;item_bind_meta(&items[index]);
+        }
+    }
+}
 static void index_sources(void)
 {
     static char line[512],url[BEAM_MAX_PATH],title[BEAM_MAX_PATH],path[BEAM_MAX_PATH];
     char name[48];
     BPTR f;
     int index;
+    index_query_favorites();
     if (cfg.index_rexx) {
         BPTR lock=Lock((STRPTR)"REXX:",ACCESS_READ);
         struct FileInfoBlock *fib=(struct FileInfoBlock *)AllocDosObject(DOS_FIB,NULL);
@@ -1127,14 +1173,14 @@ static void scan_step(void)
         if (!scan_frames_used) {
             while (scan_root<cfg.dir_count && !(scan_roots&(1UL<<scan_root))) ++scan_root;
             if (scan_root>=cfg.dir_count) { scan_complete(); break; }
-            if (!scan_push(cfg.dirs[scan_root],0,scan_root)) ++scan_unreadable;
+            if (!scan_push(cfg.dirs[scan_root],0,scan_root)) {++scan_unreadable;scan_failure(cfg.dirs[scan_root],scan_root);}
             ++scan_root;
             continue;
         }
         f=scan_frames[scan_frames_used-1];
         if (!ExNext(f->lock,f->fib)) {
             /* End-of-drawer is normal; distinguish it from disk I/O errors. */
-            if (IoErr()!=ERROR_NO_MORE_ENTRIES) ++scan_io_errors;
+            if (IoErr()!=ERROR_NO_MORE_ENTRIES) {++scan_io_errors;scan_failure(f->path,f->root);}
             scan_pop(); continue;
         }
         ++scan_count;
@@ -1152,7 +1198,7 @@ static void scan_step(void)
             if (cfg.index_drawers)
                 index_add(path,BEAM_ITEM_DRAWER,f->root);
             if ((cfg.max_depth<0 || f->depth<cfg.max_depth) && !scan_push(path,f->depth+1,f->root))
-                ++scan_unreadable;
+                {++scan_unreadable;scan_failure(path,f->root);}
         } else if (f->fib->fib_DirEntryType<0) {
             if (cfg.scan_icons && has_suffix_ci(filename,".info")) {
                 int kind=icon_file_kind(path);
@@ -1225,7 +1271,7 @@ static void refresh_index(int force_scan)
         scan_root=0; scan_count=0; scan_unreadable=0; scan_io_errors=0;
         scan_roots=all_roots();
         scan_cached=1;
-        bind_all_meta();
+        index_query_favorites();bind_all_meta();
     } else scan_begin(all_roots());
 }
 
@@ -1238,6 +1284,15 @@ static int query_prefix(const char *text,const char *prefix)
         if (a!=b) return 0;
     }
     return 1;
+}
+
+/* Prefix-only queries offer commands without starting background work. */
+static int discover_plugin(const char *text)
+{
+    int i;
+    for(i=0;i<plugin_count;i++)
+        if(beam_completion_prefix_only(text,plugins[i].prefix))return i;
+    return -1;
 }
 
 static int query_word(const char *text,const char *word)
@@ -1334,6 +1389,21 @@ static void reconcile_scan(int complete)
     beam_index_reconcile(&beam_index,complete,tracked,(unsigned int)n+1U);
     if (ordinary) for (i=0;i<result_count;i++) results[i]=tracked[i];
     args_item=tracked[n];
+}
+
+static void prune_query_favorites(void)
+{
+    int i=0,j,n,tracked[BEAM_MAX_RESULTS+1];
+    int ordinary=!browse_active && !ext_active && !rows_active && !help_mode && args_item<0 &&
+        beam_search_scope_parse(query,NULL)!=BEAM_SCOPE_PLUGIN;
+    while(i<item_count){
+        if(items[i].kind!=BEAM_ITEM_QUERY || beam_favorites_contains(&favorites,items[i].path)){++i;continue;}
+        n=0;if(ordinary)for(j=0;j<result_count;++j)tracked[n++]=results[j];tracked[n]=args_item;
+        beam_index_remove(&beam_index,items[i].path,tracked,(unsigned int)n+1U);
+        if(ordinary)for(j=0;j<result_count;++j)results[j]=tracked[j];
+        args_item=tracked[n];
+        ++index_generation;
+    }
 }
 
 static int selected_alias_index(void)
@@ -1534,7 +1604,20 @@ static int ext_fill(int scope)
     if (!ext) ext=(struct ExtEntry *)AllocVec(sizeof(struct ExtEntry)*EXT_CAP,MEMF_ANY|MEMF_CLEAR);
     if (!ext) return 0;
     ext_count=0; ext_scope=scope;
-    if (scope==BEAM_SCOPE_VOLUME) ext_fill_volumes();
+    if(scope==BEAM_SCOPE_HEALTH) {
+        for(i=0;i<cfg.plugin_file_count;i++) {
+            const struct BeamPluginHealthEntry *h=beam_plugin_health_find(&plugin_health,cfg.plugin_files[i]);
+            char name[48];sprintf(name,"%d: %.36s",i+1,(const char *)FilePart((STRPTR)cfg.plugin_files[i]));
+            ext_add(name,cfg.plugin_files[i],0);
+            if(h)sprintf(ext[ext_count-1].extra,"%s E:%lu T:%lu%s",h->last==BEAM_PLUGIN_HEALTH_TIMEOUT?"timeout":h->last==BEAM_PLUGIN_HEALTH_ERROR?"error":"OK",h->errors>999?999:h->errors,h->timeouts>999?999:h->timeouts,h->quarantined?"!":"");
+            else beam_copy(ext[ext_count-1].extra,"No failures recorded",sizeof(ext[0].extra));
+        }
+    } else if(scope==BEAM_SCOPE_SCAN_FAILURES) {
+        for(i=0;i<scan_failed_count;i++) {
+            ext_add(scan_failed_paths[i],scan_failed_paths[i],scan_failed_roots[i]);
+            beam_copy(ext[ext_count-1].extra,"Enter: retry root",sizeof(ext[0].extra));
+        }
+    } else if (scope==BEAM_SCOPE_VOLUME) ext_fill_volumes();
     else if (scope==BEAM_SCOPE_PREFS) ext_fill_prefs();
     else if (scope==BEAM_SCOPE_STATS) {
         /* Most-launched first; the counts come from the launch history. */
@@ -1604,7 +1687,7 @@ static void search_items_impl(void)
     int scores[BEAM_MAX_RESULTS];
     const int cap=cfg.results_max<=BEAM_MAX_RESULTS?cfg.results_max:BEAM_MAX_RESULTS;
     struct BeamQueryMasks query_masks;
-    search_pending=0;
+    search_pending=0;plugin_discovery=-1;
     if (args_item>=0) {
         /* The query field holds arguments, not a search. */
         result_count=0; beam_completion_reset(&completions);
@@ -1613,7 +1696,8 @@ static void search_items_impl(void)
     if (rows_active) {
         /* Results are plugin rows, in the plugin's order. */
         beam_completion_reset(&completions);
-        selected=0; result_scroll=0; action_mode=BEAM_ACTION_LAUNCH;
+        if(selected<0 || selected>=plugin_row_count)selected=0;
+        action_mode=BEAM_ACTION_LAUNCH;
         result_count=plugin_row_count<BEAM_MAX_RESULTS?plugin_row_count:BEAM_MAX_RESULTS;
         for (i=0;i<result_count;i++) results[i]=i;
         return;
@@ -1637,6 +1721,8 @@ static void search_items_impl(void)
     }
     result_count=0; selected=0; result_scroll=0; action_mode=BEAM_ACTION_LAUNCH;
     scope=beam_search_scope_parse(query,&search_query);
+    plugin_discovery=discover_plugin(query);
+    if(plugin_discovery>=0)search_query=plugins[plugin_discovery].prefix;
     favorite_group[0]=0;
     if (scope==BEAM_SCOPE_FAVORITE && *search_query) {
         unsigned int n=0;
@@ -1649,7 +1735,7 @@ static void search_items_impl(void)
         search_query+=n;while (*search_query==' ' || *search_query=='\t') ++search_query;
     }
     if (!help_mode && (scope==BEAM_SCOPE_VOLUME || scope==BEAM_SCOPE_DOC ||
-                       scope==BEAM_SCOPE_HIDDEN || scope==BEAM_SCOPE_STATS ||
+                       scope==BEAM_SCOPE_HIDDEN || scope==BEAM_SCOPE_HEALTH || scope==BEAM_SCOPE_SCAN_FAILURES || scope==BEAM_SCOPE_STATS ||
                        scope==BEAM_SCOPE_PREFS)) {
         beam_completion_reset(&completions);
         for (i=0;i<cap;i++) { results[i]=-1; scores[i]=0; }
@@ -1671,10 +1757,13 @@ static void search_items_impl(void)
     else beam_completion_reset(&completions);
     for (i=0;i<cap;i++) { results[i]=-1; scores[i]=0; }
     if (restart_confirm && restart_confirm!=restart_kind) restart_confirm=0;
-    if (help_mode || scope==BEAM_SCOPE_PLUGIN) {
+    if (help_mode || scope==BEAM_SCOPE_PLUGIN || plugin_discovery>=0) {
         for (i=0;i<help_count;i++) {
             const struct BeamHelpEntry *entry=&help_entries[i];
-            if (scope==BEAM_SCOPE_PLUGIN && entry->kind!=BEAM_HELP_PLUGIN) continue;
+            if ((scope==BEAM_SCOPE_PLUGIN || plugin_discovery>=0) && entry->kind!=BEAM_HELP_PLUGIN) continue;
+            if(plugin_discovery>=0 && (plugins[plugin_discovery].prefix[0]?
+                !query_prefix(entry->insert,plugins[plugin_discovery].prefix):
+                !beam_equal(entry->title,plugins[plugin_discovery].name)))continue;
             if (!*search_query) score=9000-i;
             else {
                 score=beam_match_score(search_query,entry->title);
@@ -1785,6 +1874,10 @@ static void search_items(void)
     if (plugin_job.active && strcmp(query,plugin_original_query)) plugin_abandon();
     if (TimerBase) GetSysTime(&started);
     search_items_impl();
+    if(selection_is_item && !strcmp(selection_query,query) && !rows_active &&
+       !browse_active && !ext_active && !help_mode && !completions.count && !query_plugin()){
+        selected=beam_search_selection(items,item_count,results,result_count,selection_path);
+    }
     if (TimerBase) timing_search=(unsigned long)micros_since(&started);
 }
 
@@ -1879,6 +1972,13 @@ static int render_pending;
  * navigation only the result area.  Typing redraws both. */
 static void render_parts(int parts)
 {
+    if(!rows_active && !browse_active && !ext_active && !help_mode &&
+       !completions.count && !query_plugin() && selected>=0 && selected<result_count &&
+       results[selected]>=0 && results[selected]<item_count){
+        beam_copy(selection_path,items[results[selected]].path,sizeof(selection_path));
+        beam_copy(selection_query,query,sizeof(selection_query));selection_is_item=1;
+    }else selection_is_item=0;
+
     struct RastPort *rp;
     struct BeamLauncherPlugin *plugin;
     int i, base, row, y, width, lineheight, reserved=0, result_width;
@@ -1916,7 +2016,7 @@ static void render_parts(int parts)
              window->Height-window->BorderBottom-1);
     plugin=query_plugin();
     scope=beam_search_scope_parse(query,NULL);
-    browse_mode=help_mode || scope==BEAM_SCOPE_PLUGIN;
+    browse_mode=help_mode || scope==BEAM_SCOPE_PLUGIN || plugin_discovery>=0;
     shell_query=beam_shell_query(query,&shell_command);
     restart_kind=beam_restart_query(query);
     row=base+lineheight+9;
@@ -2037,6 +2137,9 @@ static void render_parts(int parts)
             draw_text(rp,window->BorderLeft+width/2,y+(int)rp->TxBaseline,
                       entry->detail,width/2-16);
         }
+    } else if (plugin_job.active && !strcmp(query,plugin_original_query)) {
+        draw_text(rp,window->BorderLeft+9,row+(int)rp->TxBaseline,plugin && beam_plugin_query_readonly(plugin->id,query_plugin_input(plugin))?"Searching...":"Working...",width-18);
+        draw_text(rp,window->BorderLeft+9,row+lineheight+(int)rp->TxBaseline,"Escape stops waiting. You can keep typing.",width-18);
     } else if (plugin) {
         sprintf(label,beam_str(MSG_PLUGIN_LINE),plugin->name,
                 plugin->category[0]?"  [":"",
@@ -2059,7 +2162,7 @@ static void render_parts(int parts)
         } else {
             int live=preview_text[0] && !strcmp(preview_for,query);
             draw_text(rp,window->BorderLeft+9,row+lineheight+(int)rp->TxBaseline,
-                      live?preview_text:plugin->example[0]?plugin->example:plugin->description,
+                      live?preview_text:plugin_feedback[0] && !strcmp(plugin_feedback_query,query)?plugin_feedback:plugin->example[0]?plugin->example:plugin->description,
                       width-18);
         }
         if (selected_icon_usable)
@@ -2124,7 +2227,8 @@ static void render_parts(int parts)
                 beam_copy(label,beam_str(MSG_BADGE_FAVORITE),sizeof(label));
                 beam_copy(label+strlen(label),it->name,sizeof(label)-(unsigned int)strlen(label));
             } else {
-                beam_copy(label,it->kind==BEAM_ITEM_MODULE?beam_str(MSG_BADGE_MODULE):
+                beam_copy(label,it->kind==BEAM_ITEM_QUERY?"QUERY  ":
+                    it->kind==BEAM_ITEM_MODULE?beam_str(MSG_BADGE_MODULE):
                     it->kind==BEAM_ITEM_SCRIPT?beam_str(MSG_BADGE_SCRIPT):
                     it->kind==BEAM_ITEM_BOOKMARK?beam_str(MSG_BADGE_WEB):
                     it->kind==BEAM_ITEM_SNIPPET?beam_str(MSG_BADGE_SNIPPET):
@@ -2401,6 +2505,20 @@ static void plugin_status(const char *message)
     else beam_copy(status,message,sizeof(status));
 }
 
+/* Offer retries only for known read-only queries; never replay an action. */
+static void plugin_offer_retry(const char *reason)
+{
+    struct BeamLauncherPlugin *p=query_plugin();char message[121];
+    if(!p || !beam_plugin_query_readonly(p->id,query_plugin_input(p)) ||
+       (p>=plugins && p<plugins+plugin_count && beam_plugin_health_is_quarantined(&plugin_health,plugin_manifest[p-plugins])))return;
+    beam_copy(message,reason,sizeof(message));
+    memset(plugin_rows,0,sizeof(plugin_rows));
+    plugin_rows[0].kind=BEAM68_ROW_TEXT;beam_copy(plugin_rows[0].text,message,sizeof(plugin_rows[0].text));
+    plugin_rows[1].kind=BEAM68_ROW_QUERY;beam_copy(plugin_rows[1].text,"Retry search",sizeof(plugin_rows[1].text));
+    beam_copy(plugin_rows[1].value,query,sizeof(plugin_rows[1].value));
+    plugin_row_count=2;rows_active=1;plugin_retry_row=1;selected=1;
+    beam_copy(rows_title,p->name,sizeof(rows_title));search_items();
+}
 /* Native protocol-1 plugins reply through the public message port. ARexx
  * scripts use the atomic text transport. Neither blocks the event loop. */
 static void plugin_request_complete(unsigned long serial)
@@ -2486,6 +2604,8 @@ static void plugin_finish(const char *reply,int is_error,int terminal)
         return;
     }
     if (!strcmp(query,plugin_original_query)) {
+        beam_copy(plugin_feedback,reply,sizeof(plugin_feedback));
+        beam_copy(plugin_feedback_query,query,sizeof(plugin_feedback_query));
         if (is_error) {
             plugin_status(beam_str(MSG_PLUGIN_ERROR));
             if (strlen(status)+1+strlen(reply)<sizeof(status)) {
@@ -2511,6 +2631,7 @@ static void plugin_finish(const char *reply,int is_error,int terminal)
         sprintf(part_path,"%s.part",plugin_result_path);
         DeleteFile((STRPTR)part_path);
     }
+    if(is_error && !strcmp(query,plugin_original_query))plugin_offer_retry(reply);
     if (window) render();
 }
 /* Detach, never kill, an unsupervised child. Its serial/path remain unique;
@@ -2553,6 +2674,7 @@ static void plugin_poll(void)
                                                    plugin_active_manifest))
                 plugin_status(beam_str(MSG_PLUGIN_TIMEOUT_QUARANTINED));
             else plugin_status(beam_str(MSG_PLUGIN_TIMEOUT));
+            plugin_offer_retry(status);
         }
         if (window) render();
         return;
@@ -2660,13 +2782,69 @@ static void run_preview(void)
     preview_job=plugin_job.active;
 }
 
+/* Check availability locally, without starting network traffic or changing settings. */
+static const char *plugin_dependency_problem(const struct BeamLauncherPlugin *p)
+{
+    struct Library *network;BPTR file,lock;
+    char line[256],curl[BEAM_MAX_PATH];
+    int wiki=!strcmp(p->id,"org.beam68.wikipedia");
+    if(!wiki && !beam_equal(p->category,"Internet"))return NULL;
+    network=OpenLibrary("bsdsocket.library",4);
+    if(!network)return "TCP/IP is unavailable. Start your network stack, then try again.";
+    CloseLibrary(network);
+    if(!wiki)return NULL;
+    beam_copy(curl,"C:curl",sizeof(curl));
+    file=Open("ENVARC:Beam68/Plugins/Wikipedia.cfg",MODE_OLDFILE);
+    if(file) {
+        while(FGets(file,line,sizeof(line))) {
+            char *key=beam_trim(line),*eq=strchr(key,'=');
+            if(eq){*eq++=0;if(beam_equal(beam_trim(key),"CURL"))beam_copy(curl,beam_trim(eq),sizeof(curl));}
+        }
+        Close(file);
+    }
+    lock=Lock((STRPTR)curl,ACCESS_READ);
+    if(!lock)return "Wikipedia downloader is missing. Set its HTTPS downloader in Plugin Settings (normally C:curl).";
+    UnLock(lock);return NULL;
+}
+
+static int plugin_history_select(const struct BeamLauncherPlugin *p)
+{
+    if(!p || !beam_plugin_history_path(p->id,plugin_queries_path,sizeof(plugin_queries_path)))return 0;
+    if(strcmp(plugin_queries_id,p->id)){
+        unsigned int i=0,j;char owner[64];
+        beam_query_history_load(&plugin_queries,plugin_queries_path);
+        while(i<plugin_queries.count){
+            if(beam_plugin_query_parse(plugin_queries.entries[i],owner,sizeof(owner),NULL) && !strcmp(owner,p->id)){++i;continue;}
+            for(j=i;j+1<plugin_queries.count;++j)strcpy(plugin_queries.entries[j],plugin_queries.entries[j+1]);
+            --plugin_queries.count;
+        }
+        beam_query_history_end(&plugin_queries);
+        beam_copy(plugin_queries_id,p->id,sizeof(plugin_queries_id));
+    }return 1;
+}
+static void plugin_history_record(const struct BeamLauncherPlugin *p,const char *input)
+{
+    char canonical[BEAM_QUERY_LEN+1];BPTR dir;
+    if(executing_preview || !beam_plugin_query_readonly(p->id,input) || !plugin_history_select(p))return;
+    if(p->prefix[0]){
+        if(strlen(p->prefix)+strlen(input)>BEAM_QUERY_LEN)return;
+        strcpy(canonical,p->prefix);strcat(canonical,input);
+    }else{if(strlen(input)+1>BEAM_QUERY_LEN)return;canonical[0]=p->trigger;strcpy(canonical+1,input);}
+    dir=CreateDir("ENVARC:Beam68");if(dir)UnLock(dir);
+    dir=CreateDir("ENVARC:Beam68/PluginQueries");if(dir)UnLock(dir);
+    beam_query_history_record(&plugin_queries,canonical);
+    if(!beam_query_history_save(&plugin_queries,plugin_queries_path))
+        plugin_status("Query history could not be saved; recall remains available this session.");
+}
 static void execute_plugin(struct BeamLauncherPlugin *p)
 {
     const char *q=query_plugin_input(p);
+    if(executing_preview && discover_plugin(query)>=0)return;
     char hex[BEAM_QUERY_LEN*2+2],command[512];
     struct DateStamp stamp;
     LONG rc;
     int request_slot;
+    const char *dependency;
     int plugin_index=(p>=plugins && p<plugins+plugin_count)?(int)(p-plugins):-1;
     if (!executing_preview) {
         preview_ticks=0;preview_waiting=0;preview_text[0]=preview_for[0]=0;
@@ -2692,6 +2870,10 @@ static void execute_plugin(struct BeamLauncherPlugin *p)
         beam_copy(plugin_active_name,p->name,sizeof(plugin_active_name));
         plugin_status(beam_str(MSG_PLUGIN_IS_QUARANTINED));render();return;
     }
+    if(!executing_preview && (dependency=plugin_dependency_problem(p))!=NULL) {
+        beam_copy(plugin_active_name,p->name,sizeof(plugin_active_name));
+        plugin_status(dependency);plugin_offer_retry(dependency);render();return;
+    }
     if (beam_plugin_needs_confirmation(p->id,q,
             beam_capability_list_has(p->capabilities,"SYSTEM")) &&
         (plugin_confirm!=plugin_index || !beam_equal(plugin_confirm_query,query))) {
@@ -2701,6 +2883,7 @@ static void execute_plugin(struct BeamLauncherPlugin *p)
         render();return;
     }
     plugin_confirm=-1;plugin_confirm_query[0]=0;
+    rows_active=0;plugin_retry_row=0;plugin_feedback[0]=0;
     beam_copy(plugin_active_name,p->name,sizeof(plugin_active_name));
     if (p>=plugins && p<plugins+plugin_count)
         beam_copy(plugin_active_manifest,plugin_manifest[p-plugins],sizeof(plugin_active_manifest));
@@ -2762,9 +2945,7 @@ static void execute_plugin(struct BeamLauncherPlugin *p)
         plugin_status(beam_str(MSG_PLUGIN_ERR_START)); render();return;
     }
     beam_copy(plugin_original_query,query,sizeof(plugin_original_query));
-    beam_query_history_record(&query_history,query);
-    if (query_history.pending>=4)
-        beam_query_history_save(&query_history,BEAM_QUERY_HISTORY_PATH);
+    plugin_history_record(p,q);
     GetSysTime(&plugin_started);
     plugin_request_started[request_slot]=plugin_started;
     plugin_request_timeout[request_slot]=(unsigned short)cfg.plugin_timeout;
@@ -2902,7 +3083,11 @@ static void whd_index_poll(void)
                 }
             }
             reconcile_scan(whd_index_complete);whd_index_phase=0;whd_index_close();++index_generation;
-            if(whd_index_complete && cfg.index_cache && index_cache_path[0])beam_cache_save(&cfg,&beam_index,index_cache_path);
+            if(whd_index_complete && cfg.index_cache && index_cache_path[0]) {
+                struct BeamScanStatus base;scan_snapshot(&base);
+                if(!base.scanning && !base.capped && !base.unreadable && !base.io_errors && !base.overlong &&
+                   (base.cached || beam_scan_cacheable(&base)))beam_cache_save(&cfg,&beam_index,index_cache_path);
+            }
             search_items();if(window)render();return;
         }
         sep=strchr(line,'\t');if(!sep){whd_index_close();return;}*sep++=0;
@@ -3040,7 +3225,19 @@ static void launch_selected(void)
     const char *shell_command=NULL;
     int restart_kind=beam_restart_query(query);
     int scope=beam_search_scope_parse(query,NULL);
-    if ((help_mode || scope==BEAM_SCOPE_PLUGIN) && result_count &&
+    if(args_item<0 && !rows_active && !browse_active &&
+       (beam_equal(query,"scan:cancel") || beam_equal(query,"scan:status") || beam_equal(query,"scan:start"))) {
+        struct BeamScanStatus info;
+        if(beam_equal(query,"scan:cancel")) {
+            scan_cancel();notify_refresh_ticks=0;whd_index_wanted=0;whd_index_close();
+            beam_copy(status,"Indexing cancelled; existing results retained. F2 rescans.",sizeof(status));
+        } else {
+            if(beam_equal(query,"scan:start"))scan_begin(all_roots());
+            scan_snapshot(&info);beam_scan_status_format(&info,status,sizeof(status));
+        }
+        query[0]=0;query_cursor=0;query_view_start=0;search_items();render();return;
+    }
+    if ((help_mode || scope==BEAM_SCOPE_PLUGIN || plugin_discovery>=0) && result_count &&
         selected>=0 && selected<result_count) {
         const struct BeamHelpEntry *entry=&help_entries[results[selected]];
         if (!entry->insert[0]) {
@@ -3055,6 +3252,28 @@ static void launch_selected(void)
         int kind;
         if (!result_count || selected>=result_count) return;
         e=&ext[results[selected]];
+        if(ext_scope==BEAM_SCOPE_SCAN_FAILURES) {
+            int root=e->kind;
+            if(root>=0 && root<cfg.dir_count)scan_begin(1UL<<root);
+            ext_exit();query[0]=0;query_cursor=0;
+            beam_copy(status,"Retrying the configured root; existing results retained.",sizeof(status));
+            search_items();render();return;
+        }
+        if(ext_scope==BEAM_SCOPE_HEALTH) {
+            int n;char manifest[BEAM_MAX_PATH];beam_copy(manifest,e->path,sizeof(manifest));
+            for(n=0;n<cfg.plugin_file_count;n++)if(beam_equal(cfg.plugin_files[n],manifest))break;
+            if(n==cfg.plugin_file_count)return;
+            if(!beam_plugin_enabled(&cfg,manifest)) {
+                beam_copy(status,"Plugin disabled. Enable it with Toggle in Preferences before retrying.",sizeof(status));render();return;
+            }
+            beam_plugin_health_clear_quarantine(&plugin_health,manifest);
+            reload_plugins_only();
+            for(n=0;n<plugin_count;n++)if(beam_equal(plugin_manifest[n],manifest))break;
+            ext_exit();
+            if(n<plugin_count)beam_copy(query,plugins[n].example[0]?plugins[n].example:plugins[n].prefix,sizeof(query));
+            query_cursor=(int)strlen(query);search_items();
+            beam_copy(status,"Retry prepared. Review the query, then press Enter to run it.",sizeof(status));render();return;
+        }
         if (ext_scope==BEAM_SCOPE_STATS) {
             int index=beam_index_find(&beam_index,e->path);
             if (index>=0) {
@@ -3090,10 +3309,13 @@ static void launch_selected(void)
             hide_window(); return;
         }
         if (r->kind==BEAM68_ROW_QUERY && r->value[0]) {
-            rows_active=0;
+            int retry=plugin_retry_row && results[selected]==1;
+            plugin_retry_row=0;rows_active=0;
             beam_copy(query,r->value,sizeof(query));
             query_cursor=(int)strlen(query); query_view_start=0; status[0]=0;
-            search_items(); render(); return;
+            search_items();
+            if(retry && query_plugin())execute_plugin(query_plugin());
+            render(); return;
         }
         beam_copy(status,beam_str(beam_clip_write(r->text)?MSG_COPIED:MSG_COPY_FAILED),sizeof(status));
         render(); return;
@@ -3202,6 +3424,16 @@ static void launch_selected(void)
     }
     if (!result_count || selected>=result_count) return;
     it=&items[results[selected]];
+    if(it->kind==BEAM_ITEM_QUERY){
+        char owner[64],saved[BEAM_QUERY_LEN+1];
+        if(strncmp(it->path,"QUERY:",6) || !beam_plugin_query_parse(it->path+6,owner,sizeof(owner),NULL)){
+            beam_copy(status,"This saved query is invalid or is not read-only.",sizeof(status));render();return;
+        }
+        beam_copy(saved,it->path+6,sizeof(saved));
+        if(!window)show_window();
+        beam_copy(query,saved,sizeof(query));query_cursor=(int)strlen(query);query_view_start=0;
+        search_items();beam_copy(status,"Saved query loaded. Press Enter to search; enable its plugin if needed.",sizeof(status));render();return;
+    }
     if (action_mode==BEAM_ACTION_DRAWER) {
         char parent[BEAM_MAX_PATH];
         if (!beam_parent_drawer(it->path,parent,sizeof(parent)) ||
@@ -3422,26 +3654,43 @@ static void quick_launch(int n)
  * go to ENVARC and the current ENV copy, both human-editable text. */
 static void toggle_favorite(void)
 {
-    struct BeamItem *item;
+    char path[BEAM_MAX_PATH],owner[64],canonical[BEAM_QUERY_LEN+1];const char *candidate=NULL;
     int added,active_ok;
-    if (help_mode || browse_active || args_item>=0 || rows_active || ext_active ||
-        beam_search_scope_parse(query,NULL)==BEAM_SCOPE_PLUGIN ||
-        query_plugin() || selected<0 || selected>=result_count) return;
-    item=&items[results[selected]];
-    added=beam_favorites_toggle(&favorites,item->path);
-    if (added<0) {
-        beam_copy(status,beam_str(MSG_FAV_FULL),sizeof(status));render();return;
+    if(rows_active && selected>=0 && selected<result_count &&
+       plugin_rows[results[selected]].kind==BEAM68_ROW_QUERY)
+        candidate=plugin_rows[results[selected]].value;
+    else if(query_plugin()){
+        struct BeamLauncherPlugin *p=query_plugin();const char *q=query_plugin_input(p);
+        if(p->prefix[0]){
+            if(strlen(p->prefix)+strlen(q)>=sizeof(canonical))return;
+            strcpy(canonical,p->prefix);strcat(canonical,q);
+        }else{if(strlen(q)+2>sizeof(canonical))return;canonical[0]=p->trigger;strcpy(canonical+1,q);}
+        candidate=canonical;
     }
-    if (!beam_favorites_save(&favorites,BEAM_FAVS_ENVARC)) {
-        beam_favorites_toggle(&favorites,item->path); /* undo */
-        beam_copy(status,beam_str(MSG_FAV_SAVE_FAILED),sizeof(status));
-        render(); return;
+    if(candidate){
+        if(!beam_plugin_query_parse(candidate,owner,sizeof(owner),NULL) || strlen(candidate)+7>sizeof(path)){
+            beam_copy(status,"Only read-only plugin searches or entities can be pinned.",sizeof(status));render();return;
+        }
+        sprintf(path,"QUERY:%s",candidate);
+    }else{
+        if(help_mode||browse_active||args_item>=0||rows_active||ext_active||
+           beam_search_scope_parse(query,NULL)==BEAM_SCOPE_PLUGIN||selected<0||selected>=result_count)return;
+        beam_copy(path,items[results[selected]].path,sizeof(path));
+    }
+    if(candidate && !beam_favorites_contains(&favorites,path) && beam_index_find(&beam_index,path)<0 && item_count>=beam_index.capacity){
+        beam_copy(status,"Index full. Increase maximum indexed items before pinning a query.",sizeof(status));render();return;
+    }
+    added=beam_favorites_toggle(&favorites,path);
+    if(added<0){beam_copy(status,beam_str(MSG_FAV_FULL),sizeof(status));render();return;}
+    if(!beam_favorites_save(&favorites,BEAM_FAVS_ENVARC)){
+        beam_favorites_toggle(&favorites,path);beam_copy(status,beam_str(MSG_FAV_SAVE_FAILED),sizeof(status));render();return;
     }
     active_ok=beam_favorites_save(&favorites,BEAM_FAVS_ENV);
-    bind_favorite_meta();
-    search_items();
-    if (!active_ok) beam_copy(status,beam_str(MSG_FAV_ENV_FAILED),sizeof(status));
-    else beam_copy(status,added?beam_str(MSG_FAV_PINNED):beam_str(MSG_FAV_UNPINNED),sizeof(status));
+    if(!beam_favorites_save(&favorites,BEAM_FAVS_SESSION))active_ok=0;
+    index_query_favorites();bind_favorite_meta();search_items();
+    beam_copy(status,!active_ok?beam_str(MSG_FAV_ENV_FAILED):added?beam_str(MSG_FAV_PINNED):beam_str(MSG_FAV_UNPINNED),sizeof(status));
+    if(candidate && added && beam_index_find(&beam_index,path)<0)
+        beam_copy(status,"Query saved; insufficient index memory to display it. Free memory or rescan.",sizeof(status));
     render();
 }
 
@@ -3682,7 +3931,7 @@ static int reload_config(void)
     quick_filters_install();
     load_plugins();
     if (rescan) { beam_index_clear(&beam_index); ++index_generation; refresh_index(0); }
-    else bind_all_meta();
+    else { index_query_favorites();bind_all_meta(); }
     notify_start(); search_items();
     if (reopen_window) show_window();
     if (plugin_load_errors)
@@ -3835,14 +4084,20 @@ static void drain_replies(void)
                         sizeof(m->rows[i].text),m->rows[i].value,sizeof(m->rows[i].value))) valid=0;
             if (!valid) plugin_finish(beam_str(MSG_PLUGIN_INVALID_RESPONSE),1,terminal);
             else {
+                struct Beam68ReplyRow previous;int had_previous=rows_active && selected>=0 && selected<result_count;
+                if(had_previous)previous=plugin_rows[results[selected]];
                 for (i=0;i<n;i++) plugin_rows[i]=m->rows[i];
                 beam_copy(rows_title,plugin_active_name,sizeof(rows_title));
                 plugin_finish(plugin_rows[0].text,m->is_error,1);
                 if (!was_preview && !m->is_error &&
                     (n>1 || plugin_rows[0].kind!=BEAM68_ROW_TEXT)) {
-                    plugin_row_count=n; rows_active=1;
+                    plugin_retry_row=0;plugin_row_count=n; rows_active=1;selected=0;
                     sprintf(status,beam_str(MSG_ROWS_STATUS),rows_title,(long)n);
                     search_items();
+                    if(had_previous)for(i=0;i<n;++i)if(beam_job_row_same(previous.kind,previous.value,previous.text,
+                       plugin_rows[i].kind,plugin_rows[i].value,plugin_rows[i].text)){
+                        selected=i;break;
+                    }
                     if (window) render();
                 }
             }
@@ -4043,7 +4298,7 @@ static void handle_window_messages(void)
             int bottom=window->Height-window->BorderBottom-lineheight-8;
             int count=completions.count?(int)completions.count:result_count;
             int visible,index;
-            if (!completions.count && (help_mode || beam_search_scope_parse(query,NULL)==BEAM_SCOPE_PLUGIN))
+            if (!completions.count && (help_mode || beam_search_scope_parse(query,NULL)==BEAM_SCOPE_PLUGIN || plugin_discovery>=0))
                 bottom-=lineheight;
             visible=beam_result_rows(top,lineheight,bottom,count);
             index=beam_hit_result(mouse_y,top,lineheight,bottom,visible);
@@ -4078,7 +4333,7 @@ static void handle_window_messages(void)
                 int lineheight=launcher_lineheight(window->RPort);
                 int page=beam_result_rows(window->BorderTop+lineheight+9,
                     lineheight,window->Height-window->BorderBottom-lineheight-8-
-                    ((help_mode || beam_search_scope_parse(query,NULL)==BEAM_SCOPE_PLUGIN)?lineheight:0),
+                    ((help_mode || beam_search_scope_parse(query,NULL)==BEAM_SCOPE_PLUGIN || plugin_discovery>=0)?lineheight:0),
                     result_count);
                 int next=beam_result_navigate(selected,result_count,direction,
                     code==RAWKEY_PAGEUP || code==RAWKEY_PAGEDOWN ||
@@ -4091,7 +4346,7 @@ static void handle_window_messages(void)
                 }
             } else if (code==RAW_BACKSPACE && (qualifier&IEQUALIFIER_CONTROL)) {
                 if (beam_query_edit(query,sizeof(query),&query_cursor,BEAM_EDIT_CLEAR,0)) {
-                    beam_query_history_end(&query_history);
+                    beam_query_history_end(&query_history);beam_query_history_end(&plugin_queries);
                     status[0]=0;last_clicked=-1;search_items(); changed=BEAM_RENDER_ALL;
                 }
             } else if (code==RAW_RIGHT && query_cursor>=(int)strlen(query) &&
@@ -4128,7 +4383,7 @@ static void handle_window_messages(void)
                         BEAM_RENDER_HEADER:0;
             } else if (code==RAW_TAB) {
                 if (completions.count) accept_completion();
-                else if (help_mode || beam_search_scope_parse(query,NULL)==BEAM_SCOPE_PLUGIN)
+                else if (help_mode || beam_search_scope_parse(query,NULL)==BEAM_SCOPE_PLUGIN || plugin_discovery>=0)
                     launch_selected();
                 else if (result_count && !query_plugin()) {
                     action_mode=beam_next_action(action_mode,selected_has_custom_action());
@@ -4156,6 +4411,9 @@ static void handle_window_messages(void)
                 help_mode=!help_mode;query[0]=0;query_cursor=0;query_view_start=0;
                 status[0]=0;search_items();
                 changed=BEAM_RENDER_ALL;
+            } else if (code==RAW_F2 && (qualifier&IEQUALIFIER_CONTROL)) {
+                scan_cancel();notify_refresh_ticks=0;whd_index_wanted=0;whd_index_close();beam_copy(status,"Indexing cancelled; existing results retained. F2 rescans.",sizeof(status));
+                search_items();changed=BEAM_RENDER_ALL;
             } else if (code==RAW_F2) {
                 /* F2 updates incrementally (results stay usable);
                    Shift+F2 rebuilds from scratch, refreshing everything
@@ -4175,11 +4433,18 @@ static void handle_window_messages(void)
             else if (code==RAW_F5) { open_preferences(); return; }
             else if (code==RAW_F6) { toggle_favorite(); }
             else if (code==RAW_F7) {
-                const char *saved=(qualifier&(IEQUALIFIER_LSHIFT|IEQUALIFIER_RSHIFT))?
-                    beam_query_history_newer(&query_history):
-                    beam_query_history_older(&query_history);
+                struct BeamLauncherPlugin *p=query_plugin();
+                struct BeamQueryHistory *history=&query_history;
+                const char *saved;
+                if(p && plugin_history_select(p))history=&plugin_queries;
+                saved=beam_query_history_recall(history,
+                    (qualifier&(IEQUALIFIER_LSHIFT|IEQUALIFIER_RSHIFT))!=0,history==&query_history);
                 if (saved) {
-                    beam_copy(query,saved,sizeof(query));
+                    rows_active=0;plugin_retry_row=0;
+                    if(p && !*saved){
+                        if(p->prefix[0])beam_copy(query,p->prefix,sizeof(query));
+                        else{query[0]=p->trigger;query[1]=0;}
+                    }else beam_copy(query,saved,sizeof(query));
                     query_cursor=(int)strlen(query); query_view_start=0;
                     status[0]=0; last_clicked=-1; search_items(); changed=BEAM_RENDER_ALL;
                 } else {
@@ -4214,7 +4479,7 @@ static void handle_window_messages(void)
                         if ((unsigned char)clip[k]>=32 && (unsigned char)clip[k]<127)
                             beam_query_edit(query,sizeof(query),&query_cursor,
                                             BEAM_EDIT_INSERT,clip[k]);
-                    beam_query_history_end(&query_history);
+                    beam_query_history_end(&query_history);beam_query_history_end(&plugin_queries);
                     status[0]=0; last_clicked=-1;
                     timing_edit_begin(&input_started);
                     schedule_preview();
@@ -4268,7 +4533,7 @@ static void handle_window_messages(void)
             }
             else if (code==9) {
                 if (completions.count) { accept_completion(); render(); }
-                else if (help_mode || beam_search_scope_parse(query,NULL)==BEAM_SCOPE_PLUGIN)
+                else if (help_mode || beam_search_scope_parse(query,NULL)==BEAM_SCOPE_PLUGIN || plugin_discovery>=0)
                     launch_selected();
                 else if (result_count && !query_plugin()) {
                     action_mode=beam_next_action(action_mode,selected_has_custom_action());
@@ -4288,7 +4553,7 @@ static void handle_window_messages(void)
                     timing_edit_begin(&input_started);
                     rows_active=0;
                     schedule_preview();
-                    beam_query_history_end(&query_history);
+                    beam_query_history_end(&query_history);beam_query_history_end(&plugin_queries);
                     status[0]=0;last_clicked=-1;
                     /* Coalesce: a burst of queued keys costs one search. */
                     search_pending=1; render_pending|=BEAM_RENDER_ALL;

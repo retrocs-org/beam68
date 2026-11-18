@@ -87,6 +87,7 @@ void beam_config_defaults(struct BeamConfig *c)
     beam_copy(c->plugin_files[c->plugin_file_count++],"PROGDIR:Plugins/MusicControls.plugin",BEAM_MAX_PATH);
     beam_copy(c->plugin_files[c->plugin_file_count++],"PROGDIR:Plugins/AminetBrowser/AminetBrowser.plugin",BEAM_MAX_PATH);
     beam_copy(c->plugin_files[c->plugin_file_count++],"PROGDIR:Plugins/Wikipedia/Wikipedia.plugin",BEAM_MAX_PATH);
+    beam_copy(c->plugin_files[c->plugin_file_count++],"PROGDIR:Plugins/AmiHASS/AmiHASS.plugin",BEAM_MAX_PATH);
     /* The first six entries are the essential local tools. Optional and
        network plugins are installed but require explicit activation. */
     for(i=6;i<c->plugin_file_count;i++)

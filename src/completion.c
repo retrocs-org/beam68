@@ -13,6 +13,14 @@ static int prefix_ci(const char *text,const char *prefix)
     return 1;
 }
 
+int beam_completion_prefix_only(const char *query,const char *prefix)
+{
+    if(!query || !prefix || !*prefix || !prefix_ci(query,prefix))return 0;
+    query+=strlen(prefix);
+    while(*query==' ' || *query=='\t')query++;
+    return !*query;
+}
+
 static int equal_ci(const char *a,const char *b)
 {
     while (*a && *b)

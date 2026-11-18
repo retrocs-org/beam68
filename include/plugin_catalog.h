@@ -27,5 +27,7 @@ void beam_catalog_format_row(char *out,unsigned int cap,unsigned int columns,
 int beam_catalog_is_bundled(const struct BeamConfig *c,int index,const struct BeamPlugin *p);
 int beam_catalog_can_preview(const struct BeamPlugin *plugin);
 int beam_catalog_has_settings(const struct BeamPlugin *plugin);
+int beam_catalog_setting_defaults(const struct BeamPlugin *p,
+    char values[BEAM_MAX_PLUGIN_SETTINGS][64]);
 int beam_catalog_setting_value(const struct BeamPluginSetting *setting, const char *value, char *out, unsigned int cap);
 #endif

@@ -120,7 +120,7 @@ class ReleaseTests(unittest.TestCase):
                     'sdk/Example/HelloRexx/HelloRexx.rexx':'/* example */\n',
                     'sdk/Example/Makefile':'all:\n',
                     'sdk/tools/package-plugin.py':'# package validator\n',
-                    'docs/RELEASE-NOTES.md': '# Beam68 0.1\n\nLauncher.\n\n## Features\n\n- Search.\n\n## Installation\n\nOpen Install.\n\n## Source and Licence\n\nMIT; https://github.com/retrocs-org/beam68\n\n## Version Changelog\n\n### 0.1\n\nInitial release.\n',
+                    'docs/RELEASE-NOTES.md': 'Initial release.\n',
                     'scripts/build-install-amiga.sh': 'runtime_executables="\nBeam68\n"\nruntime_data="\nLICENSE\n"\n'}
         for name, text in contents.items():
             p = self.root / name
@@ -175,8 +175,8 @@ class ReleaseTests(unittest.TestCase):
         text=(self.root/'docs/RELEASE-NOTES.md').read_text()
         rel.validate_release_notes(self.root,'0.1',text)
         for bad in (text.replace('Initial release.','Only some changes.'),
-                    text.replace('## Installation','## Setup'),
-                    text.replace('# Beam68 0.1','# Beam68 0.2'),
+                    text+'\n## Installation\nOpen Install.\n',
+                    '# Beam68 0.1\n'+text,
                     text+'\nIn development\n'):
             with self.assertRaises(ReleaseError):
                 rel.validate_release_notes(self.root,'0.1',bad)
@@ -323,6 +323,8 @@ class ReleaseTests(unittest.TestCase):
         self.assertFalse(api.r['draft'])
         self.assertIs(api.r['prerelease'],False)
         self.assertEqual(api.r['make_latest'],'true')
+        self.assertEqual(api.r['name'],'Beam68 0.1')
+        self.assertEqual(api.r['tag_name'],'0.1')
         patch_index = next(i for i, e in enumerate(api.events) if e[0] == 'PATCH')
         uploads = [i for i, e in enumerate(api.events) if 'uploads.github.com' in e[1]]
         self.assertEqual(len(uploads), len(m['files']))
@@ -342,6 +344,8 @@ class ReleaseTests(unittest.TestCase):
         api=GitlabAPI(m['gitlab']);adapter=rel.GitLab(m,self.tool.out,api)
         adapter.publish()
         self.assertIn('released_at',api.r)
+        self.assertEqual(api.r['name'],'Beam68 0.1')
+        self.assertEqual(api.r['tag_name'],'0.1')
         self.assertIn(('GET',adapter.base+'/releases/permalink/latest'),api.events)
         api.r['upcoming_release']=True
         adapter.publish()

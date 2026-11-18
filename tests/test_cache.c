@@ -164,6 +164,10 @@ int main(void)
     cfg.index_cache=1; cfg.scan_icons=1; cfg.max_items=16; cfg.max_depth=4;
     cfg.dir_count=1; strcpy(cfg.dirs[0],"SYS:Tools");
     assert(beam_index_init(&items,16) && beam_index_init(&loaded,16));
+    assert(beam_index_add(&items,"QUERY:wiki:Amiga",BEAM_ITEM_QUERY,BEAM_ROOT_SOURCES,NULL)==0);
+    assert(beam_index_set_title(&items,0,"wiki:Amiga"));
+    assert(beam_cache_save(&cfg,&items,cache_file)&&beam_cache_load(&cfg,&loaded,cache_file));
+    assert(loaded.count==1&&loaded.items[0].kind==BEAM_ITEM_QUERY&&!strcmp(loaded.items[0].name,"wiki:Amiga"));
     fill();
     assert(!strcmp(items.items[1].name,"Amiga%App\tX"));
     assert(!strcmp(items.items[3].name,"Work:"));

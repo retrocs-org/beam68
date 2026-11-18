@@ -1,0 +1,16 @@
+VERSION=1
+ID=org.beam68.amihass
+PLUGIN_VERSION=0.1
+MIN_BEAM68=0.4
+AUTHOR=Beam68 contributors
+LICENSE=MIT
+NAME=AmiHASS
+TRIGGER=[
+PREFIX=HA:
+COMMAND=PLUGINDIR:AmiHASS
+DESCRIPTION=Search Home Assistant entities, read states and confirm device actions through AmiHASS.
+CATEGORY=Smart home
+CAPABILITIES=SYSTEM
+ICON=PROGDIR:Beam68
+EXAMPLE=ha:kitchen
+HELP=Requires a configured running AmiHASS service. Search, select an entity, then choose an action. Actions ask for confirmation.

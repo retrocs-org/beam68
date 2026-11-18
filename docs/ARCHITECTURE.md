@@ -1,4 +1,4 @@
-# Beam68 architecture — 0.3
+# Beam68 architecture — 0.4
 
 ```text
 Workbench launch (WBStartup/Beam68Start Project)
@@ -172,7 +172,7 @@ After about 30 seconds the wait expires but the AmigaDOS child is not killed,
 so abandoned files and runaway third-party processes remain an OS-level
 limitation. Native manifests and reply messages both declare public Protocol 1.
 
-The project **application version is 0.3**. Keep it at 0.3 until explicitly requested otherwise.
+The project **application version is 0.4**. Keep it at 0.4 until explicitly requested otherwise.
 
 ## Custom themes, memory fallback and recovery (version 0.1)
 

@@ -80,6 +80,9 @@ struct Library *KeymapBase;
 #define PAGE_LAST PAGE_LAYOUT
 #define G_GROUP 108
 #define G_UNLIMITED 110
+#define G_INDEX_VIEW 111
+static int index_settings_view;
+static int settings_qa_active;
 #define G_USE 2
 #define G_SAVE 3
 #define G_CANCEL 4
@@ -201,7 +204,7 @@ static struct AppWindow *app_window;
 static struct Screen *screen;
 static APTR visual;
 static struct Gadget *gadgets;
-static struct Gadget *g[111];
+static struct Gadget *g[112];
 static struct BeamPlugin plugin_metadata[BEAM_MAX_PLUGINS];
 static unsigned char plugin_states[BEAM_MAX_PLUGINS];
 static char detail_title[128];
@@ -464,18 +467,18 @@ static int build_window(void)
         last=add_gadget(BUTTON_KIND,last,G_CAPTURE,w-130,42,110,17,
                         pstr(PMSG_CAPTURE),PLACETEXT_IN);
         g[G_CAPTURE]=last;
-        last=add_tagged(INTEGER_KIND,last,G_MAXITEMS,right+85,75,100,14,
+        last=add_tagged(INTEGER_KIND,last,G_MAXITEMS,right+85,(h<230?69:75),100,14,
                         pstr(PMSG_MAX_ITEMS),PLACETEXT_LEFT,
                         GTIN_Number,(ULONG)config.max_items,GTIN_MaxChars,4);
         g[G_MAXITEMS]=last;
-        last=add_tagged(INTEGER_KIND,last,G_VISIBLE,right+85,104,100,14,
+        last=add_tagged(INTEGER_KIND,last,G_VISIBLE,right+85,(h<230?91:104),100,14,
                         pstr(PMSG_RESULTS),PLACETEXT_LEFT,
                         GTIN_Number,(ULONG)config.visible,GTIN_MaxChars,2);
         g[G_VISIBLE]=last;
-        last=add_tagged(CHECKBOX_KIND,last,G_HISTORY,right+85,137,22,12,
+        last=add_tagged(CHECKBOX_KIND,last,G_HISTORY,right+85,(h<230?106:137),22,12,
                         pstr(PMSG_RANK_FREQUENT),PLACETEXT_RIGHT,
                         GTCB_Checked,config.history,TAG_IGNORE,0); g[G_HISTORY]=last;
-        last=add_tagged(CHECKBOX_KIND,last,G_CACHE,right+300,137,22,12,
+        last=add_tagged(CHECKBOX_KIND,last,G_CACHE,right+280,(h<230?106:137),22,12,
                         pstr(PMSG_INDEX_CACHE),PLACETEXT_RIGHT,
                         GTCB_Checked,config.index_cache,TAG_IGNORE,0); g[G_CACHE]=last;
     } else if (page==PAGE_DIRS) {
@@ -485,6 +488,11 @@ static int build_window(void)
             if (strlen(excluded_text)+strlen(config.excluded_dirs[i])<sizeof(excluded_text))
                 strcat(excluded_text,config.excluded_dirs[i]);
         }
+        { static STRPTR groups[]={"Directories","Scan options",NULL};
+          last=add_tagged(CYCLE_KIND,last,G_INDEX_VIEW,right,23,250,15,"",0,
+              GTCY_Labels,(ULONG)groups,GTCY_Active,(ULONG)index_settings_view);
+          g[G_INDEX_VIEW]=last; }
+        if(index_settings_view) {
         last=add_tagged(INTEGER_KIND,last,G_DEPTH,right+72,40,65,14,
                         pstr(PMSG_DEPTH),PLACETEXT_LEFT,
                         GTIN_Number,(ULONG)(config.max_depth<0?4:config.max_depth),GTIN_MaxChars,2);
@@ -512,8 +520,9 @@ static int build_window(void)
                         content_width-110,14,pstr(PMSG_EXCLUDED),PLACETEXT_LEFT,
                         GTST_String,(ULONG)excluded_text,
                         GTST_MaxChars,sizeof(excluded_text)-1);g[G_EXCLUDED]=last;
-        last=add_tagged(LISTVIEW_KIND,last,G_LIST,right,140,content_width,
-                        entry_y-145,
+        } else {
+        last=add_tagged(LISTVIEW_KIND,last,G_LIST,right,55,content_width,
+                        entry_y-60,
                         pstr(PMSG_DIRECTORIES),PLACETEXT_ABOVE,
                         GTLV_Labels,(ULONG)&labels,TAG_IGNORE,0); g[G_LIST]=last;
         last=add_tagged(STRING_KIND,last,G_ENTRY,right,entry_y,entry_width,13,"",0,
@@ -521,6 +530,7 @@ static int build_window(void)
         last=add_gadget(BUTTON_KIND,last,G_BROWSE,button_x,entry_y-2,68,17,pstr(PMSG_BROWSE),PLACETEXT_IN); g[G_BROWSE]=last;
         last=add_gadget(BUTTON_KIND,last,G_ADD,button_x+74,entry_y-2,58,17,pstr(PMSG_ADD),PLACETEXT_IN); g[G_ADD]=last;
         last=add_gadget(BUTTON_KIND,last,G_REMOVE,button_x+136,entry_y-2,72,17,pstr(PMSG_REMOVE),PLACETEXT_IN); g[G_REMOVE]=last;
+        }
     } else if (page==PAGE_PLUGINS && plugin_settings_mode) {
         last=add_tagged(TEXT_KIND,last,G_DETAILS,right,42,content_width,18,
                         pstr(PMSG_PLUGIN_SETTINGS),PLACETEXT_ABOVE,
@@ -547,24 +557,24 @@ static int build_window(void)
                         right+content_width/2+103,140,92,17,pstr(PMSG_BACK),PLACETEXT_IN);
         g[G_PLUGIN_SETTINGS_BACK]=last;
     } else if (page==PAGE_PLUGINS) {
-        last=add_tagged(CHECKBOX_KIND,last,G_SHELL_SERVICE,right+20,42,22,12,
+        last=add_tagged(CHECKBOX_KIND,last,G_SHELL_SERVICE,right+20,(h<230?23:42),22,12,
                         pstr(PMSG_SHELL_SERVICE),PLACETEXT_RIGHT,
                         GTCB_Checked,config.shell_commands,TAG_IGNORE,0);
         g[G_SHELL_SERVICE]=last;
         last=add_tagged(LISTVIEW_KIND,last,G_LIST,right,78,content_width-130,
                         list_height-10,"",0,
                         GTLV_Labels,(ULONG)&labels,GTLV_ShowSelected,0); g[G_LIST]=last;
-        last=add_gadget(BUTTON_KIND,last,G_DETAILS,w-140,48,120,17,pstr(PMSG_DETAILS),PLACETEXT_IN);
+        last=add_gadget(BUTTON_KIND,last,G_DETAILS,w-140,(h<230?40:48),120,(h<230?13:17),pstr(PMSG_DETAILS),PLACETEXT_IN);
         g[G_DETAILS]=last;
-        last=add_gadget(BUTTON_KIND,last,G_SETTINGS,w-140,70,120,17,pstr(PMSG_SETTINGS),PLACETEXT_IN);
+        last=add_gadget(BUTTON_KIND,last,G_SETTINGS,w-140,(h<230?54:70),120,(h<230?13:17),pstr(PMSG_SETTINGS),PLACETEXT_IN);
         g[G_SETTINGS]=last;
-        last=add_gadget(BUTTON_KIND,last,G_TOGGLE,w-140,92,120,17,pstr(PMSG_TOGGLE),PLACETEXT_IN);
+        last=add_gadget(BUTTON_KIND,last,G_TOGGLE,w-140,(h<230?68:92),120,(h<230?13:17),pstr(PMSG_TOGGLE),PLACETEXT_IN);
         g[G_TOGGLE]=last;
-        last=add_gadget(BUTTON_KIND,last,G_PLUGIN_UP,w-140,114,120,17,pstr(PMSG_UP),PLACETEXT_IN);
+        last=add_gadget(BUTTON_KIND,last,G_PLUGIN_UP,w-140,(h<230?82:114),120,(h<230?13:17),pstr(PMSG_UP),PLACETEXT_IN);
         g[G_PLUGIN_UP]=last;
-        last=add_gadget(BUTTON_KIND,last,G_PLUGIN_DOWN,w-140,136,120,17,pstr(PMSG_DOWN),PLACETEXT_IN);
+        last=add_gadget(BUTTON_KIND,last,G_PLUGIN_DOWN,w-140,(h<230?96:136),120,(h<230?13:17),pstr(PMSG_DOWN),PLACETEXT_IN);
         g[G_PLUGIN_DOWN]=last;
-        last=add_gadget(BUTTON_KIND,last,G_IMPORT_PLUGIN,w-140,158,120,17,pstr(PMSG_IMPORT_PLUGIN),PLACETEXT_IN);
+        last=add_gadget(BUTTON_KIND,last,G_IMPORT_PLUGIN,w-140,(h<230?110:158),120,(h<230?13:17),pstr(PMSG_IMPORT_PLUGIN),PLACETEXT_IN);
         g[G_IMPORT_PLUGIN]=last;
         if (h>=230) {
             last=add_tagged(INTEGER_KIND,last,G_TIMEOUT,w-78,190,58,14,
@@ -685,7 +695,7 @@ static int build_window(void)
         last=add_tagged(CHECKBOX_KIND,last,G_REDUCED_COLORS,right+20,118,22,12,
                         pstr(PMSG_REDUCED_COLORS),PLACETEXT_RIGHT,
                         GTCB_Checked,config.reduced_colors,TAG_IGNORE,0);g[G_REDUCED_COLORS]=last;
-        last=add_tagged(CHECKBOX_KIND,last,G_LARGE_GADGETS,right+20,140,22,12,
+        last=add_tagged(CHECKBOX_KIND,last,G_LARGE_GADGETS,right+20,(h<230?132:140),22,12,
                         pstr(PMSG_LARGE_GADGETS),PLACETEXT_RIGHT,
                         GTCB_Checked,config.large_gadgets,TAG_IGNORE,0);g[G_LARGE_GADGETS]=last;
     } else if (page==PAGE_LAYOUT) {
@@ -697,7 +707,7 @@ static int build_window(void)
             GTIN_Number,(ULONG)config.row_spacing,GTIN_MaxChars,2);g[G_ROW_SPACING]=last;
         last=add_tagged(CYCLE_KIND,last,G_COMPACT_MODE,right+170,116,125,15,pstr(PMSG_COMPACT),PLACETEXT_LEFT,
             GTCY_Labels,(ULONG)compact_labels,GTCY_Active,(ULONG)config.compact_mode);g[G_COMPACT_MODE]=last;
-        last=add_tagged(CHECKBOX_KIND,last,G_PREVIEW,right+20,140,22,12,pstr(PMSG_ICON_PREVIEW),PLACETEXT_RIGHT,
+        last=add_tagged(CHECKBOX_KIND,last,G_PREVIEW,right+20,(h<230?132:140),22,12,pstr(PMSG_ICON_PREVIEW),PLACETEXT_RIGHT,
             GTCB_Checked,config.icon_preview,TAG_IGNORE,0);g[G_PREVIEW]=last;
     } else if (page==PAGE_SOURCES) {
         /* Index sources and how their results are opened (15-pixel rows
@@ -751,13 +761,13 @@ static int build_window(void)
                         GTTX_Text,(ULONG)launcher_status_text,
                         GTTX_Border,TRUE);
         g[G_MAIN_STATUS]=last;
-        last=add_tagged(BUTTON_KIND,last,G_MAIN_START,right,button_y,56,17,
+        last=add_tagged(BUTTON_KIND,last,G_MAIN_START,right,(h<230?button_y-24:button_y),56,17,
                         pstr(PMSG_START),PLACETEXT_IN,GA_Disabled,launcher_running,TAG_IGNORE,0);
         g[G_MAIN_START]=last;
-        last=add_tagged(BUTTON_KIND,last,G_MAIN_RESTART,right+60,button_y,76,17,
+        last=add_tagged(BUTTON_KIND,last,G_MAIN_RESTART,right+60,(h<230?button_y-24:button_y),76,17,
                         pstr(PMSG_RESTART),PLACETEXT_IN,GA_Disabled,!launcher_running,TAG_IGNORE,0);
         g[G_MAIN_RESTART]=last;
-        last=add_tagged(BUTTON_KIND,last,G_MAIN_STOP,right+140,button_y,56,17,
+        last=add_tagged(BUTTON_KIND,last,G_MAIN_STOP,right+140,(h<230?button_y-24:button_y),56,17,
                         pstr(PMSG_STOP),PLACETEXT_IN,GA_Disabled,!launcher_running,TAG_IGNORE,0);
         g[G_MAIN_STOP]=last;
     }
@@ -874,7 +884,7 @@ static void collect_page(void)
     } else if (page==PAGE_DIRS) {
         struct StringInfo *si;
         char work[512],*p,*next;
-        config.max_depth=g[G_UNLIMITED] && (g[G_UNLIMITED]->Flags&GFLG_SELECTED)?-1:(int)gadget_number(G_DEPTH);
+        if(g[G_DEPTH]) config.max_depth=g[G_UNLIMITED] && (g[G_UNLIMITED]->Flags&GFLG_SELECTED)?-1:(int)gadget_number(G_DEPTH);
         if (g[G_ICONS]) config.scan_icons=!!(g[G_ICONS]->Flags&GFLG_SELECTED);
         if (g[G_EXES]) config.scan_executables=!!(g[G_EXES]->Flags&GFLG_SELECTED);
         if (g[G_INDEX_FILES]) config.index_files=!!(g[G_INDEX_FILES]->Flags&GFLG_SELECTED);
@@ -883,7 +893,7 @@ static void collect_page(void)
         si=g[G_FILE_PATTERNS]?(struct StringInfo *)g[G_FILE_PATTERNS]->SpecialInfo:NULL;
         if (si && si->Buffer)
             beam_copy(config.file_patterns,beam_trim((char *)si->Buffer),sizeof(config.file_patterns));
-        config.excluded_dir_count=0;
+        if(g[G_EXCLUDED])config.excluded_dir_count=0;
         si=g[G_EXCLUDED]?(struct StringInfo *)g[G_EXCLUDED]->SpecialInfo:NULL;
         if (si && si->Buffer) {
             beam_copy(work,(char *)si->Buffer,sizeof(work));p=work;
@@ -1248,12 +1258,16 @@ static void modify_list(int remove)
             if (!done) set_title(install_message);
             return;
         }
-        if (n>=max) { DisplayBeep(screen); return; }
+        if (n>=max || (page==PAGE_PLUGINS && config.disabled_plugin_count>=BEAM_MAX_PLUGINS)) { DisplayBeep(screen); return; }
         for (i=0;i<n;i++) if (beam_equal(path,data[i])) return;
         if (page==PAGE_PLUGINS) {
+            if(!beam_plugin_review_reference(win,&config,path,install_message,sizeof(install_message))) {
+                set_title(install_message);return;
+            }
             config.plugin_preview_delay[n]=0;config.plugin_preview_disabled[n]=0;
         }
         beam_copy(data[n++],path,BEAM_MAX_PATH);
+        if(page==PAGE_PLUGINS) {config.plugin_file_count=n;beam_plugin_set_enabled(&config,path,0);}
     }
     if (page==PAGE_DIRS) config.dir_count=n;
     else config.plugin_file_count=n;
@@ -1886,6 +1900,7 @@ static void plugin_details(void)
             p->id,p->author,p->license,p->min_beam68,p->url);
     strcat(body,"\n\n");
     strcat(body,beam_plugin_advice(plugin_states[selection]));
+    strcat(body,"\n\n");strcat(body,beam_plugin_requirements(p->id));
     plugin_details_window(body);
 }
 
@@ -2037,6 +2052,8 @@ static int save_plugin_settings(void)
         if(had_old)Rename((STRPTR)bak,(STRPTR)plugin_settings_path);
         DeleteFile((STRPTR)tmp);return 0;
     }
+    /* Notify the resident without applying unsaved parent Preferences edits. */
+    if(!settings_qa_active)beam_control_send(BEAM_CTL_RELOAD_PLUGINS);
     return 1;
 }
 
@@ -2052,11 +2069,12 @@ static void plugin_settings_window(void)
     struct Window *dialog=NULL;struct IntuiMessage *message;
     struct Hook edit_hook;
     unsigned int active[BEAM_MAX_PLUGIN_SETTINGS],choice_counts[BEAM_MAX_PLUGIN_SETTINGS];
-    int i,width,height,border,finished=0,valid;
+    int i,width,height,border,row_step,finished=0,valid;
     char title[120];
     width=(int)screen->Width-12;if(width>720)width=720;
     border=(int)screen->WBorTop+(int)screen->Font->ta_YSize+10;
-    height=border+plugin_settings_meta.setting_count*20+36;
+    row_step=screen->Height<300?16:20;
+    height=border+plugin_settings_meta.setting_count*row_step+36;
     if(width<500 || height>(int)screen->Height-(int)screen->BarHeight-2){DisplayBeep(screen);return;}
     memset(fields,0,sizeof(fields));memset(active,0,sizeof(active));
     memset(choice_counts,0,sizeof(choice_counts));
@@ -2065,7 +2083,7 @@ static void plugin_settings_window(void)
     last=CreateContext(&list);if(!last)return;
     for(i=0;i<plugin_settings_meta.setting_count;i++) {
         const struct BeamPluginSetting *d=&plugin_settings_meta.setting_defs[i];
-        int y=border+i*20;
+        int y=border+i*row_step;
         beam_copy(labels[i],d->label,sizeof(labels[i]));
         if(d->type==BEAM_PLUGIN_SETTING_BOOL) {
             last=add_tagged(CHECKBOX_KIND,last,100+i,285,y,22,12,labels[i],PLACETEXT_LEFT,
@@ -2093,6 +2111,8 @@ static void plugin_settings_window(void)
         }
         fields[i]=last;if(!last)goto cleanup;
     }
+    last=add_gadget(BUTTON_KIND,last,3,15,height-26,160,18,pstr(PMSG_RESTORE_DEFAULTS),PLACETEXT_IN);
+    if(!last)goto cleanup;
     last=add_gadget(BUTTON_KIND,last,1,width-210,height-26,90,18,pstr(PMSG_SAVE),PLACETEXT_IN);
     if(!last)goto cleanup;
     last=add_gadget(BUTTON_KIND,last,2,width-110,height-26,95,18,pstr(PMSG_CANCEL),PLACETEXT_IN);
@@ -2117,6 +2137,23 @@ static void plugin_settings_window(void)
             else if(cls==IDCMP_REFRESHWINDOW){GT_BeginRefresh(dialog);GT_EndRefresh(dialog,TRUE);}
             else if(cls==IDCMP_GADGETUP && id>=100 && id<100U+(unsigned int)plugin_settings_meta.setting_count) {
                 i=id-100;if(plugin_settings_meta.setting_defs[i].type==BEAM_PLUGIN_SETTING_CHOICE)active[i]=code;
+            } else if(cls==IDCMP_GADGETUP && id==3) {
+                /* Stage defaults in the gadgets; no file or resident changes. */
+                if(!beam_catalog_setting_defaults(&plugin_settings_meta,edited)) {
+                    DisplayBeep(screen);continue;
+                }
+                for(i=0;i<plugin_settings_meta.setting_count;i++) {
+                    const struct BeamPluginSetting *d=&plugin_settings_meta.setting_defs[i];
+                    const char *value=edited[i];
+                    if(d->type==BEAM_PLUGIN_SETTING_BOOL)
+                        GT_SetGadgetAttrs(fields[i],dialog,NULL,GTCB_Checked,
+                            (ULONG)(beam_equal(value,"YES") || beam_equal(value,"TRUE") || !strcmp(value,"1")),TAG_DONE);
+                    else if(d->type==BEAM_PLUGIN_SETTING_CHOICE) {
+                        unsigned int n;active[i]=0;
+                        for(n=0;n<choice_counts[i];n++)if(beam_equal(value,choice_labels[i][n]))active[i]=n;
+                        GT_SetGadgetAttrs(fields[i],dialog,NULL,GTCY_Active,(ULONG)active[i],TAG_DONE);
+                    } else GT_SetGadgetAttrs(fields[i],dialog,NULL,GTST_String,(ULONG)value,TAG_DONE);
+                }
             } else if(cls==IDCMP_GADGETUP && id==1) {
                 valid=1;
                 for(i=0;i<plugin_settings_meta.setting_count;i++) {
@@ -2221,7 +2258,7 @@ static void capture_hotkey(UWORD code, UWORD qualifier)
 }
 static void switch_page(UBYTE next)
 {
-    if (next==page) return;
+    if (next==page && page!=PAGE_DIRS) return;
     collect_page();
     close_window();
     plugin_settings_mode=0;plugin_settings_plugin=-1;
@@ -2669,6 +2706,8 @@ static void handle_events(void)
                leave a half-refreshed window on OS 3.x.  Defer it. */
             pending_page=(int)next;
             return;
+        } else if(id==G_INDEX_VIEW) {
+            index_settings_view=(int)code;pending_page=PAGE_DIRS;return;
         } else if(id==G_GROUP) {
             if(page==PAGE_GENERAL || page==PAGE_EXTRAS || page==PAGE_SOURCES)
                 pending_page=code==0?PAGE_GENERAL:code==1?PAGE_EXTRAS:PAGE_SOURCES;
@@ -2757,11 +2796,50 @@ static void handle_events(void)
     }
 }
 
+/* Test entry point: all writes are confined to a new T: drawer. */
+static int plugin_settings_qa(void)
+{
+    char manifest[BEAM_MAX_PATH],path[BEAM_MAX_PATH],canonical[64],line[256];
+    static char expected[BEAM_MAX_PLUGIN_SETTINGS][64];
+    int i,j,slot,total=0;BPTR lock,file;
+    for(slot=0;slot<100;slot++) {
+        sprintf(path,"T:Beam68SettingsQA%02d",slot);lock=CreateDir((STRPTR)path);
+        if(lock){UnLock(lock);break;}
+    }
+    if(slot==100)return 0;
+    for(i=0;i<config.plugin_file_count;i++) {
+        if(!beam_catalog_resolve(&config,config.plugin_files[i],manifest,sizeof(manifest)) ||
+           !beam_plugin_read(&plugin_settings_meta,manifest))return 0;
+        if(!plugin_settings_meta.setting_count)continue;
+        sprintf(plugin_settings_path,"%.32s/plugin-%d.cfg",path,i);
+        file=Open((STRPTR)plugin_settings_path,MODE_NEWFILE);if(!file)return 0;
+        FPuts(file,"# Keep comments and unknown keys\nUNKNOWN_OPTION=preserved\n");Close(file);
+        load_plugin_setting_values();
+        for(j=0;j<plugin_settings_meta.setting_count;j++) {
+            if(!beam_catalog_setting_value(&plugin_settings_meta.setting_defs[j],
+                plugin_setting_values[j],canonical,sizeof(canonical)))return 0;
+            beam_copy(plugin_setting_values[j],canonical,sizeof(plugin_setting_values[j]));
+        }
+        memcpy(expected,plugin_setting_values,sizeof(expected));
+        if(!save_plugin_settings())return 0;
+        memset(plugin_setting_values,0,sizeof(plugin_setting_values));
+        load_plugin_setting_values();
+        for(j=0;j<plugin_settings_meta.setting_count;j++)
+            if(strcmp(expected[j],plugin_setting_values[j]))return 0;
+        file=Open((STRPTR)plugin_settings_path,MODE_OLDFILE);if(!file)return 0;
+        j=0;while(FGets(file,line,sizeof(line)))if(strstr(line,"UNKNOWN_OPTION=preserved"))j=1;
+        Close(file);if(!j)return 0;
+        printf("PASS: %s settings validate, save, reload and retain unknown keys\n",plugin_settings_meta.name);total++;
+    }
+    printf("PASS: %d bundled plugin settings files\n",total);return total>0;
+}
+
 static int prefs_main(int argc,char **argv)
 {
-    int ok=0;
+    int settings_qa=argc>1 && !strcmp(argv[1],"SETTINGSQA");
+    int ok=0,layout_qa=argc>1 && !strcmp(argv[1],"LAYOUTQA");
     const char *startup_failure="Required libraries could not be opened (Intuition, graphics, GadTools and keymap). AmigaOS 3.0+ is required.";
-    (void)argc; (void)argv;
+    settings_qa_active=settings_qa;
     IntuitionBase=(struct IntuitionBase *)OpenLibrary("intuition.library",39);
     GfxBase=(struct GfxBase *)OpenLibrary("graphics.library",39);
     GadToolsBase=OpenLibrary("gadtools.library",39);
@@ -2774,6 +2852,10 @@ static int prefs_main(int argc,char **argv)
     if (WorkbenchBase) app_port=CreateMsgPort();
     beam_config_defaults(&config);
     beam_config_read_active(&config);
+    if(layout_qa || settings_qa) {
+        beam_config_defaults(&config);beam_config_read(&config,"PROGDIR:Beam68.cfg");
+        if(!NameFromLock(GetProgramDir(),config.install_dir,sizeof(config.install_dir)))goto cleanup;
+    }
     /* Every PROGDIR:Plugins/<Drawer>/<Name>.plugin on disk is listed;
        newly found ones start disabled. */
     beam_catalog_merge_discovered(&config,(const char (*)[BEAM_MAX_PATH])discovered_specs,
@@ -2783,13 +2865,42 @@ static int prefs_main(int argc,char **argv)
     beam_favorites_load_active(&favorites);
     beam_aliases_load_active(&aliases);
     beam_plugin_health_load(&plugin_health,BEAM_PLUGIN_HEALTH_PATH);
+    if(settings_qa){ok=plugin_settings_qa();goto cleanup;}
     startup_failure="No public screen is available. Open Workbench and try again.";
-    screen=LockPubScreen(NULL);
+    screen=layout_qa?OpenScreenTags(NULL,SA_Width,640,SA_Height,200,SA_Depth,3,
+        SA_DisplayID,0x8000UL,SA_Type,PUBLICSCREEN,SA_Title,(ULONG)"Beam68 Preferences layout QA",TAG_DONE):LockPubScreen(NULL);
     if (!screen) goto cleanup;
     startup_failure="Not enough memory for Preferences screen resources.";
     visual=GetVisualInfoA(screen,NULL);
     if (!visual) goto cleanup;
     startup_failure="Could not open Preferences. Free memory or use a larger public screen.";
+    if(layout_qa) {
+        int test_page,a,b,view;ok=1;
+        for(test_page=0;test_page<=PAGE_LAST;test_page++) {
+            for(view=0;view<(test_page==PAGE_DIRS?2:1);view++) {
+                page=(UBYTE)test_page;index_settings_view=view;
+                if(!build_window()){printf("FAIL: cannot build page %d/%d\n",test_page,view);ok=0;continue;}
+                for(a=0;a<112;a++)if(g[a]) {
+                    struct Gadget *ga=g[a];
+                    if(ga->LeftEdge<0 || ga->TopEdge<win->BorderTop ||
+                       ga->LeftEdge+ga->Width>win->Width-win->BorderRight ||
+                       ga->TopEdge+ga->Height>win->Height-win->BorderBottom) {
+                        printf("FAIL: page %d/%d gadget %d outside window\n",test_page,view,a);ok=0;
+                    }
+                    for(b=a+1;b<112;b++)if(g[b] && g[b]!=ga) {
+                        struct Gadget *gb=g[b];
+                        if(ga->LeftEdge<gb->LeftEdge+gb->Width && gb->LeftEdge<ga->LeftEdge+ga->Width &&
+                           ga->TopEdge<gb->TopEdge+gb->Height && gb->TopEdge<ga->TopEdge+ga->Height) {
+                            printf("FAIL: page %d/%d gadgets %d and %d overlap\n",test_page,view,a,b);ok=0;
+                        }
+                    }
+                }
+                close_window();
+            }
+        }
+        puts(ok?"Preferences 640x200 gadget geometry: PASS":"Preferences layout: FAIL");
+        goto cleanup;
+    }
     if (!build_window()) goto cleanup;
     ok=1;
     while (!done && win) {
@@ -2820,7 +2931,7 @@ cleanup:
     if (app_port) { DeleteMsgPort(app_port); app_port=NULL; }
     if (WorkbenchBase) CloseLibrary(WorkbenchBase);
     if (visual) FreeVisualInfo(visual);
-    if (screen) UnlockPubScreen(NULL,screen);
+    if (screen) {if(layout_qa)CloseScreen(screen);else UnlockPubScreen(NULL,screen);}
     if (AslBase) CloseLibrary(AslBase);
     if (KeymapBase) CloseLibrary(KeymapBase);
     if (GadToolsBase) CloseLibrary(GadToolsBase);

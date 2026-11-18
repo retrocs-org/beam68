@@ -1,4 +1,4 @@
-# Beam68 0.3 Preferences
+# Beam68 0.4 Preferences
 
 Open Beam68Prefs from SYS:Prefs or press F5 in the launcher.
 
@@ -73,3 +73,63 @@ another theme's saved palette.
 Wikipedia searches and summaries, and Music Library searches, run when explicitly
 requested without an extra SYSTEM confirmation. Music playback still asks for
 confirmation. Automatic previews remain unavailable for these SYSTEM integrations.
+
+## 0.4 compact layouts and plugin settings
+
+Indexing uses a Directories / Scan options selector. Switching between these
+views preserves depth, exclusions and unsaved edits. Plugin controls and settings
+rows use compact spacing on short screens. Plugin Details explains integration
+requirements; missing TCP/IP and the Wikipedia downloader produce local guidance
+before a request starts. This does not certify internet connectivity or HTTPS
+compatibility. OpenURL remains optional when reading summaries.
+
+Plugin Save commits only that plugin's file and notifies the resident to reload
+plugins. It does not save unsaved parent Preferences edits. Cancel and Escape
+close the plugin dialog without writing. Unrecognized settings and comments are
+preserved during Save. A write failure leaves the dialog open for correction.
+
+## Reviewing plugin imports
+
+Import reviews the plugin identity, version, author, declared access and target.
+Updates identify upgrades, same-version reinstalls and downgrades. A second
+review shows the file count, total bytes and up to six file paths; larger
+inventories are explicitly marked as partial. Cancel either step to leave the
+installation and registration unchanged. Import does not execute the plugin.
+
+New packages and bare-manifest references start disabled; use Toggle to enable
+them, then Use or Save. Updates preserve the existing activation choice, unless
+a command conflict requires disabling the plugin. Duplicate bare-manifest IDs
+are refused; import a complete package when updating. Bundled plugins are
+updated through the Beam68 installer. Directory packages containing links or
+exceeding the bounded review limits are refused. Review is not authentication
+of the author or a security boundary around native code.
+
+## Restoring plugin settings defaults
+
+Restore defaults fills the open plugin dialog from the manifest's declared
+defaults. It does not write settings or notify the running launcher. Save validates
+and commits those values; Cancel, Escape or closing the window discards pending
+changes. Restore defaults preserves unknown file keys when eventually saved.
+A plugin's Save is independent: cancelling the main Preferences window later
+does not undo settings already saved in the plugin dialog.
+
+### AmiHASS
+
+The optional AmiHASS plugin starts disabled. Enable it after configuring and
+starting AmiHASS. `ha:status` checks connection status; `ha:kitchen` searches
+entities. Select an entity for its state and supported actions. Every action
+requires confirmation. Connection credentials remain in AmiHASS; Beam68 has
+no separate network configuration for this plugin.
+
+### Plugin search history and favorites
+
+Use F7/Shift+F7 in a plugin query to recall that plugin's read-only history.
+The application history stays separate, including when older mixed history
+files are present. Histories are bounded to 12 entries per plugin and are read
+on demand. Unknown or action entries in edited plugin-history files are ignored.
+
+F6 pins or unpins a read-only query or entity result. Saved query favorites use
+`QUERY:<query>` records in the usual Favorites.txt and retain favorite groups.
+Opening them only fills the query field. Download, playback, device-control and
+macro-execution commands cannot be pinned. F6 updates temporary, active and
+saved Favorites copies so old Use settings cannot override the new choice.

@@ -79,3 +79,73 @@ int beam_query_history_save(struct BeamQueryHistory *h,const char *path)
     if (!Rename((STRPTR)tmp,(STRPTR)path)) {if(had_old)Rename((STRPTR)bak,(STRPTR)path);DeleteFile((STRPTR)tmp);return 0;}
     h->pending=0; return 1;
 }
+
+static int starts(const char *s,const char *prefix)
+{
+    while(*prefix){unsigned char a=(unsigned char)*s++,b=(unsigned char)*prefix++;
+        if(a>='A'&&a<='Z')a+=32;
+        if(b>='A'&&b<='Z')b+=32;
+        if(a!=b)return 0;
+    }return 1;
+}
+static int verb(const char *s,const char *v)
+{return starts(s,v) && (!s[strlen(v)] || s[strlen(v)]==' ' || s[strlen(v)]=='\t');}
+int beam_plugin_query_readonly(const char *id,const char *s)
+{
+    if(!id||!s||!valid_query(s))return 0;
+    while(*s==' '||*s=='\t')++s;
+    if(!*s)return 0;
+    if(!strcmp(id,"org.beam68.amihass"))return !verb(s,"do");
+    if(!strcmp(id,"org.beam68.wikipedia"))return 1;
+    if(!strcmp(id,"org.beam68.aminetbrowser"))return verb(s,"search")||verb(s,"page")||verb(s,"info")||verb(s,"read")||verb(s,"help");
+    if(!strcmp(id,"org.beam68.musiclibrary")||!strcmp(id,"org.beam68.whdload"))return !verb(s,"play");
+    if(!strcmp(id,"org.beam68.dateutilities")||!strcmp(id,"org.beam68.developertools"))return 1;
+    if(!strcmp(id,"org.beam68.taskmanager"))return verb(s,"list")||verb(s,"tasks");
+    if(!strcmp(id,"org.beam68.clipboardtools"))return verb(s,"show");
+    if(!strcmp(id,"org.beam68.dostools"))return verb(s,"volumes")||verb(s,"assigns")||verb(s,"diskfree");
+    if(!strcmp(id,"org.beam68.systemcommands"))return verb(s,"avail")||verb(s,"version");
+    if(!strcmp(id,"org.beam68.windowswitcher"))return verb(s,"list")||verb(s,"windows");
+    if(!strcmp(id,"org.beam68.arexxrunner"))return verb(s,"list");
+    if(!strcmp(id,"org.beam68.musiccontrols"))return verb(s,"players");
+    return !strcmp(id,"org.beam68.calc")||!strcmp(id,"org.beam68.clock")||!strcmp(id,"org.beam68.memory")||!strcmp(id,"org.beam68.filefinder");
+}
+int beam_plugin_query_scope(const char *query,char *id,unsigned int cap,const char **input)
+{
+    static const char *prefixes[]={"ha:","wiki:","aminet:","mod:","=","@","?","find:","date:","dev:","task:","clip:","dos:","system:","window:","rexx:","music:","whd:","dopus:","[","\\","]",";","/",":","$","^","&","#","!","~","%","|","{","}",NULL};
+    static const char *ids[]={"amihass","wikipedia","aminetbrowser","musiclibrary","calc","clock","memory","filefinder","dateutilities","developertools","taskmanager","clipboardtools","dostools","systemcommands","windowswitcher","arexxrunner","musiccontrols","whdload","dopus","amihass","wikipedia","aminetbrowser","musiclibrary","filefinder","dateutilities","developertools","taskmanager","clipboardtools","dostools","systemcommands","windowswitcher","arexxrunner","musiccontrols","whdload","dopus"};
+    unsigned int i;char owner[64];const char *s;
+    if(!query || !id || !cap || !valid_query(query))return 0;
+    for(i=0;prefixes[i];++i)if(starts(query,prefixes[i])){
+        s=query+strlen(prefixes[i]);sprintf(owner,"org.beam68.%s",ids[i]);
+        if(strlen(owner)+1>cap)return 0;
+        strcpy(id,owner);if(input)*input=s;return 1;
+    }
+    return 0;
+}
+int beam_plugin_query_parse(const char *query,char *id,unsigned int cap,const char **input)
+{
+    char owner[64];const char *text;
+    if(!id || !beam_plugin_query_scope(query,owner,sizeof(owner),&text) ||
+       !beam_plugin_query_readonly(owner,text) || strlen(owner)+1>cap)return 0;
+    strcpy(id,owner);if(input)*input=text;return 1;
+}
+const char *beam_query_history_recall(struct BeamQueryHistory *h,int newer,int skip_plugins)
+{
+    const char *s;char owner[64];unsigned int i;
+    if(!h)return NULL;
+    for(i=0;i<=h->count;++i){
+        s=newer?beam_query_history_newer(h):beam_query_history_older(h);
+        if(!s || !*s || !skip_plugins || !beam_plugin_query_scope(s,owner,sizeof(owner),NULL))return s;
+        if(!newer && h->cursor==0)return NULL;
+    }return NULL;
+}
+int beam_plugin_history_path(const char *id,char *out,unsigned int cap)
+{
+    const char *p;unsigned int n;
+    if(!id||!*id||strlen(id)>63)return 0;
+    for(p=id;*p;++p)if(!((*p>='a'&&*p<='z')||(*p>='A'&&*p<='Z')||(*p>='0'&&*p<='9')||*p=='.'||*p=='-'||*p=='_'))return 0;
+    if(!strcmp(id,".")||!strcmp(id,".."))return 0;
+    n=(unsigned int)strlen(id)+strlen("ENVARC:Beam68/PluginQueries/.txt")+1;
+    if(n>cap)return 0;
+    sprintf(out,"ENVARC:Beam68/PluginQueries/%s.txt",id);return 1;
+}
