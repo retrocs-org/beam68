@@ -149,14 +149,17 @@ function latest_release(?callable $fetch = null, ?string $directory = null, ?int
 }
 
 function release_page_data(): array {
+    // Downloads and footer share one validated snapshot per HTTP request.
+    static $data;
+    if ($data !== null) return $data;
     // Fixtures are a CLI-only test input, never a web request parameter or URL.
     $fixture = PHP_SAPI === 'cli' ? getenv('BEAM68_WEB_RELEASE_FIXTURE') : false;
     if ($fixture !== false && $fixture !== '') {
         $raw = json_decode((string)file_get_contents($fixture), true);
         $release = is_array($raw) ? release_normalize($raw) : null;
-        return ['release' => $release, 'state' => $release ? 'fresh' : 'unavailable'];
+        return $data = ['release' => $release, 'state' => $release ? 'fresh' : 'unavailable'];
     }
-    return latest_release();
+    return $data = latest_release();
 }
 
 function release_size(int $size): string {

@@ -13,7 +13,7 @@
     },
     {
       "NAME": "Aminet Browser",
-      "DESCRIPTION": "Browse Aminet packages, read readmes, download archives and open them with your archive handler.",
+      "DESCRIPTION": "Search Aminet, read package details and readmes, and download archives with progress, speed and remaining-time feedback. Open downloads with your archive handler.",
       "PREFIX": "AMINET:",
       "TRIGGER": "]",
       "EXAMPLE": "aminet:search tracker",
@@ -24,7 +24,7 @@
     },
     {
       "NAME": "ARexx Runner",
-      "DESCRIPTION": "Run your configured ARexx macros from the launcher.",
+      "DESCRIPTION": "Run named, configured ARexx macros through RexxMast.",
       "PREFIX": "REXX:",
       "TRIGGER": "%",
       "EXAMPLE": "rexx:list",
@@ -57,7 +57,7 @@
     },
     {
       "NAME": "Clipboard Tools",
-      "DESCRIPTION": "Work with clipboard text and optionally record bounded session history with search, expiry and explicit restore.",
+      "DESCRIPTION": "Read, copy, transform and save clipboard text, with optional searchable session history, expiry and explicit restore.",
       "PREFIX": "CLIP:",
       "TRIGGER": "&",
       "EXAMPLE": "clip:show",
@@ -90,7 +90,7 @@
     },
     {
       "NAME": "Developer Tools",
-      "DESCRIPTION": "Convert numbers and inspect character codes and protection flags.",
+      "DESCRIPTION": "Convert decimal and hexadecimal numbers, look up character codes, and inspect bit masks and Amiga protection flags.",
       "PREFIX": "DEV:",
       "TRIGGER": "$",
       "EXAMPLE": "dev:hex:255",
@@ -112,7 +112,7 @@
     },
     {
       "NAME": "File Finder",
-      "DESCRIPTION": "Find files across your configured directories.",
+      "DESCRIPTION": "Search files and drawers across your configured directories.",
       "PREFIX": "FIND:",
       "TRIGGER": "/",
       "EXAMPLE": "find:screenmode",
@@ -134,7 +134,7 @@
     },
     {
       "NAME": "Music Controls",
-      "DESCRIPTION": "Control supported music players through ARexx.",
+      "DESCRIPTION": "Control HippoPlayer, AmigaAMP and EaglePlayer 2 through their ARexx ports.",
       "PREFIX": "MUSIC:",
       "TRIGGER": "|",
       "EXAMPLE": "music:status",
@@ -156,7 +156,7 @@
     },
     {
       "NAME": "System Commands",
-      "DESCRIPTION": "Run system utilities and common system actions.",
+      "DESCRIPTION": "Check memory and system versions, flush unused libraries, and request confirmed restart or shutdown actions.",
       "PREFIX": "SYSTEM:",
       "TRIGGER": "!",
       "EXAMPLE": "system:version",
@@ -167,7 +167,7 @@
     },
     {
       "NAME": "Task Manager",
-      "DESCRIPTION": "Inspect running tasks and send a break signal when needed.",
+      "DESCRIPTION": "List running processes and send an explicitly confirmed break signal to an exact process name.",
       "PREFIX": "TASK:",
       "TRIGGER": "^",
       "EXAMPLE": "task:tasks",
@@ -200,7 +200,7 @@
     },
     {
       "NAME": "Workbench Windows",
-      "DESCRIPTION": "Find and switch between open Workbench windows.",
+      "DESCRIPTION": "Find and bring forward open Workbench windows and public screens.",
       "PREFIX": "WINDOW:",
       "TRIGGER": "~",
       "EXAMPLE": "window:windows",

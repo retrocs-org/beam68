@@ -124,3 +124,16 @@ Website edits are prepared locally for manual upload; do not deploy automaticall
 0.5 copy also covers result actions, categories, two-line rows, explicit local
 completion, readiness checks, Aminet speed/ETA and optional session clipboard
 history. No deployment is performed by release preparation.
+
+## Footer release version
+
+Every page reads its footer version from the same validated GitHub latest-release
+snapshot and ten-minute cache as Get Beam68. The download body and footer share
+one snapshot per request. BEAM68_SITE_VERSION identifies the source documented
+by the overview; it never supplies the footer's published-release version.
+If no valid release or usable cache exists, the footer shows Beam68 without a
+version number rather than falling back to a hard-coded version.
+
+The plugin list includes all 19 bundled manifests and current descriptions,
+including optional session clipboard history and Aminet transfer feedback.
+Music Controls supports HippoPlayer, AmigaAMP and EaglePlayer 2.

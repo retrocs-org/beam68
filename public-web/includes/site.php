@@ -69,9 +69,13 @@ function page_start(string $title, string $description, string $page): void {
 </header>
 <main id="main" class="site-main">
 <?php }
-function page_end(): void { ?>
+function page_end(): void {
+    require_once __DIR__ . '/github-releases.php';
+    $data = release_page_data();
+    $tag = $data['release']['tag'] ?? null;
+    ?>
 </main>
-<footer class="site-footer wrap"><span>Beam68 <?= escape(BEAM68_SITE_VERSION) ?> · Classic AmigaOS</span><span>Open source · MIT License</span><a href="#top">Back to top ↑</a></footer>
+<footer class="site-footer wrap"><span>Beam68<?php if ($tag !== null): ?> <?= escape($tag) ?><?php endif; ?> · Classic AmigaOS</span><span>Open source · MIT License</span><a href="#top">Back to top ↑</a></footer>
 </body></html>
 <?php }
 function screenshot_card(array $item): void { ?>

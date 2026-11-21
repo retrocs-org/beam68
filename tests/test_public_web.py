@@ -159,3 +159,21 @@ assert b'release02-general.png' not in rendered['screenshots.php']
 clock=next(x for x in catalog['plugins'] if x['NAME']=='Clock')
 assert 'date' not in clock['DESCRIPTION'].lower()
 assert next(x for x in catalog['plugins'] if x['NAME']=='Wikipedia')['introduced']=='0.3'
+
+# Footer follows the public release fixture, independently of source version 0.5.
+for name,raw in rendered.items():
+    footer=raw.split(b'<footer ',1)[1]
+    assert 'Beam68 0.2 · Classic AmigaOS'.encode() in footer,name
+    assert 'Beam68 0.5 · Classic AmigaOS'.encode() not in footer,name
+with tempfile.NamedTemporaryFile(mode='w',suffix='.json') as unavailable:
+    unavailable.write('null');unavailable.flush()
+    env=dict(os.environ,BEAM68_WEB_RELEASE_FIXTURE=unavailable.name)
+    result=subprocess.run([PHP,'-n',str(WEB/'index.php')],check=True,capture_output=True,env=env)
+    assert not result.stderr
+    footer=result.stdout.split(b'<footer ',1)[1]
+    assert 'Beam68 · Classic AmigaOS'.encode() in footer
+    assert 'Beam68 0.5'.encode() not in footer
+assert b'remaining-time feedback' in plugin_section
+assert b'optional searchable session history' in plugin_section
+assert b'HippoPlayer, AmigaAMP and EaglePlayer 2' in plugin_section
+print('PASS: release-derived footer, unavailable-release fallback and current plugin descriptions')
