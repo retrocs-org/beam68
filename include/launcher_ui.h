@@ -35,4 +35,6 @@ int beam_hit_result(int y, int row_top, int lineheight,
                     int usable_bottom, int result_count);
 /* Word-wrap a byte string at a font-measured fit; returns bytes drawn. */
 unsigned int beam_text_line(const char *text,unsigned int fit,unsigned int *next);
+/* Complete a literal local-name prefix; preserves typed case and scope. */
+int beam_inline_complete(const char *typed,const char *name,char *out,unsigned int capacity);
 #endif

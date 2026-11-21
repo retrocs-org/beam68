@@ -835,3 +835,7 @@ Extra sökord och egna startkommandon.
 
 PMSG_RESTORE_DEFAULTS
 Återställ standard
+
+PMSG_DETAILED_ROWS
+Tvaradig lista
+;Two-line rows

@@ -835,3 +835,7 @@ Weitere Suchwörter und eigene Startaktionen.
 
 PMSG_RESTORE_DEFAULTS
 Standardwerte
+
+PMSG_DETAILED_ROWS
+Zweizeilige Liste
+;Two-line rows

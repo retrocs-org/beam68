@@ -1,13 +1,14 @@
 @database Beam68.guide
-@$VER: Beam68.guide 0.4 (17.11.2026)
+@$VER: Beam68.guide 0.5 (21.11.2026)
 @author "Beam68 contributors"
 @(c) "MIT License"
 @wordwrap
-@node MAIN "Beam68 0.4 - Manual"
+@node MAIN "Beam68 0.5 - Manual"
 
-                    @{b}Beam68 0.4@{ub}
+                    @{b}Beam68 0.5@{ub}
      A keyboard application launcher for AmigaOS 3.x
 
+  @{" New in 0.5         " link NEW05}  Completion and clipboard history
   @{" Introduction       " link INTRO}  What Beam68 does
   @{" Requirements       " link REQUIREMENTS}  What you need
   @{" Installation       " link INSTALL}  Install, update, uninstall
@@ -182,12 +183,13 @@ Start the query with a scope to search only one kind of result:
   Up / Down         select a result
   Shift+Up/Down     a page at a time (also PageUp/PageDown)
   Ctrl+Up/Down      first / last result (also Home/End)
-  Tab               accept a completion, or cycle the result action
+  Tab               accept a completion, or open result actions
   Ctrl+L or Ctrl+U  clear the search
   Amiga+V           paste the first clipboard line
   Ctrl+1 ... Ctrl+9 start favorite 1-9 (in pin order)
   Mouse wheel       select a result
   Shift+Del         hide the selected result (in hidden: show it again)
+  Ctrl+Right        accept a matching local inline suggestion at query end
   Right             on a drawer result (cursor at the end): browse it
   Left              while browsing (cursor at the start): parent drawer
   F1 or Help        searchable list of commands, plugins and keys
@@ -206,7 +208,9 @@ Start the query with a scope to search only one kind of result:
 @node ACTIONS "Result actions"
 @{b}Result actions@{ub}
 
-Press @{b}Tab@{ub} on a result to cycle its action, then Enter:
+Press @{b}Tab@{ub} or right-click an indexed result to open its action menu.
+Use Up/Down and Enter, click an action, or press its number.
+Escape closes the menu without hiding Beam68. Applicable actions include:
 
   @{b}Launch@{ub}          start it (default)
   @{b}Run with arguments@{ub}  type arguments, Enter runs the program in a
@@ -522,6 +526,7 @@ command; see @{"Result actions" link ACTIONS}.
 
   @{b}Launcher font@{ub}  any font from FONTS: (Choose... opens a requester)
   @{b}Row spacing@{ub}    space between result rows
+  @{b}Two-line rows@{ub}  name above location/description; compact screens use one line
   @{b}High-contrast@{ub}  selection drawn in the Workbench fill colours
   @{b}Larger gadgets@{ub} for Beam68Prefs
   @{b}Reduced colors@{ub} never allocate theme colours
@@ -718,4 +723,26 @@ After downloading, choose Open drawer, View readme or Install. Install opens
 an archive handler after checking the archive signature; follow the package's
 own instructions. View readme uses MultiView. Interrupted transfers remove
 partial data and offer Retry; cancellation opens nothing. Existing files stay.
+@endnode
+
+; 0.5: All/Apps/Files/Drawers/Plugins buttons select search scopes without
+; changing the index. Typed scopes remain available in very short windows.
+
+@node NEW05 "Completion and optional clipboard history"
+Ctrl+Right accepts a matching local inline completion at the query end.
+Suggestions do not execute commands or contact network plugins.
+
+Plugin Details shows local dependency readiness. Check readiness repeats the
+probe; AmiHASS Test connection reads service STATUS without controlling devices.
+
+Clipboard Tools is optional. Recording starts only with clip:history on.
+clip:history <text> searches; select an entry and Enter restores it.
+clip:history clear erases entries; clip:history off stops and clears recording.
+Settings control entry count, retained text bytes and expiry. Restart recording
+after changing limits. Capture samples about once a second and skips non-text
+and text longer than 120 bytes. History stays on RAM:, never in ENVARC:.
+Stopping Beam68 or disabling Clipboard Tools stops the recorder.
+
+Aminet downloads show average speed, ETA for known sizes and byte counts for
+unknown sizes. Cancel and Retry remain explicit.
 @endnode

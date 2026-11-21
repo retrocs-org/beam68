@@ -1,6 +1,23 @@
 # Beam68 validation status
 
-## Current version: 0.4
+## Current version: 0.5
+
+Prepared 21 November 2026. The full host suite, sensitive-input/source checks,
+translation freshness, independent plugin versions and strict m68000 native
+build passed. Native Workbench 3.2.1 / 68060 checks covered result menus,
+categories, inline completion, compact/detailed rows, dependency readiness,
+read-only AmiHASS status tests, all eight plugin settings transactions, clipboard
+recording lifecycle and Aminet completion fixtures. Preferences bounds and
+launcher geometry were checked on small screens.
+
+The actual 0.4-to-0.5 installer upgrade preserved settings. Both uninstall modes,
+reinstallation and fresh defaults passed, including stopping the active test
+clipboard recorder. Fresh defaults enable six of 19 plugins, keep network and
+Clipboard Tools off, and retain Ctrl+Alt+Space. Reports are under
+outputs/testing/0.5-release/. Physical 68000/minimum-memory and every translated
+layout remain outside this validation. The historical results below apply to 0.4.
+
+## Released 0.4 validation
 
 Updated 18 November 2026. The application version is 0.4; release preparation and the final installer lifecycle checks passed.
 The 0.3 validation results below are historical. On 18 November, native 0.4

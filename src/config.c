@@ -45,7 +45,7 @@ void beam_config_defaults(struct BeamConfig *c)
     c->theme=BEAM_THEME_MOCHA; c->shell_commands=1;
     beam_copy(c->file_patterns,"*",sizeof(c->file_patterns));
     beam_copy(c->font_name,"topaz.font",sizeof(c->font_name));
-    c->font_size=8;c->row_spacing=7;c->high_contrast=0;
+    c->font_size=8;c->row_spacing=7;c->detailed_rows=1;c->high_contrast=0;
     c->large_gadgets=0;c->reduced_colors=0;c->compact_mode=BEAM_COMPACT_AUTO;
     c->index_games=1;
     beam_copy(c->whdload_command,"WHDLoad",sizeof(c->whdload_command));
@@ -495,7 +495,8 @@ int beam_config_read(struct BeamConfig *c, const char *file)
             n=atoi(value);if (n>=6 && n<=32) c->font_size=n;
         } else if (beam_equal(key,"ROW_SPACING")) {
             n=atoi(value);if (n>=2 && n<=16) c->row_spacing=n;
-        } else if (beam_equal(key,"HIGH_CONTRAST")) c->high_contrast=beam_equal(value,"YES") || beam_equal(value,"TRUE") || beam_equal(value,"1");
+        } else if (beam_equal(key,"DETAILED_ROWS")) c->detailed_rows=beam_equal(value,"YES") || beam_equal(value,"TRUE") || beam_equal(value,"1");
+        else if (beam_equal(key,"HIGH_CONTRAST")) c->high_contrast=beam_equal(value,"YES") || beam_equal(value,"TRUE") || beam_equal(value,"1");
         else if (beam_equal(key,"LARGE_GADGETS")) c->large_gadgets=beam_equal(value,"YES") || beam_equal(value,"TRUE") || beam_equal(value,"1");
         else if (beam_equal(key,"REDUCED_COLORS")) c->reduced_colors=beam_equal(value,"YES") || beam_equal(value,"TRUE") || beam_equal(value,"1");
         else if (beam_equal(key,"COMPACT_MODE"))
@@ -699,6 +700,7 @@ int beam_config_valid(const struct BeamConfig *c)
         !safe_setting(c->font_name) ||
         c->font_size<6 || c->font_size>32 ||
         c->row_spacing<2 || c->row_spacing>16 ||
+        (c->detailed_rows!=0 && c->detailed_rows!=1) ||
         (c->high_contrast!=0 && c->high_contrast!=1) ||
         (c->large_gadgets!=0 && c->large_gadgets!=1) ||
         (c->reduced_colors!=0 && c->reduced_colors!=1) ||
@@ -863,6 +865,7 @@ int beam_config_write(struct BeamConfig *c, const char *path)
     if (ok) ok=emit_entry(output,"FONT_NAME",c->font_name);
     if (ok) ok=emit_number(output,"FONT_SIZE",c->font_size);
     if (ok) ok=emit_number(output,"ROW_SPACING",c->row_spacing);
+    if (ok) ok=emit_entry(output,"DETAILED_ROWS",c->detailed_rows?"YES":"NO");
     if (ok) ok=emit_entry(output,"HIGH_CONTRAST",c->high_contrast?"YES":"NO");
     if (ok) ok=emit_entry(output,"LARGE_GADGETS",c->large_gadgets?"YES":"NO");
     if (ok) ok=emit_entry(output,"REDUCED_COLORS",c->reduced_colors?"YES":"NO");

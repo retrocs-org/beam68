@@ -153,3 +153,30 @@ int beam_action_expand(const char *template_text,const char *path,
     }
     return 1;
 }
+
+int beam_item_actions(int kind,int custom,int dopus,int *out,int capacity)
+{
+    int list[7],n=0,i;
+    list[n++]=BEAM_ACTION_LAUNCH;
+    if(kind==BEAM_ITEM_WORKBENCH || kind==BEAM_ITEM_SHELL)
+        list[n++]=BEAM_ACTION_ARGS;
+    if(kind!=BEAM_ITEM_QUERY && kind!=BEAM_ITEM_BOOKMARK && kind!=BEAM_ITEM_SNIPPET){
+        if(kind!=BEAM_ITEM_VOLUME && kind!=BEAM_ITEM_ASSIGN)list[n++]=BEAM_ACTION_DRAWER;
+        if(dopus)list[n++]=BEAM_ACTION_DOPUS;
+        list[n++]=BEAM_ACTION_INFO;
+    }
+    if(kind!=BEAM_ITEM_QUERY && kind!=BEAM_ITEM_SNIPPET)list[n++]=BEAM_ACTION_COPY;
+    if(custom && kind!=BEAM_ITEM_QUERY)list[n++]=BEAM_ACTION_CUSTOM;
+    if(!out || capacity<n)return 0;
+    for(i=0;i<n;i++)out[i]=list[i];
+    return n;
+}
+const char *beam_item_default_action(int kind)
+{
+    if(kind==BEAM_ITEM_QUERY)return beam_str(MSG_DEFAULT_QUERY);
+    if(kind==BEAM_ITEM_SNIPPET)return beam_str(MSG_DEFAULT_TEXT);
+    if(kind==BEAM_ITEM_DRAWER || kind==BEAM_ITEM_VOLUME || kind==BEAM_ITEM_ASSIGN ||
+       kind==BEAM_ITEM_FILE || kind==BEAM_ITEM_BOOKMARK)return beam_str(MSG_DEFAULT_OPEN);
+    if(kind==BEAM_ITEM_MODULE)return beam_str(MSG_DEFAULT_PLAY);
+    return beam_action_name(BEAM_ACTION_LAUNCH,NULL);
+}

@@ -284,4 +284,5 @@ const char *const beam68prefs_strings[BEAM68PREFS_STRING_COUNT]={
     "App shortcuts", /* PMSG_APPLICATION_SHORTCUTS_NAV */
     "Extra search words and custom launch actions.", /* PMSG_APPLICATION_SHORTCUTS_HELP */
     "Restore defaults", /* PMSG_RESTORE_DEFAULTS */
+    "Two-line rows", /* PMSG_DETAILED_ROWS */
 };

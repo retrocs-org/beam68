@@ -191,3 +191,13 @@ int beam_aminet_percent(unsigned long bytes,unsigned long total)
     }
     return low;
 }
+
+void beam_aminet_transfer_stats(unsigned long bytes,unsigned long total,unsigned long ticks,
+                              unsigned long *rate,unsigned long *remaining)
+{
+    unsigned long seconds=ticks/50UL,r=0,left=~0UL;
+    if(seconds)r=bytes/seconds;
+    if(r && total>=bytes && total)left=(total-bytes)/r+((total-bytes)%r!=0);
+    if(rate)*rate=r;
+    if(remaining)*remaining=left;
+}

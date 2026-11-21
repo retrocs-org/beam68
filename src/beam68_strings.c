@@ -191,4 +191,18 @@ const char *const beam68_strings[BEAM68_STRING_COUNT]={
     "Usage statistics", /* MSG_HELP_STATS_TITLE */
     "stats: lists your most-launched items", /* MSG_HELP_STATS */
     "Plugin request limit reached; waiting for older requests to finish.", /* MSG_PLUGIN_REQUEST_LIMIT */
+    "All", /* MSG_CATEGORY_ALL */
+    "Apps", /* MSG_CATEGORY_APPS */
+    "Files", /* MSG_CATEGORY_FILES */
+    "Drawers", /* MSG_CATEGORY_DRAWERS */
+    "Plugins", /* MSG_CATEGORY_PLUGINS */
+    "Open", /* MSG_DEFAULT_OPEN */
+    "Play", /* MSG_DEFAULT_PLAY */
+    "Load saved query", /* MSG_DEFAULT_QUERY */
+    "Copy text", /* MSG_DEFAULT_TEXT */
+    "Result changed. Open Actions again.", /* MSG_ACTIONS_CHANGED */
+    "Up/Down | Enter: select | Esc: back", /* MSG_ACTIONS_FOOT */
+    "Enter: select | Esc: back", /* MSG_ACTIONS_FOOT_SMALL */
+    "%d/%d | Enter: %s | Tab: Actions", /* MSG_RESULTS_ACTIONS */
+    "Enter: %s | Tab: Actions", /* MSG_RESULTS_ACTIONS_SMALL */
 };

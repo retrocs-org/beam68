@@ -174,3 +174,19 @@ unsigned long beam_elapsed_ms(unsigned long start_seconds,unsigned long start_mi
     if (micros>maximum-seconds) return maximum;
     return seconds+micros;
 }
+
+int beam_inline_complete(const char *typed,const char *name,char *out,unsigned int capacity)
+{
+    unsigned int n,i,a,b;
+    if(!typed || !name || !out || !capacity)return 0;
+    a=(unsigned int)strlen(typed);b=(unsigned int)strlen(name);
+    if(!a || a>=b || b>=capacity)return 0;
+    for(i=0;i<a;i++){
+        int x=(unsigned char)typed[i],y=(unsigned char)name[i];
+        if(x>='A' && x<='Z')x+=32;
+        if(y>='A' && y<='Z')y+=32;
+        if(x!=y)return 0;
+    }
+    for(n=0;n<b;n++)if((unsigned char)name[n]<32 || (unsigned char)name[n]>126)return 0;
+    memmove(out,typed,a);memmove(out+a,name+a,b-a+1);return 1;
+}

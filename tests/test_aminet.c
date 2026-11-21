@@ -10,6 +10,13 @@ static void row(FILE *f,int n,const char *package)
 }
 int main(void)
 {
+    unsigned long rate,remaining;
+    beam_aminet_transfer_stats(1000,2000,100,&rate,&remaining);assert(rate==500 && remaining==2);
+    beam_aminet_transfer_stats(1000,0,100,&rate,&remaining);assert(rate==500 && remaining==~0UL);
+    beam_aminet_transfer_stats(0,1000,10,&rate,&remaining);assert(rate==0 && remaining==~0UL);
+    beam_aminet_transfer_stats(2000,2000,100,&rate,&remaining);assert(rate==1000 && remaining==0);
+    beam_aminet_transfer_stats(~0UL,~0UL,50,&rate,&remaining);assert(rate==~0UL && remaining==0);
+
     char out[400],package[100];long length;FILE *f;struct BeamAminetResults r;struct BeamAminetDetails d;int i;
     assert(beam_aminet_percent(0,0)==-1);
     assert(beam_aminet_percent(0,100)==0 && beam_aminet_percent(1,3)==33);

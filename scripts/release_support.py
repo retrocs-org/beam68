@@ -6,6 +6,7 @@ import re
 import struct
 import subprocess
 import tempfile
+import time
 import zipfile
 from pathlib import Path
 
@@ -77,9 +78,10 @@ def fingerprint(files):
     return hashlib.sha256(canonical(files)).hexdigest()
 
 def zip_write(path, entries):
+    timestamp = time.localtime(time.time())[:6]
     with zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for name, data, executable in sorted(entries):
-            info = zipfile.ZipInfo(name, (1980, 1, 1, 0, 0, 0))
+            info = zipfile.ZipInfo(name, timestamp)
             info.compress_type = zipfile.ZIP_DEFLATED
             info.create_system = 3
             info.external_attr = (0o100755 if executable else 0o100644) << 16
@@ -139,23 +141,28 @@ def lha_environment():
 
 def lha_write(path, entries, tool=None):
     """LHA level 0, -lh0- stored members. No external compressor required."""
+    timestamp = int(time.time())
     if tool:
         with tempfile.TemporaryDirectory(dir=path.parent) as directory:
             stage=Path(directory)
             for name,data in entries.items():
                 target=stage/name;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(data)
-                os.utime(target,(315532800,315532800))
+                os.utime(target,(timestamp,timestamp))
             result=subprocess.run([tool,'ao5g0q2',str(path.resolve()),*sorted(entries)],cwd=stage,capture_output=True,env=lha_environment())
             if result.returncode:
                 raise ReleaseError('LHA compression failed')
         return
+    year, month, day, hour, minute, second = time.localtime(timestamp)[:6]
+    dos_time = ((year - 1980) << 25 | month << 21 | day << 16 |
+                hour << 11 | minute << 5 | second // 2)
     with path.open('wb') as stream:
         for name, data in sorted(entries.items()):
             encoded = name.replace('/', '\\').encode('ascii')
             if len(encoded) > 233 or len(data) > 0xffffffff:
                 raise ReleaseError('LHA member exceeds level-0 limits')
-            # Fixed DOS timestamp: 1980-01-01. Attribute 0x20 is a regular file.
-            body = b'-lh0-' + struct.pack('<III', len(data), len(data), 0x00210000)
+            # Current build-local DOS timestamp; seconds have two-second precision.
+            # Attribute 0x20 is a regular file.
+            body = b'-lh0-' + struct.pack('<III', len(data), len(data), dos_time)
             body += bytes((0x20, 0, len(encoded))) + encoded + struct.pack('<H', crc16(data))
             stream.write(bytes((len(body), sum(body) & 255)) + body + data)
         stream.write(b'\0')

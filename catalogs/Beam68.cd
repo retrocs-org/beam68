@@ -379,3 +379,45 @@ stats: lists your most-launched items
 
 MSG_PLUGIN_REQUEST_LIMIT (188//)
 Plugin request limit reached; waiting for older requests to finish.
+
+MSG_CATEGORY_ALL (189//)
+All
+
+MSG_CATEGORY_APPS (190//)
+Apps
+
+MSG_CATEGORY_FILES (191//)
+Files
+
+MSG_CATEGORY_DRAWERS (192//)
+Drawers
+
+MSG_CATEGORY_PLUGINS (193//)
+Plugins
+
+MSG_DEFAULT_OPEN (194//)
+Open
+
+MSG_DEFAULT_PLAY (195//)
+Play
+
+MSG_DEFAULT_QUERY (196//)
+Load saved query
+
+MSG_DEFAULT_TEXT (197//)
+Copy text
+
+MSG_ACTIONS_CHANGED (198//)
+Result changed. Open Actions again.
+
+MSG_ACTIONS_FOOT (199//)
+Up/Down | Enter: select | Esc: back
+
+MSG_ACTIONS_FOOT_SMALL (200//)
+Enter: select | Esc: back
+
+MSG_RESULTS_ACTIONS (201//)
+%d/%d | Enter: %s | Tab: Actions
+
+MSG_RESULTS_ACTIONS_SMALL (202//)
+Enter: %s | Tab: Actions

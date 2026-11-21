@@ -566,3 +566,59 @@ stats: zeigt die meistgestarteten Einträge
 
 MSG_PLUGIN_REQUEST_LIMIT
 Plugin-Anfragelimit erreicht; aeltere Anfragen muessen erst enden.
+
+MSG_CATEGORY_ALL
+Alle
+;All
+
+MSG_CATEGORY_APPS
+Apps
+;Apps
+
+MSG_CATEGORY_FILES
+Dateien
+;Files
+
+MSG_CATEGORY_DRAWERS
+Ordner
+;Drawers
+
+MSG_CATEGORY_PLUGINS
+Plugins
+;Plugins
+
+MSG_DEFAULT_OPEN
+Oeffnen
+;Open
+
+MSG_DEFAULT_PLAY
+Abspielen
+;Play
+
+MSG_DEFAULT_QUERY
+Gespeicherte Suche laden
+;Load saved query
+
+MSG_DEFAULT_TEXT
+Text kopieren
+;Copy text
+
+MSG_ACTIONS_CHANGED
+Ergebnis geaendert. Aktionen erneut oeffnen.
+;Result changed. Open Actions again.
+
+MSG_ACTIONS_FOOT
+Auf/Ab | Enter: waehlen | Esc: zurueck
+;Up/Down | Enter: select | Esc: back
+
+MSG_ACTIONS_FOOT_SMALL
+Enter: waehlen | Esc: zurueck
+;Enter: select | Esc: back
+
+MSG_RESULTS_ACTIONS
+%d/%d | Enter: %s | Tab: Aktionen
+;%d/%d | Enter: %s | Tab: Actions
+
+MSG_RESULTS_ACTIONS_SMALL
+Enter: %s | Tab: Aktionen
+;Enter: %s | Tab: Actions

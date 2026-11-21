@@ -4,6 +4,14 @@
 #include "launcher_ui.h"
 int main(void)
 {
+    char suggested[80];
+    assert(beam_inline_complete("eD","Editor",suggested,sizeof(suggested)) && !strcmp(suggested,"eDitor"));
+    assert(!beam_inline_complete("edtr","Editor",suggested,sizeof(suggested)));
+    assert(!beam_inline_complete("Editor","Editor",suggested,sizeof(suggested)));
+    assert(!beam_inline_complete("","Editor",suggested,sizeof(suggested)));
+    assert(!beam_inline_complete("E","Editor",suggested,3));
+    assert(!beam_inline_complete("E","Editor\n",suggested,sizeof(suggested)));
+
     /* Raw releases/modifiers between text keys must not split a burst.
        Enter, navigation and Shift+Delete must see current results. */
     assert(!beam_input_flush_search(BEAM_INPUT_TEXT,'a',0));

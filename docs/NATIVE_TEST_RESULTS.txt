@@ -206,3 +206,43 @@ Tested LHA SHA-256: cc67af3c77a986df2ab9746469ece45920809f58b4c9b4c05a80e8248cf2
 Reports and native runner: outputs/testing/0.4-final-installer/.
 Only release documentation changes followed this installer test; the final
 package rebuild must retain identical runtime executables and Install script.
+
+2026-11-21: Beam68 0.5 result interface
+
+PASS: full host suite and strict m68000 native build (-Werror).
+PASS: native launcher UI harness in a disposable Workbench 3.2.1 / 68060 guest.
+The harness includes the production renderer and event handler. Native Intuition
+messages exercise category clicks, retained query text, applicable action lists,
+Tab/arrow/Enter, menu-only Escape cancellation, Run with arguments preparation,
+right-click, disabled-shell filtering, row hit testing and compact preference.
+Screens: 640x200 compact and 640x400 detailed; no external programs were launched.
+PASS: Beam68Prefs LAYOUTQA checks all gadget bounds/overlaps at 640x200,
+including the Two-line rows control. Host tests cover category buffer limits,
+item-kind action policy and row-setting save/read/validation.
+Reports: outputs/testing/0.5-result-ui/. Test files were staged only in /tmp,
+not the persistent Builds share. The production installer in Builds/Beam68 was
+refreshed. Full 0.5 install/update/uninstall validation remains a release check.
+
+2026-11-21: Final Beam68 0.5 release checks
+
+PASS: synchronous native runner, six children returned zero: dependency readiness
+(including fake connected/unconfigured AmiHASS STATUS replies), actual launcher
+renderer/events and Ctrl+Right completion, Preferences 640x200 geometry, all eight
+plugin settings transactions, real clipboard.device recording/search/restore/
+clear/stop, and Aminet completion fixtures. These tests do not contact Home
+Assistant or operate devices. Portable tests cover history bounds, text budgets,
+expiry, malformed data, transfer rate/ETA and unknown-size calculations.
+
+PASS: actual packaged installers in a disposable Workbench 3.2.1 / 68060 guest.
+Published 0.4 installed and updated to 0.5 with exact saved-config preservation.
+Uninstall / Keep settings stopped both the launcher and an active test recorder;
+reinstall retained settings. Uninstall / Remove settings stopped and cleared the
+recorder and removed saved/session configuration. Fresh reinstall started 0.5
+and shut down cleanly. Defaults: 19 plugins, six essentials enabled, network and
+Clipboard Tools disabled, Ctrl+Alt+Space and DETAILED_ROWS=YES.
+Reports: outputs/testing/0.5-release/.
+Tested candidate LHA SHA-256: 15de6c271b7a92a6b5b3f5d32a29d3e954175b924e48909fda65042c79ddb577
+The first installer attempt lost its network helper and is not pass evidence;
+the completed second run is recorded. No QA drawer was left in persistent Builds.
+Final packaging must retain the tested runtime binaries and Install script.
+Physical 68000/minimum-memory and every translated layout remain separate checks.

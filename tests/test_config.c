@@ -26,6 +26,7 @@ int main(void)
     write_text("build/testsettings/PROGDIR/Beam68.cfg",
         "# sample starter\nHOTKEY=rawkey control alt space\nDIR=SYS:Tools\nPLUGIN=PROGDIR:Plugins/Calc.plugin\n");
     beam_config_defaults(&c);
+    assert(c.detailed_rows==1);
     assert(beam_config_read_active(&c));
     assert(c.dir_count==1);
     assert(beam_equal(c.dirs[0],"SYS:Tools"));
@@ -154,6 +155,9 @@ int main(void)
     assert(beam_config_write(&d,BEAM_CONFIG_SESSION));
     beam_config_defaults(&c);assert(beam_config_read_active(&c));
     assert(beam_plugin_enabled(&c,"PROGDIR:Plugins/AminetBrowser/AminetBrowser.plugin"));
+    d.detailed_rows=0;assert(beam_config_write(&d,BEAM_CONFIG_SESSION));
+    beam_config_defaults(&c);assert(beam_config_read_active(&c) && c.detailed_rows==0);
+    d.detailed_rows=2;assert(!beam_config_valid(&d));d.detailed_rows=0;
     d.max_depth=-2;assert(!beam_config_valid(&d));
     d.max_depth=17;assert(!beam_config_valid(&d));
     d.max_items=0;

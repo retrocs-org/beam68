@@ -6,6 +6,20 @@ int main(void)
 {
     char parent[BEAM_MAX_PATH],command[512],shell_command[64];
     const char *shell;
+    int menu[7],n;
+    n=beam_item_actions(BEAM_ITEM_WORKBENCH,1,1,menu,7);
+    assert(n==7 && menu[0]==BEAM_ACTION_LAUNCH && menu[6]==BEAM_ACTION_CUSTOM);
+    n=beam_item_actions(BEAM_ITEM_FILE,0,0,menu,7);
+    assert(n==4 && menu[1]==BEAM_ACTION_DRAWER && menu[2]==BEAM_ACTION_INFO && menu[3]==BEAM_ACTION_COPY);
+    n=beam_item_actions(BEAM_ITEM_BOOKMARK,0,1,menu,7);
+    assert(n==2 && menu[1]==BEAM_ACTION_COPY);
+    assert(beam_item_actions(BEAM_ITEM_QUERY,1,1,menu,7)==1);
+    n=beam_item_actions(BEAM_ITEM_GAME,0,0,menu,7);
+    assert(n==4 && menu[1]==BEAM_ACTION_DRAWER);
+    n=beam_item_actions(BEAM_ITEM_VOLUME,0,0,menu,7);
+    assert(n==3 && menu[1]==BEAM_ACTION_INFO);
+    assert(beam_item_actions(BEAM_ITEM_WORKBENCH,1,1,menu,2)==0);
+    assert(!strcmp(beam_item_default_action(BEAM_ITEM_QUERY),"Load saved query"));
     assert(beam_parent_drawer("SYS:Tools/Ed",parent,sizeof(parent)));
     assert(!strcmp(parent,"SYS:Tools"));
     assert(beam_parent_drawer("SYS:Prefs",parent,sizeof(parent)));

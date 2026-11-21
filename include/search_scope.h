@@ -25,6 +25,8 @@
 /* Returns a BEAM_SCOPE_* value and points text at the part after the prefix.
  * Unknown prefixes remain ordinary search text for backward compatibility. */
 int beam_search_scope_parse(const char *query,const char **text);
+/* Build a category query without stacking recognized scope prefixes. */
+int beam_category_query(int category,const char *query,char *out,unsigned int cap);
 int beam_search_scope_kind_allowed(int scope,int item_kind);
 /* Empty pattern lists accept all names. Comma/semicolon separated patterns
  * support '*' and '?' without requiring dos.library ParsePattern buffers. */

@@ -317,6 +317,16 @@ class API:
         except urllib.error.HTTPError as exc:
             if missing and exc.code == 404:
                 return None
+            # GitLab redirects its read-only latest permalink to a numeric
+            # project release endpoint. Never replay writes or forward tokens
+            # to another origin; other API redirects remain errors.
+            if method == 'GET' and p.path.endswith('/releases/permalink/latest') and exc.code == 302:
+                target = urllib.parse.urlsplit(urllib.parse.urljoin(url, exc.headers.get('Location', '')))
+                need(target.scheme + '://' + target.netloc == self.origin and
+                     not target.username and not target.password and not target.query and not target.fragment and
+                     re.fullmatch(r'/api/v4/projects/[^/]+/releases/[A-Za-z0-9][A-Za-z0-9_.-]*', target.path),
+                     'Unsafe latest-release redirect')
+                return self.open(urllib.parse.urlunsplit(target))
             raise ReleaseError('Release service returned HTTP ' + str(exc.code)) from None
         except (urllib.error.URLError, OSError):
             raise ReleaseError('Release service connection failed') from None

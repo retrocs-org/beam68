@@ -37,6 +37,7 @@ static struct BeamAminetResults results;
 static struct BeamAminetDetails details;
 static unsigned long last_progress,progress_bytes,progress_total,last_progress_tick,last_progress_total;
 static char progress_name[108];
+static unsigned long transfer_start,transfer_rate,transfer_remaining;
 static int cancelled;
 static void query_row(const char *label,const char *verb,const char *argument)
 {
@@ -63,7 +64,7 @@ static void draw_progress(void)
     n=strlen(progress_name);while(n>0 && TextLength(rp,(STRPTR)progress_name,n)>right-x)n--;
     SetAPen(rp,foreground);Move(rp,x,y);Text(rp,(STRPTR)progress_name,n);
     percent=beam_aminet_percent(progress_bytes,progress_total);
-    if(percent<0)strcpy(label,"Connecting to Aminet...");
+    if(percent<0){if(progress_bytes<1024UL && progress_bytes)sprintf(label,"%lu bytes downloaded (size unknown)",progress_bytes);else if(progress_bytes)sprintf(label,"%lu KB downloaded (size unknown)",progress_bytes/1024UL);else strcpy(label,"Connecting to Aminet...");}
     else if(progress_total<1024UL)sprintf(label,"%lu / %lu bytes (%d%%)",progress_bytes,progress_total,percent);
     else sprintf(label,"%lu / %lu KB (%d%%)",progress_bytes/1024UL,progress_total/1024UL,percent);
     y+=height+8;Move(rp,x,y);Text(rp,(STRPTR)label,strlen(label));
@@ -72,8 +73,16 @@ static void draw_progress(void)
     SetAPen(rp,shine);RectFill(rp,x+1,y+1,right-1,y+16);
     SetAPen(rp,background);RectFill(rp,x+2,y+2,right-2,y+15);
     if(percent>0){SetAPen(rp,fill);RectFill(rp,x+2,y+2,x+1+(right-x-3)*percent/100,y+15);}
-    SetAPen(rp,foreground);Move(rp,x,y+height+29);
-    Text(rp,(STRPTR)"Close this window to cancel.",27);
+    if(percent<0 && progress_bytes){
+        int span=right-x-20,position=(int)((progress_bytes/1024UL)%((unsigned long)(span>0?span:1)));
+        SetAPen(rp,fill);RectFill(rp,x+2+position,y+2,x+14+position,y+15);
+    }
+    SetAPen(rp,foreground);Move(rp,x,y+height+25);
+    if(!transfer_rate)strcpy(label,"Measuring transfer speed...");
+    else if(transfer_remaining==~0UL)sprintf(label,"%lu bytes/s | time remaining unknown",transfer_rate);
+    else sprintf(label,"%lu bytes/s | about %lu:%02lu remaining",transfer_rate,transfer_remaining/60UL,transfer_remaining%60UL);
+    Text(rp,(STRPTR)label,strlen(label));
+    Move(rp,x,y+2*height+32);Text(rp,(STRPTR)"Close this window to cancel.",27);
 }
 static int progress(unsigned long bytes,unsigned long total)
 {
@@ -88,10 +97,13 @@ static int progress(unsigned long bytes,unsigned long total)
     if(bytes/4096UL!=last_progress)repaint=1;
     if(total && (bytes==total || bytes==0))repaint=1;
     DateStamp(&stamp);now=(unsigned long)stamp.ds_Days*4320000UL+(unsigned long)stamp.ds_Minute*3000UL+(unsigned long)stamp.ds_Tick;
+    if(last_progress==~0UL)transfer_start=now;
+    beam_aminet_transfer_stats(bytes,total,now-transfer_start,&transfer_rate,&transfer_remaining);
+    if(now-last_progress_tick>=25UL)repaint=1;
     if(repaint && (last_progress==~0UL || now-last_progress_tick>=5UL || total!=last_progress_total || (total && bytes==total))) {
         int percent=beam_aminet_percent(bytes,total);
         if(percent>=0)sprintf(text,"Aminet download - %d%%",percent);
-        else strcpy(text,"Aminet download - connecting");
+        else strcpy(text,bytes?"Aminet download - size unknown":"Aminet download - connecting");
         last_progress=bytes/4096UL;last_progress_tick=now;last_progress_total=total;
         SetWindowTitles(progress_window,(STRPTR)text,(STRPTR)~0UL);draw_progress();
     }
@@ -322,7 +334,7 @@ retry_transfer:
     if(!reserve_drawer(directory,drawer,sizeof(drawer))) { strcpy(error_text,"Cannot reserve a download staging drawer.");goto cleanup; }
     strcpy(part,drawer);AddPart(part,"archive.part",sizeof(part));
     if(!progress_window)progress_window=OpenWindowTags(NULL,WA_Title,(ULONG)"Aminet download - close to cancel",
-        WA_Width,440,WA_Height,128,WA_DragBar,TRUE,WA_CloseGadget,TRUE,WA_Activate,TRUE,
+        WA_Width,440,WA_Height,150,WA_DragBar,TRUE,WA_CloseGadget,TRUE,WA_Activate,TRUE,
         WA_IDCMP,IDCMP_CLOSEWINDOW|IDCMP_REFRESHWINDOW,TAG_DONE);
     if(!progress_window) { strcpy(error_text,"Cannot open the download window.");DeleteFile((STRPTR)drawer);goto cleanup; }
     /* The visible, individually cancellable transfer owns its lifecycle after
@@ -332,7 +344,7 @@ retry_transfer:
         strcpy(error_text,"Cannot acknowledge the download request.");DeleteFile((STRPTR)drawer);goto cleanup;
     }
 #endif
-    delivered=1;cancelled=0;last_progress=~0UL;progress_bytes=progress_total=0;
+    delivered=1;cancelled=0;last_progress=~0UL;progress_bytes=progress_total=transfer_rate=0;transfer_remaining=~0UL;
     beam_plugin_copy(progress_name,filename,sizeof(progress_name));draw_progress();
     /* Transfer owns its window now; leave a newer launcher query alone. */
     if(argc==5)beam_control_plugin_handoff(strtoul(argv[4],NULL,10));

@@ -38,6 +38,7 @@
 #include "favorites.h"
 #include "aliases.h"
 #include "plugin_catalog.h"
+#include "../Plugins/AmiHASS/amihass.h"
 #include "plugin_diagnostics.h"
 #include "plugin_health.h"
 #include "wb_drop.h"
@@ -81,6 +82,7 @@ struct Library *KeymapBase;
 #define G_GROUP 108
 #define G_UNLIMITED 110
 #define G_INDEX_VIEW 111
+#define G_DETAILED_ROWS 112
 static int index_settings_view;
 static int settings_qa_active;
 #define G_USE 2
@@ -204,7 +206,7 @@ static struct AppWindow *app_window;
 static struct Screen *screen;
 static APTR visual;
 static struct Gadget *gadgets;
-static struct Gadget *g[112];
+static struct Gadget *g[113];
 static struct BeamPlugin plugin_metadata[BEAM_MAX_PLUGINS];
 static unsigned char plugin_states[BEAM_MAX_PLUGINS];
 static char detail_title[128];
@@ -277,6 +279,89 @@ static void prefs_locale_close(void)
 }
 static struct TextAttr topaz={(STRPTR)"topaz.font",8,FS_NORMAL,FPF_ROMFONT};
 
+/* Availability probes are local; only the explicit Test connection uses IPC. */
+static void dependency_setting(const struct BeamPlugin *p,const char *key,const char *fallback,char *out,unsigned int cap)
+{
+    BPTR f;char line[300];unsigned int i;
+    beam_copy(out,fallback,cap);
+    for(i=0;i<p->setting_count;i++)if(beam_equal(p->setting_defs[i].key,key))
+        beam_copy(out,p->setting_defs[i].default_value,cap);
+    if(!p->settings[0])return;
+    f=Open((STRPTR)p->settings,MODE_OLDFILE);if(!f)return;
+    while(FGets(f,line,sizeof(line))){char *a=beam_trim(line),*b=strchr(a,'=');
+        if(b){*b++=0;if(beam_equal(beam_trim(a),key))beam_copy(out,beam_trim(b),cap);}}
+    Close(f);
+}
+static int dependency_port(const char *name)
+{int found;Forbid();found=FindPort((STRPTR)name)!=NULL;Permit();return found;}
+static int dependency_file(const char *name)
+{
+    char path[BEAM_MAX_PATH];BPTR l;
+    if(!name || !*name)return 0;
+    if(strchr(name,':'))beam_copy(path,name,sizeof(path));
+    else {if(strlen(name)+3>=sizeof(path))return 0;sprintf(path,"C:%s",name);}
+    l=Lock((STRPTR)path,ACCESS_READ);if(!l)return 0;UnLock(l);return 1;
+}
+static void plugin_readiness(const struct BeamPlugin *p,char *out,unsigned int cap)
+{
+    struct Library *network;char setting[BEAM_MAX_PATH];
+    const char *message="Ready: local dependencies available";
+    int wiki=beam_equal(p->id,"org.beam68.wikipedia");
+    if(wiki || beam_equal(p->id,"org.beam68.aminetbrowser")){
+        network=OpenLibrary("bsdsocket.library",4);
+        if(!network)message="Missing TCP/IP: start your network stack";
+        else {CloseLibrary(network);
+            if(wiki){dependency_setting(p,"CURL","C:curl",setting,sizeof(setting));
+                if(!*setting)message="Not configured: select an HTTPS downloader in Settings";
+                else if(!dependency_file(setting))message="Missing curl: check HTTPS downloader in Settings";
+                else message="Ready: TCP/IP and downloader found; server not contacted";
+            }else message="Ready: TCP/IP available; Aminet not contacted";
+        }
+    }else if(beam_equal(p->id,"org.beam68.amihass"))
+        message=dependency_port(AMIHASS_PORT)?"Ready: service running; use Test connection for server status":"Service unavailable: start and configure AmiHASS";
+    else if(beam_equal(p->id,"org.beam68.dopus")){
+        dependency_setting(p,"PORT","DOPUS.1",setting,sizeof(setting));
+        message=!*setting?"Not configured: set the DOpus ARexx port":
+            dependency_port(setting)?"Ready: DOpus ARexx port found":"Service unavailable: start DOpus or check its ARexx port";
+    }else if(beam_equal(p->id,"org.beam68.whdload")){
+        dependency_setting(p,"COMMAND","WHDLoad",setting,sizeof(setting));
+        message=dependency_file(setting)?"Ready: WHDLoad executable found":"Missing WHDLoad: set its executable in Settings";
+    }else if(beam_equal(p->id,"org.beam68.arexxrunner"))
+        message=dependency_port("REXX")?"Ready: RexxMast running":"Service unavailable: start RexxMast";
+    else if(beam_equal(p->id,"org.beam68.musiccontrols"))
+        message=dependency_port("HIPPOPLAYER") || dependency_port("AMIGAMP") || dependency_port("EAGLEPLAYER") || dependency_port("LUMIAMP")?
+            "Ready: a supported player port is present":"Service unavailable: start a supported music player";
+    else if(beam_equal(p->id,"org.beam68.musiclibrary")){
+        dependency_setting(p,"PLAYER_COMMAND","",setting,sizeof(setting));
+        message=*setting?"Ready: player command configured; playback not tested":"Not configured: set the player command in Settings";
+    }
+    beam_copy(out,message,cap);
+}
+static void plugin_test_status(const struct BeamPlugin *p,char *result,unsigned int capacity)
+{
+    plugin_readiness(p,result,capacity);
+    if(beam_equal(p->id,"org.beam68.amihass")){
+        struct AmiHASSClient client;struct AmiHASSMessage *reply=NULL;int ticks=0;
+        memset(&client,0,sizeof(client));
+        if(amihass_send(&client,AMIHASS_STATUS,"Beam68Prefs",NULL,NULL,0,0,NULL,NULL)){
+            while(ticks++<100 && !(reply=amihass_reply(&client)))Delay(1);
+            if(reply){
+                beam_copy(result,reply->result==AMIHASS_UNCONFIGURED?"Not configured: open AmiHASS Preferences":
+                    reply->result==AMIHASS_OK && reply->status.connected?"Ready: AmiHASS reports a connected server":
+                    "Service running, server disconnected: check AmiHASS settings and diagnostics",capacity);
+                amihass_erase(reply,sizeof(*reply));FreeVec(reply);
+            }else beam_copy(result,"Service did not reply within two seconds. No device action was sent.",capacity);
+        }
+        amihass_client_close(&client);
+    }
+}
+static void plugin_connection_test(struct Window *parent)
+{
+    char result[240];APTR args[1];
+    struct EasyStruct prompt={sizeof(struct EasyStruct),0,"Plugin readiness","%s","Close"};
+    plugin_test_status(&plugin_metadata[selection],result,sizeof(result));
+    args[0]=(APTR)result;EasyRequestArgs(parent,&prompt,NULL,args);
+}
 static void show_selected_plugin(void);
 static void show_selected_application(void);
 static void show_selected_appearance(void);
@@ -707,6 +792,8 @@ static int build_window(void)
             GTIN_Number,(ULONG)config.row_spacing,GTIN_MaxChars,2);g[G_ROW_SPACING]=last;
         last=add_tagged(CYCLE_KIND,last,G_COMPACT_MODE,right+170,116,125,15,pstr(PMSG_COMPACT),PLACETEXT_LEFT,
             GTCY_Labels,(ULONG)compact_labels,GTCY_Active,(ULONG)config.compact_mode);g[G_COMPACT_MODE]=last;
+        last=add_tagged(CHECKBOX_KIND,last,G_DETAILED_ROWS,right+225,(h<230?132:140),22,12,pstr(PMSG_DETAILED_ROWS),PLACETEXT_RIGHT,
+            GTCB_Checked,config.detailed_rows,TAG_IGNORE,0);g[G_DETAILED_ROWS]=last;
         last=add_tagged(CHECKBOX_KIND,last,G_PREVIEW,right+20,(h<230?132:140),22,12,pstr(PMSG_ICON_PREVIEW),PLACETEXT_RIGHT,
             GTCB_Checked,config.icon_preview,TAG_IGNORE,0);g[G_PREVIEW]=last;
     } else if (page==PAGE_SOURCES) {
@@ -914,6 +1001,7 @@ static void collect_page(void)
     } else if(page==PAGE_LAYOUT) {
         config.window_width=(int)gadget_number(G_WIDTH);config.window_height=(int)gadget_number(G_HEIGHT);
         config.row_spacing=(int)gadget_number(G_ROW_SPACING);
+        if(g[G_DETAILED_ROWS])config.detailed_rows=!!(g[G_DETAILED_ROWS]->Flags&GFLG_SELECTED);
         if(g[G_PREVIEW])config.icon_preview=!!(g[G_PREVIEW]->Flags&GFLG_SELECTED);
     } else if (page==PAGE_SOURCES) {
         char *text;
@@ -1655,8 +1743,8 @@ static void show_selected_plugin(void)
     if(selection<0 || selection>=config.plugin_file_count)return;
     name=plugin_metadata[selection].name[0]?
         plugin_metadata[selection].name:config.plugin_files[selection];
-    sprintf(detail_title,"Beam68 - %.65s : %s",name,
-            beam_plugin_diagnostic(plugin_states[selection]));
+    {char readiness[160];plugin_readiness(&plugin_metadata[selection],readiness,sizeof(readiness));
+     sprintf(detail_title,"%.35s : %.80s",name,readiness);}
     SetWindowTitles(win,(STRPTR)detail_title,(STRPTR)~0UL);
 }
 /* A local gadget list avoids disturbing the main Preferences page. The
@@ -1827,9 +1915,11 @@ static void plugin_details_window(const char *body)
     last=CreateContext(&list);
     last=add_tagged(LISTVIEW_KIND,last,1,12,border,w-24,h-border-40,"",0,
                     GTLV_Labels,(ULONG)&text,GTLV_ReadOnly,TRUE);
-    last=add_tagged(BUTTON_KIND,last,2,12,h-28,240,18,pstr(PMSG_TYPING_PREVIEW),PLACETEXT_IN,
+    last=add_tagged(BUTTON_KIND,last,2,12,h-28,200,18,pstr(PMSG_TYPING_PREVIEW),PLACETEXT_IN,
         GA_Disabled,(ULONG)(selection<0 || selection>=config.plugin_file_count ||
         !beam_catalog_can_preview(&plugin_metadata[selection])),TAG_IGNORE,0);
+    last=add_gadget(BUTTON_KIND,last,4,w/2-65,h-28,150,18,
+        beam_equal(plugin_metadata[selection].id,"org.beam68.amihass")?"Test connection":"Check readiness",PLACETEXT_IN);
     last=add_gadget(BUTTON_KIND,last,3,w-112,h-28,100,18,pstr(PMSG_DETAILS_CLOSE),PLACETEXT_IN);
     if(!last){FreeGadgets(list);DisplayBeep(screen);return;}
     dialog=OpenWindowTags(NULL,WA_PubScreen,(ULONG)screen,WA_Title,(ULONG)pstr(PMSG_DETAILS_TITLE),
@@ -1850,6 +1940,7 @@ static void plugin_details_window(const char *body)
                (cls==IDCMP_RAWKEY && code==PREF_RAW_ESCAPE))finished=1;
             else if(cls==IDCMP_REFRESHWINDOW){GT_BeginRefresh(dialog);GT_EndRefresh(dialog,TRUE);}
             else if(cls==IDCMP_GADGETUP && id==2){plugin_preview_controls();ActivateWindow(dialog);}
+            else if(cls==IDCMP_GADGETUP && id==4){plugin_connection_test(dialog);ActivateWindow(dialog);}
             else if(cls==IDCMP_RAWKEY && (code==PREF_RAW_UP || code==PREF_RAW_DOWN)) {
                 scroll+=code==PREF_RAW_UP?-1:1;
                 if(scroll>count-visible)scroll=count-visible;
@@ -1901,6 +1992,8 @@ static void plugin_details(void)
     strcat(body,"\n\n");
     strcat(body,beam_plugin_advice(plugin_states[selection]));
     strcat(body,"\n\n");strcat(body,beam_plugin_requirements(p->id));
+    {char readiness[160];plugin_readiness(p,readiness,sizeof(readiness));
+     sprintf(body+strlen(body),"\nReadiness: %s\n",readiness);}
     plugin_details_window(body);
 }
 
@@ -2880,14 +2973,14 @@ static int prefs_main(int argc,char **argv)
             for(view=0;view<(test_page==PAGE_DIRS?2:1);view++) {
                 page=(UBYTE)test_page;index_settings_view=view;
                 if(!build_window()){printf("FAIL: cannot build page %d/%d\n",test_page,view);ok=0;continue;}
-                for(a=0;a<112;a++)if(g[a]) {
+                for(a=0;a<113;a++)if(g[a]) {
                     struct Gadget *ga=g[a];
                     if(ga->LeftEdge<0 || ga->TopEdge<win->BorderTop ||
                        ga->LeftEdge+ga->Width>win->Width-win->BorderRight ||
                        ga->TopEdge+ga->Height>win->Height-win->BorderBottom) {
                         printf("FAIL: page %d/%d gadget %d outside window\n",test_page,view,a);ok=0;
                     }
-                    for(b=a+1;b<112;b++)if(g[b] && g[b]!=ga) {
+                    for(b=a+1;b<113;b++)if(g[b] && g[b]!=ga) {
                         struct Gadget *gb=g[b];
                         if(ga->LeftEdge<gb->LeftEdge+gb->Width && gb->LeftEdge<ga->LeftEdge+ga->Width &&
                            ga->TopEdge<gb->TopEdge+gb->Height && gb->TopEdge<ga->TopEdge+ga->Height) {

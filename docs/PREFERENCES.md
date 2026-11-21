@@ -1,4 +1,4 @@
-# Beam68 0.4 Preferences
+# Beam68 0.5 Preferences
 
 Open Beam68Prefs from SYS:Prefs or press F5 in the launcher.
 
@@ -133,3 +133,32 @@ F6 pins or unpins a read-only query or entity result. Saved query favorites use
 Opening them only fills the query field. Download, playback, device-control and
 macro-execution commands cannot be pinned. F6 updates temporary, active and
 saved Favorites copies so old Use settings cannot override the new choice.
+
+## Result rows in 0.5
+
+Appearance → Window layout includes Two-line rows, enabled by default. The
+launcher shows the name above its containing drawer or available description.
+Disable it for compact columns. Compact mode and short windows use single-line
+rows automatically. Use applies this preference to the running launcher; Save
+also keeps it for subsequent sessions.
+
+The launcher category buttons select existing scopes; they do not change what
+is indexed. Tab or right-click opens applicable actions for indexed results.
+The footer shows the default Enter action; Escape closes just the action menu.
+
+## Plugin readiness and clipboard limits
+
+Select a plugin to see its readiness in the Preferences title, then open Details
+for the full status. Checks cover TCP/IP, the configured Wikipedia downloader,
+AmiHASS/DOpus/ARexx/player service ports and WHDLoad's executable where applicable.
+A Ready result describes these dependencies; it does not enable the plugin or
+promise that an external server/player will succeed. Wikipedia/Aminet are not
+contacted by these local checks. AmiHASS Test connection explicitly requests
+read-only service status and distinguishes a connected server from missing
+configuration. It does not start services or operate devices.
+
+Clipboard Tools has entry-count, retained-text budget and expiry settings.
+Recording remains off until explicitly started with `clip:history on`. Restart
+recording after changing its limits. Disabling the plugin or quitting Beam68
+stops it; stopping/clearing removes its temporary RAM: history. Other files saved
+by the user and current clipboard contents are retained.

@@ -566,3 +566,59 @@ stats: visar det du startar mest
 
 MSG_PLUGIN_REQUEST_LIMIT
 Gransen for pluginanrop ar nadd; vantar pa att aldre anrop avslutas.
+
+MSG_CATEGORY_ALL
+Alla
+;All
+
+MSG_CATEGORY_APPS
+Appar
+;Apps
+
+MSG_CATEGORY_FILES
+Filer
+;Files
+
+MSG_CATEGORY_DRAWERS
+Mappar
+;Drawers
+
+MSG_CATEGORY_PLUGINS
+Instick
+;Plugins
+
+MSG_DEFAULT_OPEN
+Oppna
+;Open
+
+MSG_DEFAULT_PLAY
+Spela
+;Play
+
+MSG_DEFAULT_QUERY
+Las in sparad sokning
+;Load saved query
+
+MSG_DEFAULT_TEXT
+Kopiera text
+;Copy text
+
+MSG_ACTIONS_CHANGED
+Resultatet andrades. Oppna Atgarder igen.
+;Result changed. Open Actions again.
+
+MSG_ACTIONS_FOOT
+Upp/Ned | Enter: valj | Esc: tillbaka
+;Up/Down | Enter: select | Esc: back
+
+MSG_ACTIONS_FOOT_SMALL
+Enter: valj | Esc: tillbaka
+;Enter: select | Esc: back
+
+MSG_RESULTS_ACTIONS
+%d/%d | Enter: %s | Tab: Atgarder
+;%d/%d | Enter: %s | Tab: Actions
+
+MSG_RESULTS_ACTIONS_SMALL
+Enter: %s | Tab: Atgarder
+;Enter: %s | Tab: Actions

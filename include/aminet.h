@@ -18,4 +18,7 @@ void beam_aminet_plain(const char *text,char *out,unsigned int cap);
 int beam_aminet_http_header(const char *header,unsigned long limit,long *length);
 /* Overflow-safe percentage; -1 when total is unknown. */
 int beam_aminet_percent(unsigned long bytes,unsigned long total);
+/* Average transfer rate/ETA; ticks are monotonic elapsed 1/50 seconds. */
+void beam_aminet_transfer_stats(unsigned long bytes,unsigned long total,unsigned long ticks,
+                              unsigned long *rate,unsigned long *remaining);
 #endif

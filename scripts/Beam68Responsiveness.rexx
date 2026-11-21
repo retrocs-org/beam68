@@ -1,10 +1,10 @@
-/* Beam68 0.4 - capture responsiveness on the current machine and index. */
+/* Beam68 0.5 - capture responsiveness on the current machine and index. */
 OPTIONS RESULTS
 PARSE ARG report
 report=STRIP(report)
 IF report='' THEN report='T:Beam68-responsiveness.log'
 IF ~SHOW('P','BEAM68') THEN DO
-  SAY 'Start Beam68 0.4 with RexxMast available, then run this script again.'
+  SAY 'Start Beam68 0.5 with RexxMast available, then run this script again.'
   EXIT 10
 END
 IF OPEN('existing',report,'R') THEN DO
@@ -17,12 +17,12 @@ IF ~OPEN('log',report,'W') THEN DO
   EXIT 10
 END
 ADDRESS 'BEAM68' 'VERSION'
-IF RC~=0 | RESULT~='0.4' THEN DO
-  SAY 'This report requires Beam68 0.4.'
+IF RC~=0 | RESULT~='0.5' THEN DO
+  SAY 'This report requires Beam68 0.5.'
   CALL CLOSE 'log'
   EXIT 10
 END
-CALL LINEOUT 'log','Beam68 responsiveness report - version 0.4'
+CALL LINEOUT 'log','Beam68 responsiveness report - version 0.5'
 CALL LINEOUT 'log','Captured:' DATE('S') TIME()
 SAY 'Machine/CPU, memory, display mode and index label (small/large):'
 PULL machine

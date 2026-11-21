@@ -4,6 +4,16 @@
 #include "search_scope.h"
 int main(void)
 {
+    char category[64];
+    assert(beam_category_query(2,"app:paint",category,sizeof(category)));
+    assert(!strcmp(category,"file:paint"));
+    assert(beam_category_query(0,category,category,sizeof(category)));
+    assert(!strcmp(category,"paint"));
+    assert(beam_category_query(4,"drawer:tools",category,sizeof(category)));
+    assert(!strcmp(category,"plugin:tools"));
+    assert(!beam_category_query(7,"paint",category,sizeof(category)));
+    assert(!beam_category_query(3,"paint",category,4));
+
     const char *text;
     assert(beam_search_scope_parse("health:clock",&text)==BEAM_SCOPE_HEALTH && !strcmp(text,"clock"));
     assert(beam_search_scope_parse("scan:failures",&text)==BEAM_SCOPE_SCAN_FAILURES);

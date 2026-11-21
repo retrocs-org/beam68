@@ -1,4 +1,5 @@
 #include <exec/types.h>
+#include <exec/memory.h>
 #include <exec/io.h>
 #include <exec/ports.h>
 #include <devices/clipboard.h>
@@ -7,6 +8,10 @@
 #include <dos/dos.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include "beam68plugin.h"
+#include "clipboard_history.h"
+#include "stack_guard.h"
 #include "plugin_protocol.h"
 #include "plugin_common.h"
 #include "plugin_locale.h"
@@ -18,11 +23,13 @@ static ULONG get32(const UBYTE *p)
 
 /* clipboard.device may wait for a writer. Never let a launcher utility hang
  * indefinitely: abort a request after roughly two seconds. */
+static int history_recording;
 static int timed_io(struct IOClipReq *io)
 {
     int ticks=0;
     SendIO((struct IORequest *)io);
-    while (!CheckIO((struct IORequest *)io) && ticks++<100) Delay(1);
+    while (!CheckIO((struct IORequest *)io) && ticks++<100 &&
+           !(history_recording && (SetSignal(0,0)&SIGBREAKF_CTRL_C))) Delay(1);
     if (!CheckIO((struct IORequest *)io)) AbortIO((struct IORequest *)io);
     WaitIO((struct IORequest *)io);
     return ticks<=100 && io->io_Error==0;
@@ -53,7 +60,7 @@ static int clipboard_write(const char *text)
     return ok;
 }
 
-static int clipboard_read(char *out,unsigned int cap)
+static int clipboard_read_size(char *out,unsigned int cap,int *truncated)
 {
     struct MsgPort *port;
     struct IOClipReq *io;
@@ -61,7 +68,7 @@ static int clipboard_read(char *out,unsigned int cap)
     ULONG form_size,len,n,remaining,got;
     int ok=0;
     if (!cap) return 0;
-    out[0]=0;
+    out[0]=0;if(truncated)*truncated=0;
     port=CreateMsgPort();
     if (!port) return 0;
     io=(struct IOClipReq *)CreateIORequest(port,sizeof(*io));
@@ -74,12 +81,14 @@ static int clipboard_read(char *out,unsigned int cap)
                 if (!timed_io(io) || io->io_Actual!=8) break;
                 len=get32(chunk+4);remaining-=8;got=0;
                 if (!memcmp(chunk,"CHRS",4)) {
+                    if(truncated && len>=cap)*truncated=1;
                     n=len;if (n+1>cap) n=cap-1;if (n>sizeof(data)) n=sizeof(data);
                     io->io_Command=CMD_READ;io->io_Data=data;io->io_Length=n;
                     if (!n || (timed_io(io) && io->io_Actual==n)) {
                         memcpy(out,data,n);out[n]=0;ok=1;got=n;
                     }
                 }
+                if(truncated && got<len && len-got<0x7fffffffUL){io->io_Offset+=len-got;got=len;}
                 while (got<len) {
                     n=len-got;if (n>sizeof(data)) n=sizeof(data);
                     io->io_Command=CMD_READ;io->io_Data=data;io->io_Length=n;
@@ -106,7 +115,111 @@ static int clipboard_read(char *out,unsigned int cap)
     return ok;
 }
 
-int main(int argc,char **argv)
+#define HISTORY_PORT "BEAM68.CLIPBOARD.HISTORY"
+#define HISTORY_PATH "RAM:Beam68-ClipboardHistory"
+#define HISTORY_NEW "RAM:Beam68-ClipboardHistory.new"
+static unsigned long history_seed(void)
+{struct DateStamp d;DateStamp(&d);return (unsigned long)d.ds_Days*4320000UL+(unsigned long)d.ds_Minute*3000UL+(unsigned long)d.ds_Tick;}
+static void history_clear(struct BeamClipHistory *h,unsigned int limit,unsigned int budget,unsigned long expiry)
+{unsigned long next=h->next_id;beam_clip_history_init(h,limit,budget,expiry);h->next_id=next;}
+static unsigned long history_now(void)
+{struct DateStamp d;DateStamp(&d);return (unsigned long)d.ds_Days*86400UL+(unsigned long)d.ds_Minute*60UL+(unsigned long)d.ds_Tick/50UL;}
+static int clipboard_read(char *out,unsigned int cap)
+{return clipboard_read_size(out,cap,NULL);}
+static int history_signal(ULONG signal)
+{struct MsgPort *p;int found;Forbid();p=FindPort(HISTORY_PORT);found=p!=NULL;if(p && signal)Signal(p->mp_SigTask,signal);Permit();return found;}
+static unsigned int history_setting(const char *key,unsigned int fallback,unsigned int low,unsigned int high)
+{
+    char line[100];FILE *f=fopen("ENVARC:Beam68/Plugins/ClipboardTools.cfg","r");
+    if(f){while(fgets(line,sizeof(line),f)){char *eq=strchr(line,'=');if(eq){*eq++=0;if(beam_ascii_equal(beam_plugin_trim(line),key)){unsigned long n=strtoul(eq,NULL,10);if(n>=low && n<=high)fallback=(unsigned int)n;}}}fclose(f);}
+    return fallback;
+}
+static int history_parent(void)
+{int found;Forbid();found=FindPort("BEAM68.CONTROL")!=NULL;Permit();return found;}
+static int history_record(int argc,char **argv)
+{
+    struct MsgPort *guard=CreateMsgPort();struct BeamClipHistory *h;
+    char text[121],previous[121];int truncated,first=1;
+    unsigned int limit=history_setting("HISTORY_ENTRIES",8,1,16);
+    unsigned int budget=history_setting("HISTORY_BYTES",2048,256,2048);
+    unsigned int minutes=history_setting("EXPIRY_MINUTES",30,1,240);
+    if(!guard)return beam_plugin_error(argc,argv,"Not enough memory to start clipboard history.");
+    guard->mp_Node.ln_Name=HISTORY_PORT;
+    Forbid();if(FindPort(HISTORY_PORT)){Permit();DeleteMsgPort(guard);return beam_plugin_text(argc,argv,"Clipboard history is already recording. history off stops and clears it.");}
+    AddPort(guard);Permit();
+    h=(struct BeamClipHistory *)AllocVec(sizeof(*h),MEMF_CLEAR);
+    if(!h){RemPort(guard);DeleteMsgPort(guard);return beam_plugin_error(argc,argv,"Not enough memory for history.");}
+    beam_clip_history_init(h,limit,budget,(unsigned long)minutes*60UL);h->next_id=history_seed();
+    previous[0]=0;DeleteFile(HISTORY_PATH);DeleteFile(HISTORY_NEW);
+    if(beam_plugin_text(argc,argv,"Clipboard recording started for this session. history off stops and clears it; history clear erases captured entries."))goto done;
+    history_recording=1;
+    while(history_parent()){
+        ULONG signals=SetSignal(0,SIGBREAKF_CTRL_C|SIGBREAKF_CTRL_D);int changed;
+        if(signals&SIGBREAKF_CTRL_C)break;
+        if(signals&SIGBREAKF_CTRL_D){history_clear(h,limit,budget,(unsigned long)minutes*60UL);DeleteFile(HISTORY_PATH);}
+        changed=beam_clip_history_expire(h,history_now());
+        if(clipboard_read_size(text,sizeof(text),&truncated)){
+            if(first){beam_plugin_copy(previous,text,sizeof(previous));first=0;}
+            else if(strcmp(text,previous)){
+                beam_plugin_copy(previous,text,sizeof(previous));
+                if(!truncated && beam_clip_history_add(h,text,history_now()))changed=1;
+            }
+        }
+        signals=SetSignal(0,SIGBREAKF_CTRL_C|SIGBREAKF_CTRL_D);
+        if(signals&SIGBREAKF_CTRL_C)break;
+        if(signals&SIGBREAKF_CTRL_D){history_clear(h,limit,budget,(unsigned long)minutes*60UL);DeleteFile(HISTORY_PATH);changed=0;}
+        if(changed && beam_clip_history_save(h,HISTORY_NEW)){
+            DeleteFile(HISTORY_PATH);Rename(HISTORY_NEW,HISTORY_PATH);
+        }
+        Delay(50);
+    }
+done:
+    history_recording=0;
+    memset(text,0,sizeof(text));memset(previous,0,sizeof(previous));memset(h,0,sizeof(*h));FreeVec(h);
+    DeleteFile(HISTORY_PATH);DeleteFile(HISTORY_NEW);Forbid();RemPort(guard);Permit();DeleteMsgPort(guard);return 0;
+}
+static int history_command(int argc,char **argv,char *command)
+{
+    static struct BeamClipHistory h;const char *filter=beam_plugin_trim(command);unsigned int i,shown=0,skip=0;
+    char label[121],request[121];int running=history_signal(0);
+    if(beam_ascii_equal(filter,"on")){
+        if(!history_parent())return beam_plugin_error(argc,argv,"Start Beam68 before enabling session clipboard recording.");
+        return history_record(argc,argv);
+    }
+    if(beam_ascii_equal(filter,"off")){
+        int ticks=0;history_signal(SIGBREAKF_CTRL_C);
+        while(history_signal(0) && ticks++<150)Delay(1);
+        DeleteFile(HISTORY_PATH);DeleteFile(HISTORY_NEW);
+        return beam_plugin_text(argc,argv,history_signal(0)?"Recorder is stopping; captured data was cleared.":"Clipboard recording stopped and history cleared.");
+    }
+    if(beam_ascii_equal(filter,"clear")){
+        history_signal(SIGBREAKF_CTRL_D);DeleteFile(HISTORY_PATH);DeleteFile(HISTORY_NEW);
+        return beam_plugin_text(argc,argv,"Clipboard history cleared. Stop recording with history off.");
+    }
+    if(beam_ascii_equal(filter,"status"))return beam_plugin_text(argc,argv,running?"Clipboard recording is on for this Beam68 session.":"Clipboard recording is off. history on starts it explicitly.");
+    if(!running)return beam_plugin_text(argc,argv,"History is off. Enter clip:history on to record future clipboard changes for this session.");
+    if(beam_ascii_prefix(filter,"page ")){skip=(unsigned int)strtoul(filter+5,NULL,10);filter="";if(skip>=16)skip=0;}
+    beam_clip_history_init(&h,16,2048,1800);
+    if(!beam_clip_history_load(&h,HISTORY_PATH,history_now()) || !h.count)return beam_plugin_text(argc,argv,"No captured entries yet. Copy some text after starting recording.");
+    beam68_rows_begin();
+    for(i=skip;i<h.count && shown<7;i++)if(beam_clip_history_match(h.entries[i].text,filter)){
+        unsigned int j;beam_plugin_copy(label,h.entries[i].text,sizeof(label));
+        for(j=0;label[j];j++)if((unsigned char)label[j]<32 || label[j]==127)label[j]=' ';
+        sprintf(request,"clip:restore %lu",h.entries[i].id);beam68_row(BEAM68_ROW_QUERY,label,request);++shown;
+    }
+    if(i<h.count && !*filter){sprintf(request,"clip:history page %u",i);beam68_row(BEAM68_ROW_QUERY,"More clipboard history",request);}
+    if(!shown)beam68_row(BEAM68_ROW_TEXT,"No matching clipboard entries.","");
+    memset(&h,0,sizeof(h));return beam68_rows_send(argc,argv,0);
+}
+static int history_restore(int argc,char **argv,const char *number)
+{
+    static struct BeamClipHistory h;char *end;unsigned long id=strtoul(number,&end,10);const char *text;int ok;
+    if(!id || *end || !history_signal(0))return beam_plugin_error(argc,argv,"Clipboard entry is unavailable or recording has stopped.");
+    beam_clip_history_init(&h,16,2048,1800);
+    if(!beam_clip_history_load(&h,HISTORY_PATH,history_now()) || !(text=beam_clip_history_find(&h,id,history_now())))return beam_plugin_error(argc,argv,"Clipboard entry expired or was cleared.");
+    ok=clipboard_write(text);memset(&h,0,sizeof(h));return ok?beam_plugin_text(argc,argv,"Clipboard entry restored."):beam_plugin_error(argc,argv,"Cannot restore clipboard text.");
+}
+static int clipboard_main(int argc,char **argv)
 {
     char input[BEAM_PLUGIN_MAX_INPUT+1],text[121];
     char *s,*path;
@@ -114,6 +227,9 @@ int main(int argc,char **argv)
     unsigned int i;
     if (!beam_plugin_input(argc,argv,input,sizeof(input))) return 20;
     s=beam_plugin_trim(input);
+    if(beam_ascii_equal(s,"history"))return history_command(argc,argv,s+7);
+    if(beam_ascii_prefix(s,"history "))return history_command(argc,argv,s+8);
+    if(beam_ascii_prefix(s,"restore "))return history_restore(argc,argv,s+8);
     if (!*s || beam_ascii_equal(s,"show")) {
         if (!clipboard_read(text,sizeof(text))) return beam_plugin_error(argc,argv,plugin_str(PLMSG_CLIP_EMPTY));
         return beam_plugin_text(argc,argv,text);
@@ -143,3 +259,6 @@ int main(int argc,char **argv)
     }
     return beam_plugin_error(argc,argv,plugin_str(PLMSG_CLIP_USAGE));
 }
+
+int main(int argc,char **argv)
+{return beam_run_with_stack(16384UL,clipboard_main,argc,argv);}

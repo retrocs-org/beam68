@@ -1,9 +1,9 @@
-# Before publishing Beam68 0.4
+# Before publishing Beam68 0.5
 
 Work from the reviewed Git checkout. Commit the final source and documentation
-before publication. The app stays at 0.4 unless its version is explicitly changed.
-Version 0.4 is a new release. Build and verify new packages for its own tag;
-keep published 0.3 assets and release history unchanged.
+before publication. The app stays at 0.5 unless its version is explicitly changed.
+Version 0.5 is a new release. Build and verify new packages for its own tag;
+keep published 0.4 assets and release history unchanged.
 
 ## Automated gates
 
@@ -57,3 +57,12 @@ entity discovery. Older local builds bearing 0.1 may lack this correction;
 update from the published package when catalogue requests fail. The plugin is
 optional and disabled by default. See NATIVE_TEST_RESULTS.txt for verification
 scope and the distinction between the live test build and published binary.
+
+## 0.5 preparation record — 21 November 2026
+
+The native UI, readiness, settings, clipboard and Aminet fixture checks passed.
+The actual published 0.4 installer was upgraded to 0.5; Keep settings, Remove
+settings, reinstall and fresh defaults passed. Both uninstall paths stopped an
+active test clipboard recorder. See NATIVE_TEST_RESULTS.txt and BUILD_STATUS.md.
+Final build/check/prepare must bind these reviewed sources to the final commit;
+preparation does not publish a release or submit to Aminet.

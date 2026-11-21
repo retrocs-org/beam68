@@ -113,3 +113,15 @@ int beam_path_is_excluded(const char *path,
     }
     return 0;
 }
+
+int beam_category_query(int category,const char *query,char *out,unsigned int cap)
+{
+    static const char *prefixes[]={"","app:","file:","drawer:","plugin:"};
+    const char *text;unsigned int a,b;
+    if(category<0 || category>4 || !query || !out || !cap)return 0;
+    beam_search_scope_parse(query,&text);
+    a=(unsigned int)strlen(prefixes[category]);b=(unsigned int)strlen(text);
+    if(a+b>=cap)return 0;
+    /* Caller may use the same buffer for input and output. */
+    memmove(out+a,text,b+1);memcpy(out,prefixes[category],a);return 1;
+}

@@ -54,3 +54,12 @@ The download window shows filename, transferred size, total size and percentage
 when the server supplies a total, plus a progress bar. Close it to cancel. Once
 the download window opens successfully, Beam68 hides its launcher window while
 remaining resident. A late handoff cannot hide a newer query.
+
+## Transfer feedback in 0.5
+
+The download window shows transferred bytes and average bytes per second.
+For known sizes it also estimates remaining time. Unknown sizes display the
+bytes received and an activity indicator without a fabricated percentage.
+Very short transfers may finish before a useful speed estimate is available.
+Cancel removes partial data; Retry starts a new transfer rather than appending
+to an incomplete archive. Existing files are preserved on commit failures.

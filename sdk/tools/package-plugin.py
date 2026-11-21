@@ -23,7 +23,7 @@ DRAWER_RE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.-]{0,29}$")
 VERSION_RE = re.compile(r"^[0-9]+(\.[0-9]+)*$")
 CAP_RE = re.compile(r"^[A-Z_]{1,19}$")
 SKIP = {".DS_Store", "Thumbs.db"}
-BEAM68_VERSION = "0.4"
+BEAM68_VERSION = "0.5"
 
 
 def version_tuple(text):

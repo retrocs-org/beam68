@@ -20,7 +20,7 @@
       "path": "Plugins/AminetBrowser",
       "introduced": "0.2",
       "default_enabled": false,
-      "version": "0.6"
+      "version": "0.8"
     },
     {
       "NAME": "ARexx Runner",
@@ -57,14 +57,14 @@
     },
     {
       "NAME": "Clipboard Tools",
-      "DESCRIPTION": "View, edit, transform and save clipboard text.",
+      "DESCRIPTION": "Work with clipboard text and optionally record bounded session history with search, expiry and explicit restore.",
       "PREFIX": "CLIP:",
       "TRIGGER": "&",
       "EXAMPLE": "clip:show",
       "path": "Plugins/ClipboardTools",
       "introduced": "0.1",
       "default_enabled": false,
-      "version": "0.1"
+      "version": "0.2"
     },
     {
       "NAME": "Clock",
@@ -108,7 +108,7 @@
       "path": "Plugins/DOpus",
       "introduced": "0.3",
       "default_enabled": false,
-      "version": "0.6"
+      "version": "0.7"
     },
     {
       "NAME": "File Finder",
@@ -119,7 +119,7 @@
       "path": "Plugins/FileFinder",
       "introduced": "0.1",
       "default_enabled": true,
-      "version": "0.9"
+      "version": "0.10"
     },
     {
       "NAME": "Memory",
@@ -152,7 +152,7 @@
       "path": "Plugins/MusicLibrary",
       "introduced": "0.3",
       "default_enabled": false,
-      "version": "0.9"
+      "version": "0.10"
     },
     {
       "NAME": "System Commands",
@@ -185,7 +185,7 @@
       "path": "Plugins/WHDLoad",
       "introduced": "0.3",
       "default_enabled": false,
-      "version": "0.8"
+      "version": "0.9"
     },
     {
       "NAME": "Wikipedia",
@@ -196,7 +196,7 @@
       "path": "Plugins/Wikipedia",
       "introduced": "0.3",
       "default_enabled": false,
-      "version": "0.3"
+      "version": "0.5"
     },
     {
       "NAME": "Workbench Windows",

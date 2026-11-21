@@ -1,6 +1,6 @@
-# Beam68 0.4
+# Beam68 0.5
 
-This source tree contains Beam68 0.4. The website identifies the latest published download.
+This source tree contains Beam68 0.5. The website identifies the latest published download.
 
 A keyboard-driven application launcher for classic AmigaOS, with a resident
 Commodities hotkey and a separate native Preferences application.
@@ -91,7 +91,7 @@ commands, plugin examples, aliases and shortcuts.
 | PageUp/PageDown | Move a page |
 | Home/End | Jump to the first or last result |
 | Right/Left | Enter a drawer or return to its parent |
-| Tab | Accept a completion or cycle result actions |
+| Tab | Accept a completion or open the selected result’s action menu |
 | F1 / Help | Browse commands and help |
 | F2 / F3 / Shift+F3 | Reindex / reload settings / reload plugins |
 | F5 / F6 | Open Preferences / pin or unpin a favorite |
@@ -178,7 +178,7 @@ and Assigns and Volumes. Network and optional plugins start disabled. Saved
 plugin choices are preserved on update. Enable Wikipedia for `wiki:Amiga`;
 its Settings select language, HTTPS-capable curl and OpenURL executables.
 
-In the 0.4 source tree, type `help` to discover enabled plugins, or enter a
+Type `help` to discover enabled plugins, or enter a
 plugin prefix such as `aminet:` to select an example before running it. Use F1
 for full command help. `scan:status` reports indexing progress; `scan:cancel`
 or Ctrl+F2 cancels indexing while retaining existing results. F2 or `scan:start`
@@ -223,3 +223,42 @@ signature; follow the package's own instructions. View readme saves a companion
 readme without overwriting an existing one, then opens MultiView. Failed
 transfers remove partial data and offer an explicit restart; cancellation closes
 the transfer without opening anything. Files already present are preserved.
+
+## Search interface in 0.5
+
+Click All, Apps, Files, Drawers or Plugins above the results to change search
+scope while retaining the search text. Category buttons are hidden when the
+window is too short; typed scopes remain available.
+
+Tab, right-click or clicking the result footer opens an action menu for an
+indexed result. Up/Down selects an action; Enter or clicking executes it.
+Number keys choose a listed action directly. Escape dismisses the menu without
+hiding Beam68. The footer describes the selected result’s Enter action.
+Plugin suggestions, completions and drawer browsing retain their own controls.
+
+Appearance → Window layout → Two-line rows displays a name above its location
+or description. Disable it for the original compact columns. Compact mode and
+short windows automatically use single-line rows. No additional index metadata
+is collected for the detailed display.
+
+## Completion, readiness and clipboard history
+
+Matching local names appear as an inline suggestion at the end of the query.
+Ctrl+Right accepts the suggestion explicitly; Enter keeps its normal result
+behavior. Suggestions preserve a selected search scope and do not issue network
+requests, change the clipboard or execute commands.
+
+Plugins → Details shows local dependency readiness. Check readiness repeats the
+local probe; AmiHASS provides an explicit, read-only Test connection using its
+service STATUS reply. The check never starts services or controls devices.
+
+Aminet downloads show average speed, estimated time remaining when size is
+known, and downloaded bytes with an activity indicator when size is unknown.
+Existing cancel, retry and completion actions remain explicit.
+
+Clipboard Tools can record an optional session history with entry, text-budget
+and expiry limits. Recording starts only with `clip:history on` and is off by
+default. `clip:history words` searches; selecting an entry and pressing Enter
+restores it. `clip:history clear` erases entries; `clip:history off` stops and
+clears recording. History is temporary on RAM:, not saved preferences.
+See [Clipboard Tools](Plugins/ClipboardTools/README.md) for limits and commands.

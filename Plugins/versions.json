@@ -8,24 +8,24 @@
     "version": "0.1"
   },
   "AminetBrowser": {
-    "sha256": "08ded86701baa5c9a6081eafb0d7b49b21877770d6d0073cf66339961f94d49e",
-    "version": "0.6"
+    "sha256": "889da1a1f9499ed348dfd456e5d5ed074169465cd29b9be9b6ca9746ecf03a22",
+    "version": "0.8"
   },
   "Calc": {
     "sha256": "9b7e16bff1556689b1e80adc784a0e9033135325f7c6b87d06a1ee2ada5b1880",
     "version": "0.1"
   },
   "ClipboardTools": {
-    "sha256": "68a434b49b325ecca5029accbcdfc5f766c1a73f6275c0a3b6708e5dccee0d36",
-    "version": "0.1"
+    "sha256": "d0d8027f70ce8a613e0a19bc0f13da57b186f68ce701977c940a0fc37a358647",
+    "version": "0.2"
   },
   "Clock": {
     "sha256": "f103ddd2ef4b976850b922c1018c8a3de6aae9678f16dd2b5125481087beb5a8",
     "version": "0.1"
   },
   "DOpus": {
-    "sha256": "18b0b16ee107f145bdc4a6210a5d778b9feefe040a288b4e388a12facef8ccf7",
-    "version": "0.6"
+    "sha256": "5a9fe40c17ab55c5c3eac7917a69ad23ae79f847697cc315204cbdae542caa9c",
+    "version": "0.7"
   },
   "DateUtilities": {
     "sha256": "39fdd1721b67956a8235a3c920b98f5efe34683cc8715888e72222509d55e28c",
@@ -40,8 +40,8 @@
     "version": "0.1"
   },
   "FileFinder": {
-    "sha256": "9e10cce7047079a0b9b12294149c208742ecb2bacafc409d1807fe8309d6fd79",
-    "version": "0.9"
+    "sha256": "8c0b9babff663bfe64b4fad3fd09a00d13ff73c3dd05c58ff8a5f2b24e955a08",
+    "version": "0.10"
   },
   "Memory": {
     "sha256": "ddd38d5f946df13d01736ec306152e2101ba1dbdaa3f6a3de06d9708e63dd1cc",
@@ -52,8 +52,8 @@
     "version": "0.1"
   },
   "MusicLibrary": {
-    "sha256": "69b1e932a88c8ee8e0b4c0f9d57d6551b34e0c62fa6ecaf1a104019ee2ba2e44",
-    "version": "0.9"
+    "sha256": "c02c65eaeac6a1613ad19e82fcbc3c2464d4d420f4084d285d4884d6316206c7",
+    "version": "0.10"
   },
   "SystemCommands": {
     "sha256": "cb4b9b18845ee1db2a83d0048f971a70dc37fb37e6f01543fd1f51b21fcad3d7",
@@ -64,12 +64,12 @@
     "version": "0.1"
   },
   "WHDLoad": {
-    "sha256": "f8323f87f81599fefca0b525572e823d0ceb30c9839a83ae30681d3b54d4e572",
-    "version": "0.8"
+    "sha256": "0801df3fb3b8479be33644a50b45fbad4063fcd9a4d56fc9c6d5efd65df506a6",
+    "version": "0.9"
   },
   "Wikipedia": {
-    "sha256": "21c441b3e00b65972ad6fe5fd551b3eca12a0a4ddefd686ca9906c7f0fea7f0d",
-    "version": "0.3"
+    "sha256": "62441815ed8ff06c09c1721fd9481a45c904d4b9d85e39b68f7e7d16494f7461",
+    "version": "0.5"
   },
   "WindowSwitcher": {
     "sha256": "abada4a19322992bd66f64e6b7456961cde5cc9cc432baf716a36adae41d814d",

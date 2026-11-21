@@ -14,8 +14,8 @@ all: Beam68 Beam68Prefs Beam68Ctl CreateIcons Plugins/Calc/Calc Plugins/Clock/Cl
 Beam68: src/main.c src/rexx_sequence.c src/matcher.c src/search_rank.c src/search_scope.c src/calc_engine.c src/history.c src/query_history.c src/plugin_health.c src/favorites.c src/aliases.c src/index_cache.c src/actions.c src/plugin_job.c src/launcher_ui.c src/appearance.c src/recovery.c src/rexx_commands.c src/plugin_diagnostics.c src/scan_status.c src/completion.c src/item_index.c src/dos_compat.c src/wb_launch.c src/stack_guard.c src/startup_error.c src/icon_info.c src/whdload.c src/clip.c src/hidden.c src/sources.c src/locale_support.c src/beam68_strings.c $(COMMON)
 	$(VC) $(CFLAGS) $(INC) -o $@ src/main.c src/rexx_sequence.c src/matcher.c src/search_rank.c src/search_scope.c src/calc_engine.c src/history.c src/query_history.c src/plugin_health.c src/favorites.c src/aliases.c src/index_cache.c src/actions.c src/plugin_job.c src/launcher_ui.c src/appearance.c src/recovery.c src/rexx_commands.c src/plugin_diagnostics.c src/scan_status.c src/completion.c src/item_index.c src/dos_compat.c src/wb_launch.c src/stack_guard.c src/startup_error.c src/icon_info.c src/whdload.c src/clip.c src/hidden.c src/sources.c src/locale_support.c src/beam68_strings.c $(COMMON)
 
-Beam68Prefs: src/prefs.c src/launcher_ui.c src/hotkey_capture.c src/plugin_catalog.c src/plugin_diagnostics.c src/plugin_health.c src/favorites.c src/aliases.c src/wb_drop.c src/appearance.c src/theme_file.c src/dos_compat.c src/stack_guard.c src/startup_error.c src/plugin_package.c src/plugin_install.c src/preset.c src/catalogue.c src/catalogue_window.c src/beam68prefs_strings.c $(COMMON)
-	$(VC) $(CFLAGS) $(INC) -o $@ src/prefs.c src/launcher_ui.c src/hotkey_capture.c src/plugin_catalog.c src/plugin_diagnostics.c src/plugin_health.c src/favorites.c src/aliases.c src/wb_drop.c src/appearance.c src/theme_file.c src/dos_compat.c src/stack_guard.c src/startup_error.c src/plugin_package.c src/plugin_install.c src/preset.c src/catalogue.c src/catalogue_window.c src/beam68prefs_strings.c $(COMMON)
+Beam68Prefs: src/prefs.c src/launcher_ui.c src/hotkey_capture.c src/plugin_catalog.c src/plugin_diagnostics.c src/plugin_health.c src/favorites.c src/aliases.c src/wb_drop.c src/appearance.c src/theme_file.c src/dos_compat.c src/stack_guard.c src/startup_error.c src/plugin_package.c src/plugin_install.c src/preset.c src/catalogue.c src/catalogue_window.c src/beam68prefs_strings.c $(COMMON) Plugins/AmiHASS/client.c
+	$(VC) $(CFLAGS) $(INC) -o $@ src/prefs.c src/launcher_ui.c src/hotkey_capture.c src/plugin_catalog.c src/plugin_diagnostics.c src/plugin_health.c src/favorites.c src/aliases.c src/wb_drop.c src/appearance.c src/theme_file.c src/dos_compat.c src/stack_guard.c src/startup_error.c src/plugin_package.c src/plugin_install.c src/preset.c src/catalogue.c src/catalogue_window.c src/beam68prefs_strings.c $(COMMON) Plugins/AmiHASS/client.c
 
 Beam68Ctl: src/ctl.c src/control.c src/config.c src/appearance.c
 	$(VC) $(CFLAGS) $(INC) -o $@ src/ctl.c src/control.c src/config.c src/appearance.c src/locale_support.c src/beam68_strings.c
@@ -44,8 +44,8 @@ Plugins/DosTools/DosTools: Plugins/DosTools/DosTools.c $(PLUGIN_COMMON) Plugins/
 Plugins/TaskManager/TaskManager: Plugins/TaskManager/TaskManager.c $(PLUGIN_COMMON) Plugins/TaskManager/version.c
 	$(VC) $(CFLAGS) $(INC) -o $@ Plugins/TaskManager/TaskManager.c $(PLUGIN_COMMON) Plugins/TaskManager/version.c
 
-Plugins/ClipboardTools/ClipboardTools: Plugins/ClipboardTools/ClipboardTools.c $(PLUGIN_COMMON) Plugins/ClipboardTools/version.c
-	$(VC) $(CFLAGS) $(INC) -o $@ Plugins/ClipboardTools/ClipboardTools.c $(PLUGIN_COMMON) Plugins/ClipboardTools/version.c
+Plugins/ClipboardTools/ClipboardTools: Plugins/ClipboardTools/ClipboardTools.c $(PLUGIN_COMMON) Plugins/ClipboardTools/version.c src/clipboard_history.c src/stack_guard.c include/clipboard_history.h
+	$(VC) $(CFLAGS) $(INC) -o $@ Plugins/ClipboardTools/ClipboardTools.c $(PLUGIN_COMMON) Plugins/ClipboardTools/version.c src/clipboard_history.c src/stack_guard.c
 
 Plugins/DateUtilities/DateUtilities: Plugins/DateUtilities/DateUtilities.c $(PLUGIN_COMMON) Plugins/DateUtilities/version.c
 	$(VC) $(CFLAGS) $(INC) -o $@ Plugins/DateUtilities/DateUtilities.c $(PLUGIN_COMMON) Plugins/DateUtilities/version.c

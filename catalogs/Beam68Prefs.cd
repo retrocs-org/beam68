@@ -583,3 +583,6 @@ Extra search words and custom launch actions.
 
 PMSG_RESTORE_DEFAULTS (281//)
 Restore defaults
+
+PMSG_DETAILED_ROWS (282//)
+Two-line rows

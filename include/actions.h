@@ -14,6 +14,9 @@
 /* Return parent drawer for SYS:Tool and SYS:Games/Foo/Bar.
  * Avoids OS-dependent FilePart() in the portable test suite. */
 int beam_parent_drawer(const char *path,char *parent,unsigned int cap);
+/* Applicable indexed-item actions, in menu order; never executes anything. */
+int beam_item_actions(int kind,int custom,int dopus,int *out,int capacity);
+const char *beam_item_default_action(int kind);
 int beam_next_action(int current,int has_custom);
 const char *beam_action_name(int action,const char *custom_label);
 /* Expand {path} and {drawer} into quoted AmigaDOS arguments. */

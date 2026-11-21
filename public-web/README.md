@@ -97,7 +97,7 @@ remain separate from build instructions and SDK documentation. The plugin list s
 examples and default activation states remain in its internal metadata; keep
 those fields in sync with manifests and the installer.
 
-The overview includes six grouped feature summaries and twenty collapsible
+The overview includes six grouped feature summaries and twenty-four collapsible
 FAQ answers. Keep examples and dependencies consistent with the
 corresponding plugin manifests and documentation.
 
@@ -108,10 +108,9 @@ counts are omitted; a reported zero is displayed.
 
 ## Current content
 
-The overview, footer and plugin list describe 0.4. The download page queries
+The overview, footer and plugin list describe 0.5. The download page queries
 GitHub for the latest stable package; source-version copy never selects a
-download asset or marks an unpublished package as available. On 18 November 2026 the latest stable
-tag was 0.3. Do not hard-code that tag into download links.
+download asset or marks an unpublished package as available. Do not hard-code a release tag into download links.
 
 Current feature copy covers scoped F7 history, F6 query favorites, stable result
 selection, read-only retry feedback, Aminet completion choices, optional AmiHASS,
@@ -121,3 +120,7 @@ no new capture or current-layout claim is implied. Native test scope and remaini
 physical-machine limits are described on Source and in BUILD_STATUS.md.
 
 Website edits are prepared locally for manual upload; do not deploy automatically.
+
+0.5 copy also covers result actions, categories, two-line rows, explicit local
+completion, readiness checks, Aminet speed/ETA and optional session clipboard
+history. No deployment is performed by release preparation.

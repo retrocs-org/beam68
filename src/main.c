@@ -177,6 +177,10 @@ static int index_memory_reduced;
 #define BEAM_MAX_RESULTS 64   /* storage; RESULTS_MAX picks 8..64 */
 static int results[BEAM_MAX_RESULTS], result_count, selected;
 static int action_mode, result_scroll;
+static int action_menu,action_choice,action_first,action_count,menu_escape_consumed;
+static int action_choices[7];
+static char action_target[BEAM_MAX_PATH];
+
 static struct MsgPort *cx_port;
 static struct MsgPort *control_port;
 static struct MsgPort *rexx_port;
@@ -1937,6 +1941,18 @@ static void draw_help_detail(struct RastPort *rp,int x,int y,const char *text,in
 
 /* Keep the text insertion cursor visible without allocating an edit buffer.
  * Long queries scroll horizontally; the search still uses the full string. */
+static int indexed_results(void);
+static int inline_suggestion(char *out,unsigned int cap)
+{
+    const char *text;unsigned int prefix,n;char completed[BEAM_QUERY_LEN+1];
+    if(!indexed_results() || action_menu || search_pending || query_cursor!=(int)strlen(query) ||
+       selected<0 || selected>=result_count || results[selected]<0 || results[selected]>=item_count ||
+       items[results[selected]].kind==BEAM_ITEM_QUERY || items[results[selected]].kind==BEAM_ITEM_SNIPPET)return 0;
+    beam_search_scope_parse(query,&text);prefix=(unsigned int)(text-query);
+    if(!beam_inline_complete(text,items[results[selected]].name,completed,sizeof(completed)))return 0;
+    n=(unsigned int)strlen(completed);if(prefix+n>=cap)return 0;
+    memcpy(out,query,prefix);memcpy(out+prefix,completed,n+1);return 1;
+}
 static void draw_query_input(struct RastPort *rp, int left, int top, int width)
 {
     int n=(int)strlen(query), x, i;
@@ -1955,6 +1971,15 @@ static void draw_query_input(struct RastPort *rp, int left, int top, int width)
                       query_cursor-query_view_start+1)<=width-6)
         --query_view_start;
     draw_text(rp,left,top,query+query_view_start,width-3);
+    {
+        char suggestion[BEAM_QUERY_LEN+1];
+        if(inline_suggestion(suggestion,sizeof(suggestion))){
+            int used=(int)TextLength(rp,(STRPTR)(query+query_view_start),n-query_view_start);
+            SetAPen(rp,palette.fill);
+            draw_text(rp,left+used,top,suggestion+n,width-used-3);
+            SetAPen(rp,palette.text);
+        }
+    }
     i=query_cursor-query_view_start;
     x=left+(i>0 ? (int)TextLength(rp,(STRPTR)(query+query_view_start),i) : 0);
     if (x<left+width-2) {
@@ -1970,6 +1995,59 @@ static void draw_query_input(struct RastPort *rp, int left, int top, int width)
 static int render_pending;
 /* Redraw only what changed: cursor movement touches the query line, list
  * navigation only the result area.  Typing redraws both. */
+static int dopus_running(void);
+static int indexed_results(void)
+{
+    return !rows_active && !browse_active && !ext_active && !help_mode &&
+        !completions.count && !query_plugin() && plugin_discovery<0 && args_item<0 &&
+        beam_search_scope_parse(query,NULL)!=BEAM_SCOPE_PLUGIN;
+}
+static int category_bar_height(void)
+{
+    int lh=launcher_lineheight(window->RPort);
+    return window->Height-window->BorderTop-window->BorderBottom>=4*lh+20?lh+5:0;
+}
+static int result_top(void)
+{
+    return window->BorderTop+launcher_lineheight(window->RPort)+9+category_bar_height();
+}
+static int detailed_results(void)
+{
+    return cfg.detailed_rows && !compact_active && indexed_results() &&
+        window->Height-window->BorderBottom-result_top()>=
+        5*(int)window->RPort->TxHeight+20;
+}
+static int result_stride(void)
+{
+    return launcher_lineheight(window->RPort)+
+        (detailed_results()?(int)window->RPort->TxHeight+2:0);
+}
+static int open_action_menu(void)
+{
+    if(!indexed_results() || selected<0 || selected>=result_count ||
+       results[selected]<0 || results[selected]>=item_count)return 0;
+    action_count=beam_item_actions(items[results[selected]].kind,
+        selected_has_custom_action(),dopus_running(),action_choices,7);
+    if(!cfg.shell_commands){
+        int i,n=0;for(i=0;i<action_count;i++)
+            if(action_choices[i]!=BEAM_ACTION_ARGS)action_choices[n++]=action_choices[i];
+        action_count=n;
+    }
+    if(!action_count)return 0;
+    beam_copy(action_target,items[results[selected]].path,sizeof(action_target));
+    action_menu=1;action_choice=action_first=0;status[0]=0;return 1;
+}
+static void choose_category(int category)
+{
+    char changed[BEAM_QUERY_LEN+1];
+    if(args_item>=0)return;
+    if(!beam_category_query(category,query,changed,sizeof(changed))){DisplayBeep(pubscreen);return;}
+    plugin_abandon();action_menu=0;rows_active=0;help_mode=0;
+    browse_exit();ext_exit();beam_completion_reset(&completions);
+    beam_copy(query,changed,sizeof(query));query_cursor=(int)strlen(query);query_view_start=0;
+    action_mode=BEAM_ACTION_LAUNCH;selected=result_scroll=0;last_clicked=-1;status[0]=0;
+    search_items();
+}
 static void render_parts(int parts)
 {
     if(!rows_active && !browse_active && !ext_active && !help_mode &&
@@ -1987,6 +2065,7 @@ static void render_parts(int parts)
     char label[256], aux[256];
     if (!window) return;
     if (search_pending && (parts&BEAM_RENDER_BODY)) { search_items(); parts=BEAM_RENDER_ALL; }
+    if((parts&BEAM_RENDER_BODY) && indexed_results())parts|=BEAM_RENDER_HEADER;
     render_pending&=~parts;
     rp=window->RPort;
     width=window->Width-window->BorderLeft-window->BorderRight;
@@ -2019,7 +2098,42 @@ static void render_parts(int parts)
     browse_mode=help_mode || scope==BEAM_SCOPE_PLUGIN || plugin_discovery>=0;
     shell_query=beam_shell_query(query,&shell_command);
     restart_kind=beam_restart_query(query);
-    row=base+lineheight+9;
+    row=result_top();
+    if(category_bar_height()){
+        static const int names[]={MSG_CATEGORY_ALL,MSG_CATEGORY_APPS,MSG_CATEGORY_FILES,MSG_CATEGORY_DRAWERS,MSG_CATEGORY_PLUGINS};
+        int cell=(width-12)/5,active=beam_search_scope_parse(query,NULL);
+        for(i=0;i<5;i++){
+            int x=window->BorderLeft+6+i*cell,top=base+lineheight+6;
+            SetAPen(rp,active==i?palette.fill:palette.shadow);
+            RectFill(rp,x,top,x+cell-3,top+lineheight-1);
+            SetAPen(rp,active==i?palette.fill_text:palette.text);
+            draw_text(rp,x+3,top+(int)rp->TxBaseline+1,beam_str(names[i]),cell-8);
+        }
+    }
+    if(action_menu && (!indexed_results() || selected<0 || selected>=result_count ||
+       results[selected]<0 || results[selected]>=item_count ||
+       strcmp(action_target,items[results[selected]].path))){
+        action_menu=0;beam_copy(status,beam_str(MSG_ACTIONS_CHANGED),sizeof(status));
+    }
+    if(action_menu){
+        int bottom=window->Height-window->BorderBottom-lineheight-8;
+        int visible=beam_result_rows(row,lineheight,bottom,action_count);
+        action_first=beam_result_scroll(action_choice,action_first,visible,action_count);
+        for(i=action_first;i<action_count && i<action_first+visible;i++){
+            y=row+(i-action_first)*lineheight;
+            SetAPen(rp,i==action_choice?palette.fill:palette.background);
+            RectFill(rp,window->BorderLeft+4,y-2,window->BorderLeft+width-5,y+lineheight-2);
+            SetAPen(rp,i==action_choice?palette.fill_text:palette.text);
+            sprintf(label,"%d. %.200s",i+1,action_choices[i]==BEAM_ACTION_LAUNCH?
+                beam_item_default_action(items[results[selected]].kind):
+                beam_action_name(action_choices[i],beam_alias_action_label(&aliases,selected_alias_index())));
+            draw_text(rp,window->BorderLeft+9,y+(int)rp->TxBaseline,label,width-18);
+        }
+        SetAPen(rp,palette.text);
+        draw_text(rp,window->BorderLeft+9,window->Height-window->BorderBottom-8-
+            (int)(rp->TxHeight-rp->TxBaseline),beam_str(width<440?MSG_ACTIONS_FOOT_SMALL:MSG_ACTIONS_FOOT),width-18);
+        return;
+    }
     SetAPen(rp,palette.text);
     if (completions.count) preview_clear();
     else if (plugin && plugin->icon[0]) {
@@ -2197,7 +2311,8 @@ static void render_parts(int parts)
         draw_text(rp,window->BorderLeft+9,row+lineheight+(int)rp->TxBaseline,
                   second,width-18);
     } else {
-        int visible=beam_result_rows(row,lineheight,
+        int stride=result_stride(),detail=detailed_results();
+        int visible=beam_result_rows(row,stride,
                     window->Height-window->BorderBottom-lineheight-8,result_count);
         reserved=beam_preview_reserved(cfg.icon_preview,width,
                     window->Height-window->BorderBottom-lineheight-8-row);
@@ -2206,11 +2321,11 @@ static void render_parts(int parts)
         result_scroll=beam_result_scroll(selected,result_scroll,visible,result_count);
         for (i=result_scroll;i<result_count && i<result_scroll+visible;i++) {
             const struct BeamItem *it=&items[results[i]];
-            y=row+(i-result_scroll)*lineheight;
+            y=row+(i-result_scroll)*stride;
             if (i==selected) {
                 SetAPen(rp,palette.fill);
                 RectFill(rp,window->BorderLeft+4,y-2,
-                         window->BorderLeft+result_width-4,y+lineheight-2);
+                         window->BorderLeft+result_width-4,y+stride-2);
                 SetAPen(rp,palette.fill_text);
             } else SetAPen(rp,palette.text);
             if (action_mode!=BEAM_ACTION_LAUNCH) {
@@ -2246,9 +2361,15 @@ static void render_parts(int parts)
                 if (*typed && !random_pick && scope_used!=BEAM_SCOPE_FAVORITE)
                     marks=beam_query_marks(typed,it->name);
                 draw_marked(rp,window->BorderLeft+9,y+(int)rp->TxBaseline,label,marks,
-                            (int)(strlen(label)-strlen(it->name)),result_width/2-12);
+                            (int)(strlen(label)-strlen(it->name)),detail?result_width-18:result_width/2-12);
             }
-            draw_text(rp,window->BorderLeft+result_width/2,y+(int)rp->TxBaseline,
+            if(detail){
+                char location[BEAM_MAX_PATH];
+                const char *description=it->title?it->title:it->path;
+                if(!it->title && beam_parent_drawer(it->path,location,sizeof(location)))description=location;
+                draw_text(rp,window->BorderLeft+17,y+(int)rp->TxHeight+2+(int)rp->TxBaseline,
+                          description,result_width-26);
+            }else draw_text(rp,window->BorderLeft+result_width/2,y+(int)rp->TxBaseline,
                       it->kind==BEAM_ITEM_BOOKMARK?it->path:it->title?it->title:it->path,
                       result_width/2-16);
         }
@@ -2285,10 +2406,16 @@ static void render_parts(int parts)
                   beam_str(MSG_FOOT_SHELL):beam_str(MSG_FOOT_SHELL_OFF),
                   width-18);
     } else if (!status[0] && result_count && !query_plugin()) {
-        sprintf(aux,beam_str(MSG_FOOT_RESULTS),
-                selected+1,result_count,
-                beam_action_name(action_mode,
-                    beam_alias_action_label(&aliases,selected_alias_index())));
+        if(indexed_results()){
+            char action_label[96];
+            beam_copy(action_label,action_mode==BEAM_ACTION_LAUNCH?
+                beam_item_default_action(items[results[selected]].kind):
+                beam_action_name(action_mode,beam_alias_action_label(&aliases,selected_alias_index())),sizeof(action_label));
+            if(width<440)sprintf(aux,beam_str(MSG_RESULTS_ACTIONS_SMALL),action_label);
+            else sprintf(aux,beam_str(MSG_RESULTS_ACTIONS),selected+1,result_count,action_label);
+        }
+        else sprintf(aux,beam_str(MSG_FOOT_RESULTS),selected+1,result_count,
+            beam_action_name(action_mode,beam_alias_action_label(&aliases,selected_alias_index())));
         draw_text(rp,window->BorderLeft+9,
                   window->Height-window->BorderBottom-8-(int)(rp->TxHeight-rp->TxBaseline),
                   aux,width-18);
@@ -2387,6 +2514,7 @@ static void hide_window(void)
     preview_clear();
     ext_exit();
     args_item=-1;
+    action_menu=menu_escape_consumed=0;
     rows_active=0;
     browse_exit();
     if (window) {
@@ -2451,7 +2579,8 @@ static void show_window(void)
     rows=compact_active && cfg.visible>4?4:cfg.visible;
     h=last_height?last_height:(state_index>=0?window_states[state_index].height:
       (cfg.window_height?cfg.window_height:
-        45+(rows+3)*(font_height+(compact_active?3:cfg.row_spacing))));
+        50+(rows+4)*(font_height+(compact_active?3:cfg.row_spacing))+
+        (cfg.detailed_rows && !compact_active?rows*(font_height+2):0)));
     maxheight=(int)pubscreen->Height-(int)pubscreen->BarHeight-5;
     if (h>maxheight) h=maxheight;
     if (w<230 || h<90) { hide_window(); return; }
@@ -3715,6 +3844,15 @@ static void plugin_to_launcher(struct BeamLauncherPlugin *d,
 
 /* Plugin manifests are read on first use (first popup or ARexx query),
  * not at boot: 13+ manifest reads are noticeable on floppy and slow CF. */
+static void stop_clipboard_history(int wait)
+{
+    struct MsgPort *port;int ticks=0,found;
+    do{
+        Forbid();port=FindPort("BEAM68.CLIPBOARD.HISTORY");found=port!=NULL;
+        if(port)Signal(port->mp_SigTask,SIGBREAKF_CTRL_C);
+        Permit();if(!wait || !found)break;Delay(1);
+    }while(++ticks<150);
+}
 static void load_plugins(void)
 {
     plugins_loaded=1;
@@ -3726,7 +3864,7 @@ static void load_plugins(void)
     memset(plugin_state,0,sizeof(plugin_state));
     memset(plugin_trigger,0,sizeof(plugin_trigger));
     memset(plugin_manifest,0,sizeof(plugin_manifest));
-    if (safe_mode) { help_build(); return; }
+    if (safe_mode) { stop_clipboard_history(0);help_build(); return; }
     for (i=0;i<cfg.plugin_file_count;i++) {
         char manifest_path[BEAM_MAX_PATH];
         int j, collision=0;
@@ -3795,6 +3933,8 @@ static void load_plugins(void)
             ++plugin_count;
         }
     }
+    {int clip_enabled=0;for(i=0;i<plugin_count;i++)if(beam_equal(plugins[i].id,"org.beam68.clipboardtools"))clip_enabled=1;
+     if(!clip_enabled)stop_clipboard_history(0);}
     help_build();
     whd_index_request(0);
 }
@@ -4271,7 +4411,7 @@ static void handle_window_messages(void)
     UWORD code, qualifier;
     while (window && (m=(struct IntuiMessage *)GetMsg(window->UserPort))) {
         struct timeval input_started;
-        WORD mouse_y=m->MouseY;
+        WORD mouse_y=m->MouseY,mouse_x=m->MouseX;
         ULONG seconds=m->Seconds, micros=m->Micros;
         cls=m->Class; code=m->Code; qualifier=m->Qualifier;
         if (cls==IDCMP_VANILLAKEY || cls==IDCMP_RAWKEY) GetSysTime(&input_started);
@@ -4285,6 +4425,47 @@ static void handle_window_messages(void)
             search_items(); render_pending|=BEAM_RENDER_ALL;
         }
         if (cls==IDCMP_CLOSEWINDOW) { hide_window(); return; }
+        if(cls==IDCMP_VANILLAKEY && menu_escape_consumed){
+            menu_escape_consumed=0;if(code==27)continue;
+        }
+        if(cls==IDCMP_MOUSEBUTTONS && code==SELECTDOWN && args_item<0 && category_bar_height()){
+            int lh=launcher_lineheight(window->RPort),top=window->BorderTop+lh+6;
+            int width=window->Width-window->BorderLeft-window->BorderRight,cell=(width-12)/5;
+            int x=mouse_x-window->BorderLeft-6;
+            if(mouse_y>=top && mouse_y<top+lh && x>=0 && x<5*cell){
+                choose_category(x/cell);render();continue;
+            }
+        }
+        if(action_menu){
+            int execute=0,handled=0;
+            if(!indexed_results() || selected<0 || selected>=result_count ||
+               results[selected]<0 || results[selected]>=item_count ||
+               strcmp(action_target,items[results[selected]].path)){
+                action_menu=0;beam_copy(status,beam_str(MSG_ACTIONS_CHANGED),sizeof(status));render();continue;
+            }
+            if(cls==IDCMP_RAWKEY && !(code&0x80)){
+                if(code==RAW_UP || code==RAW_DOWN || code==RAW_TAB){
+                    action_choice=beam_result_navigate(action_choice,action_count,code==RAW_UP?-1:1,0,0,1);handled=1;
+                }else if(code==RAW_ESCAPE){action_menu=0;menu_escape_consumed=1;handled=1;}
+            }else if(cls==IDCMP_VANILLAKEY){
+                if(code==13 || code==10)execute=1;
+                else if(code>='1' && code<'1'+action_count){action_choice=code-'1';execute=1;}
+                else if(code==27){action_menu=0;handled=1;}
+                else if(code!=9){action_menu=0;}
+            }else if(cls==IDCMP_MOUSEBUTTONS && code==SELECTDOWN){
+                int lh=launcher_lineheight(window->RPort),bottom=window->Height-window->BorderBottom-lh-8;
+                int index=beam_hit_result(mouse_y,result_top(),lh,bottom,action_count);
+                if(index>=0 && index+action_first<action_count){action_choice=index+action_first;execute=1;}
+                handled=1;
+            }
+            if(execute){action_mode=action_choices[action_choice];action_menu=0;launch_selected();if(window)render();continue;}
+            if(handled){if(window)render();continue;}
+            if(cls==IDCMP_VANILLAKEY && code==9)continue;
+        }
+        if(cls==IDCMP_MOUSEBUTTONS && (code==MENUDOWN ||
+           (code==SELECTDOWN && mouse_y>=window->Height-window->BorderBottom-launcher_lineheight(window->RPort)-8)) && open_action_menu()){
+            render();continue;
+        }
         if (cls==IDCMP_REFRESHWINDOW) {
             BeginRefresh(window); render(); EndRefresh(window,TRUE);
         } else if (cls==IDCMP_NEWSIZE) {
@@ -4294,14 +4475,15 @@ static void handle_window_messages(void)
                    (completions.count || (result_count && !query_plugin()))) {
             struct RastPort *rp=window->RPort;
             int lineheight=launcher_lineheight(rp);
-            int top=window->BorderTop+lineheight+9;
+            int top=result_top();
+            int stride=indexed_results()?result_stride():lineheight;
             int bottom=window->Height-window->BorderBottom-lineheight-8;
             int count=completions.count?(int)completions.count:result_count;
             int visible,index;
             if (!completions.count && (help_mode || beam_search_scope_parse(query,NULL)==BEAM_SCOPE_PLUGIN || plugin_discovery>=0))
                 bottom-=lineheight;
-            visible=beam_result_rows(top,lineheight,bottom,count);
-            index=beam_hit_result(mouse_y,top,lineheight,bottom,visible);
+            visible=beam_result_rows(top,stride,bottom,count);
+            index=beam_hit_result(mouse_y,top,stride,bottom,visible);
             if (index>=0) {
                 int dbl;
                 if (!completions.count) index+=result_scroll;
@@ -4331,8 +4513,8 @@ static void handle_window_messages(void)
                     beam_completion_move(&completions,direction);changed=BEAM_RENDER_BODY;
                 } else {
                 int lineheight=launcher_lineheight(window->RPort);
-                int page=beam_result_rows(window->BorderTop+lineheight+9,
-                    lineheight,window->Height-window->BorderBottom-lineheight-8-
+                int page=beam_result_rows(result_top(),
+                    indexed_results()?result_stride():lineheight,window->Height-window->BorderBottom-lineheight-8-
                     ((help_mode || beam_search_scope_parse(query,NULL)==BEAM_SCOPE_PLUGIN || plugin_discovery>=0)?lineheight:0),
                     result_count);
                 int next=beam_result_navigate(selected,result_count,direction,
@@ -4348,6 +4530,12 @@ static void handle_window_messages(void)
                 if (beam_query_edit(query,sizeof(query),&query_cursor,BEAM_EDIT_CLEAR,0)) {
                     beam_query_history_end(&query_history);beam_query_history_end(&plugin_queries);
                     status[0]=0;last_clicked=-1;search_items(); changed=BEAM_RENDER_ALL;
+                }
+            } else if(code==RAW_RIGHT && (qualifier&IEQUALIFIER_CONTROL) && query_cursor==(int)strlen(query)){
+                char suggestion[BEAM_QUERY_LEN+1];
+                if(inline_suggestion(suggestion,sizeof(suggestion))){
+                    beam_copy(query,suggestion,sizeof(query));query_cursor=(int)strlen(query);
+                    search_items();changed=BEAM_RENDER_ALL;
                 }
             } else if (code==RAW_RIGHT && query_cursor>=(int)strlen(query) &&
                        selected>=0 && selected<result_count && args_item<0 && !rows_active &&
@@ -4386,9 +4574,7 @@ static void handle_window_messages(void)
                 else if (help_mode || beam_search_scope_parse(query,NULL)==BEAM_SCOPE_PLUGIN || plugin_discovery>=0)
                     launch_selected();
                 else if (result_count && !query_plugin()) {
-                    action_mode=beam_next_action(action_mode,selected_has_custom_action());
-                    if (action_mode==BEAM_ACTION_DOPUS && !dopus_running())
-                        action_mode=beam_next_action(action_mode,selected_has_custom_action());
+                    open_action_menu();
                 } else beam_copy(status,beam_str(MSG_NO_COMPLETION),sizeof(status));
                 changed=BEAM_RENDER_ALL;
             } else if (code==RAW_ESCAPE && rows_active) {
@@ -4536,9 +4722,7 @@ static void handle_window_messages(void)
                 else if (help_mode || beam_search_scope_parse(query,NULL)==BEAM_SCOPE_PLUGIN || plugin_discovery>=0)
                     launch_selected();
                 else if (result_count && !query_plugin()) {
-                    action_mode=beam_next_action(action_mode,selected_has_custom_action());
-                    if (action_mode==BEAM_ACTION_DOPUS && !dopus_running())
-                        action_mode=beam_next_action(action_mode,selected_has_custom_action());
+                    open_action_menu();
                     render();
                 } else { beam_copy(status,beam_str(MSG_NO_COMPLETION),sizeof(status)); render(); }
             } else {
@@ -4838,6 +5022,7 @@ static int beam_main(int argc,char **argv)
     timing_startup=(unsigned long)micros_since(&startup_time);
     event_loop();
 cleanup:
+    stop_clipboard_history(1);
     if (!success) beam_startup_error("Beam68",startup_failure);
     if (resident_started) safe_mode_active_set(0);
     notify_stop();

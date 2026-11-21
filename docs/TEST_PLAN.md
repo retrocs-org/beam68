@@ -740,6 +740,11 @@ Average and Expert keep the removal and settings choices.
 The report is `RAM:Beam68InstallerQA/report.txt`; the Installer transcript is
 `RAM:Beam68InstallerQA/installer.log`.
 
+After QA finishes, remove any staged `Builds:Beam68-Installer-QA` drawer and
+its matching `.info` and `.uaem` sidecars from the host Builds directory.
+Keep QA reports under `outputs/testing/`, not in Builds. The production
+`Builds:Beam68` installer remains available for the user.
+
 The generated copy redirects system, locale and settings destinations into
 one dedicated RAM drawer, omits resident shutdown and does not start installed
 applications. It exercises installer file operations; use the production
@@ -817,3 +822,19 @@ guest and starts that service; run it only in an isolated test guest, never in a
 saved desktop. Retain redacted proof logs, then remove the disposable profile
 and private credential copies. Use a current service with valid all-area
 catalogue templates; old malformed templates fail discovery with HTTP 400.
+
+## 0.5 result interface
+
+Build the native test-only launcher harness with `make CC=/path/to/m68k-amigaos-gcc build/Beam68LauncherUIQA`
+or `scripts/build-native-qa.sh`. Run it synchronously through Amiga Workbench’s
+disposable --test guest. It includes the production renderer/event handler and
+checks category clicks, query retention, action filtering, Tab/arrow/Enter,
+Escape cancellation, row hit testing and compact fallback on 640x200/640x400.
+Run Beam68Prefs LAYOUTQA for all Preferences control bounds and overlap checks.
+Neither test requires QA files in the persistent Builds share.
+
+Also review ordinary results visually, duplicate names from different drawers,
+long names/paths, changing fonts and resized windows. Confirm that plugin rows,
+completion acceptance and argument entry retain their existing controls. Selecting
+a category must not run a command or send a network request. Cancelled action
+menus must not launch anything. Clearing Two-line rows must persist through Save.

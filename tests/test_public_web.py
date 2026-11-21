@@ -3,7 +3,7 @@
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlsplit
-import json,struct,subprocess,os,shutil,tempfile
+import json,struct,subprocess,os,shutil,tempfile,re
 ROOT=Path(__file__).resolve().parents[1];WEB=ROOT/'public-web'
 PHP=os.environ.get('BEAM68_PHP') or shutil.which('php')
 assert PHP,'Install PHP CLI or set BEAM68_PHP to run the website checks'
@@ -105,10 +105,13 @@ for item in catalog['plugins']+catalog['themes']:
 assert {x['path'] for x in catalog['plugins']}=={str(p.parent.relative_to(ROOT)) for p in (ROOT/'Plugins').glob('*/*.plugin')}
 aminet=next(x for x in catalog['plugins'] if x['NAME']=='Aminet Browser')
 assert aminet['default_enabled'] is False and aminet['introduced']=='0.2'
-assert b'0.4' in rendered['index.php'] and b'19' in rendered['index.php']
+assert b'0.5' in rendered['index.php'] and b'19' in rendered['index.php']
 assert all(x['NAME'].encode() in rendered['marketplace.php'] for x in catalog['plugins'])
 assert b'Aminet asks before downloading' in rendered['index.php']
-assert (ROOT/'VERSION').read_text('ascii').strip()=='0.4'
+# Published website copy is independent of the next development version.
+assert (ROOT/'VERSION').read_text('ascii').strip()==re.search(
+    r'^#define BEAM68_VERSION "([^"]+)"',
+    (ROOT/'include/beam.h').read_text(),re.M).group(1)
 print('PASS: PHP syntax/rendering, escaping, navigation, local CSS and screenshot metadata')
 
 # Public plugin metadata reflects the independent manifests and actual defaults.
@@ -126,7 +129,7 @@ assert b'0.2 views' not in rendered['screenshots.php']
 
 assert b'Earlier versions &amp; additional themes' not in rendered['screenshots.php']
 assert all(shot.get('version')=='0.2' for shot in json.loads((WEB/'images/screenshots.json').read_text()))
-assert rendered['index.php'].count(b'<details>')==20
+assert rendered['index.php'].count(b'<details>')==24
 assert b'wiki:Amiga' in rendered['index.php'] and b'whd:enigma' in rendered['index.php']
 
 assert not any('about' in shot['file'] for shot in json.loads((WEB/'images/screenshots.json').read_text()))
@@ -151,7 +154,7 @@ for label in (b'Keep useful searches close', b'Home Assistant with AmiHASS',
               b'What happens when I import a plugin?', b'View readme'):
     assert label in rendered['index.php'],label
 assert b'SYSTEM integrations do not offer automatic typing previews' in rendered['developers.php']
-assert b'0.3 installation was upgraded to 0.4' in rendered['source.php']
+assert b'0.4 installation was upgraded to 0.5' in rendered['source.php']
 assert b'release02-general.png' not in rendered['screenshots.php']
 clock=next(x for x in catalog['plugins'] if x['NAME']=='Clock')
 assert 'date' not in clock['DESCRIPTION'].lower()

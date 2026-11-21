@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 import zipfile
 from pathlib import Path
@@ -464,6 +465,30 @@ class ReleaseTests(unittest.TestCase):
                 rel.Aminet(m,self.tool.state/'aminet',self.tool.state/'aminet-receipt.json',sha(self.tool.manifest),FTP).preflight()
             self.assertFalse(FTP.uploads)
         finally: FTP.existing=[]
+    def test_latest_release_redirect_is_same_origin_and_readonly(self):
+        import urllib.error
+        origin='https://gitlab.example.net'
+        url=origin+'/api/v4/projects/retrocs%2Fbeam68/releases/permalink/latest'
+        target=origin+'/api/v4/projects/52/releases/0.5'
+        api=rel.API(origin,'not-a-real-token')
+        class Opener:
+            def __init__(self,location):self.location=location;self.calls=[]
+            def open(self,request,timeout=60):
+                self.calls.append(request)
+                if len(self.calls)==1:
+                    raise urllib.error.HTTPError(url,302,'redirect',{'Location':self.location},None)
+                return 'verified response'
+        api.opener=Opener(target)
+        self.assertEqual(api.open(url),'verified response')
+        self.assertEqual(api.opener.calls[1].full_url,target)
+        for unsafe in ['https://other.example/api/v4/projects/52/releases/0.5',origin+'/sign_in',target+'?secret=example']:
+            api.opener=Opener(unsafe)
+            with self.assertRaises(ReleaseError):api.open(url)
+            self.assertEqual(len(api.opener.calls),1)
+        api.opener=Opener(target)
+        with self.assertRaises(ReleaseError):api.open(url,'POST',b'{}')
+        self.assertEqual(len(api.opener.calls),1)
+
     def test_download_redirect_does_not_forward_token_to_storage(self):
         import urllib.error
         class Opener:
@@ -539,6 +564,29 @@ class ReleaseTests(unittest.TestCase):
     def test_source_push_requires_confirmation(self):
         with self.assertRaisesRegex(ReleaseError,'confirm-push'):
             rel.push_source(self.config,['github'],root=self.root)
+    def test_archive_members_use_current_build_date(self):
+        from release_support import lha_write, zip_write, verify_lha
+        stamp = int(time.mktime((2026, 11, 20, 14, 35, 26, 0, 0, -1)))
+        expected = time.localtime(stamp)[:6]
+        folder = Path(self.tmp.name)
+        with patch('release_support.time.time', return_value=stamp):
+            zip_write(folder/'dated.zip', [('one', b'one', False), ('two', b'two', False)])
+            tools = [None]
+            configured = os.environ.get('BEAM68_TEST_LHA') or os.environ.get('LHA')
+            if configured:
+                tools.append(configured)
+            for i, tool in enumerate(tools):
+                path = folder/('dated-'+str(i)+'.lha')
+                lha_write(path, {'Beam68/one': b'one'}, tool)
+                verify_lha(path, {'Beam68/one': b'one'}, tool)
+                raw = int.from_bytes(path.read_bytes()[15:19], 'little')
+                actual = (1980+(raw>>25), (raw>>21)&15, (raw>>16)&31,
+                          (raw>>11)&31, (raw>>5)&63, (raw&31)*2)
+                self.assertEqual(actual, expected)
+        with zipfile.ZipFile(folder/'dated.zip') as archive:
+            self.assertEqual([entry.date_time for entry in archive.infolist()],
+                             [expected, expected])
+
     def test_configured_compressed_lha_roundtrip(self):
         tool=os.environ.get('BEAM68_TEST_LHA') or os.environ.get('LHA')
         if not tool: self.skipTest('No optional LHA writer configured')
