@@ -107,9 +107,11 @@ int beam_path_is_excluded(const char *path,
     int i;
     if (!path || !excluded || count<1) return 0;
     for (i=0;i<count;i++) {
-        unsigned int n=(unsigned int)strlen(excluded[i]);
-        if (!n || strlen(path)<n || !prefix(path,excluded[i])) continue;
-        if (!path[n] || path[n]=='/' || path[n]==':') return 1;
+        unsigned int n=(unsigned int)strlen(excluded[i]),j;
+        while(n>1 && excluded[i][n-1]=='/')--n;
+        if(!n)continue;
+        for(j=0;j<n && path[j];j++)if(lower_char((unsigned char)path[j])!=lower_char((unsigned char)excluded[i][j]))break;
+        if(j==n && (!path[n] || path[n]=='/' || excluded[i][n-1]==':'))return 1;
     }
     return 0;
 }

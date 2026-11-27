@@ -1,6 +1,6 @@
-# Beam68 0.5
+# Beam68 0.6
 
-This source tree contains Beam68 0.5. The website identifies the latest published download.
+This source tree contains Beam68 0.6. The website identifies the latest published download.
 
 A keyboard-driven application launcher for classic AmigaOS, with a resident
 Commodities hotkey and a separate native Preferences application.
@@ -262,3 +262,59 @@ default. `clip:history words` searches; selecting an entry and pressing Enter
 restores it. `clip:history clear` erases entries; `clip:history off` stops and
 clears recording. History is temporary on RAM:, not saved preferences.
 See [Clipboard Tools](Plugins/ClipboardTools/README.md) for limits and commands.
+
+## Feedback, ranking and conversions in 0.6
+
+Indexing shows the current drawer, scanned entries and indexed items in a banner.
+Its bar measures completed configured roots, not a guessed file percentage.
+Click the banner or press Ctrl+F2 to cancel; existing results remain available.
+`scan:failures` explains recent unreadable locations and offers root retries.
+
+Exact names and prefixes retain priority over looser matches. Favorites and
+bounded launch frequency improve ordering within a match class; equal scores
+sort by name and path. `history:reset` asks before clearing learned ranking and
+recent applications; pinned favorites, aliases and plugin query histories remain.
+Disabled or unavailable plugin prefixes explain the problem and direct you to
+F5 -> Plugins. Missing dependencies and failed requests keep their error and
+explicit retry action, while successful empty replies explain that no matches
+were returned. No network plugin is enabled automatically.
+
+Calculator also converts units locally: `=1.5 MiB to KiB`, `=90 min to h`,
+`=1 in to cm`. Supported units are B/KB/MB/GB (decimal), KiB/MiB/GiB (binary),
+ms/s/min/h/day, mm/cm/m/km/in/ft/yd/mi, mg/g/kg and C/F/K temperatures. Input accepts up to three
+fractional decimal digits; results show up to twelve, with `~` for truncated
+non-exact values. Incompatible dimensions and 32-bit intermediate overflows are
+rejected. Arithmetic retains its existing integer semantics; no FPU is needed.
+
+Plugin settings automatically use pages when a plugin has more fields than fit
+on the current screen. Moving between pages preserves pending edits; Save writes
+all pages, Cancel discards them, and Restore defaults stays pending until Save.
+
+## Incremental updates and file actions in 0.6
+
+Filesystem notifications coalesce changes in configured roots and up to 64
+visited subdrawers. A watched subdrawer is rescanned independently; sibling
+entries remain available and are not marked stale. Missing watched drawers fall
+back to a root refresh; cancellation and I/O errors retain existing entries.
+Handlers without notification support, deeper unwatched drawers and external
+plugin indexes may still need F2 for a full rescan. No idle filesystem polling
+is added. Partial/cancelled scans cannot certify an incomplete index cache.
+
+Results keep their selected path or plugin row value across updates. If that
+identity disappears, Enter and the Actions menu are blocked until you explicitly
+select another result or change the query. Updating labels alone does not change
+an actionable plugin row's identity. An adaptive bounded top-results collector preserves match
+ordering while reducing work for large sets of similarly named applications.
+
+The file Actions menu retains Copy path and Information and adds Open with.
+Choose an executable in the native file requester; the file is passed as a
+Workbench argument, including spaces, without changing its default tool.
+Exclude drawer applies to the selected drawer or a file's parent. Confirm Use
+for the current session, Save to keep it and the current running settings, or
+Cancel. Matching entries disappear immediately; siblings remain indexed.
+
+Plugin Settings provides Browse beside known executable and drawer fields:
+Wikipedia's curl/OpenURL, WHDLoad, the Music Library drawer and Aminet's download
+drawer. Browse only fills a pending value; Save and Cancel keep their usual
+meaning. Command templates remain editable text. Dependency details include the
+configured executable or service name; local checks do not contact a server.

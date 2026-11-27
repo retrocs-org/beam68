@@ -1,8 +1,8 @@
 #ifndef BEAM68_H
 #define BEAM68_H
 /* Release version, compared against a plugin manifest's MIN_BEAM68. */
-#define BEAM68_VERSION "0.5"
-#define BEAM68_VERSION_DATE "21.11.2026"
+#define BEAM68_VERSION "0.6"
+#define BEAM68_VERSION_DATE "24.11.2026"
 #define BEAM_MAX_DIRS 16
 #define BEAM_MAX_PLUGINS 32
 #define BEAM_MAX_ITEMS_LIMIT 2048

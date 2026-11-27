@@ -97,7 +97,7 @@ def build(destination, cc):
     drawer_icon[48] = 2  # WBDRAWER, default drawer view
     destination.with_name(destination.name + ".info").write_bytes(drawer_icon)
     (destination / "ReadMe.txt.info").write_bytes(icons.project_object(icons.guide_art(), "MultiView", []))
-    (destination / "ReadMe.txt").write_text("""Beam68 Installer QA 0.5
+    (destination / "ReadMe.txt").write_text("""Beam68 Installer QA 0.6
 
 Double-click Beam68 Installer QA. Choose Install / update, then a user level.
 Novice installs automatically. Intermediate and Expert expose the normal choices;

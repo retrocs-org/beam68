@@ -46,14 +46,14 @@
     },
     {
       "NAME": "Calculator",
-      "DESCRIPTION": "Calculate integer arithmetic with parentheses and decimal, hexadecimal and binary results.",
+      "DESCRIPTION": "Calculate arithmetic and convert bytes, time, length, metric mass and C/F/K temperatures offline, without an FPU.",
       "PREFIX": "",
       "TRIGGER": "=",
       "EXAMPLE": "=12*(3+4)",
       "path": "Plugins/Calc",
       "introduced": "0.1",
       "default_enabled": true,
-      "version": "0.1"
+      "version": "0.3"
     },
     {
       "NAME": "Clipboard Tools",

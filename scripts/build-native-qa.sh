@@ -32,7 +32,15 @@ mkdir -p build
 "$BEAM68_CC" -O2 -m68000 -mcrt=nix20 -Wall -Wextra -Werror -Wno-pointer-sign -Iinclude -o build/Beam68PolishQA tests/native/polish_runner_qa.c src/stack_guard.c
 
 # Same renderer/event handler as production; no public resident or live files.
-make CC="$BEAM68_CC" CFLAGS="-O2 -m68000 -mcrt=nix20 -Wall -Wextra -Werror -Wno-pointer-sign" build/Beam68LauncherUIQA
+make CC="$BEAM68_CC" CFLAGS="-O2 -m68000 -mcrt=nix20 -Wall -Wextra -Werror -Wno-pointer-sign" build/Beam68LauncherUIQA build/Beam68PerformanceQA
 make CC="$BEAM68_CC" CFLAGS="-O2 -m68000 -mcrt=nix20 -Wall -Wextra -Werror -Wno-pointer-sign" build/Beam68ReadinessQA
 "$BEAM68_CC" -O2 -m68000 -mcrt=nix20 -Wall -Wextra -Werror -Wno-pointer-sign -IPlugins/AmiHASS -o build/ReadinessService tests/native/readiness_service.c
 "$BEAM68_CC" -O2 -m68000 -mcrt=nix20 -Wall -Wextra -Werror -Wno-pointer-sign -Iinclude -Isdk/include -o build/Beam68ClipboardHistoryQA tests/native/clipboard_history_qa.c src/clip.c src/stack_guard.c
+
+"$BEAM68_CC" -O2 -m68000 -mcrt=nix20 -Wall -Wextra -Werror -Wno-pointer-sign -o build/OpenWithReceiver tests/native/open_with_receiver.c
+
+"$BEAM68_CC" -O2 -m68000 -mcrt=nix20 -Wall -Wextra -Werror -Wno-pointer-sign -Iinclude -o build/Beam68EnhancementsQA tests/native/enhancements_runner_qa.c src/stack_guard.c
+
+"$BEAM68_CC" -O2 -m68000 -mcrt=nix20 -Wall -Wextra -Werror -Wno-pointer-sign -Iinclude -o build/Beam68CachePolishQA tests/native/cache_polish_runner_qa.c src/stack_guard.c
+
+"$BEAM68_CC" -O2 -m68000 -mcrt=nix20 -Wall -Wextra -Werror -Wno-pointer-sign -Iinclude -o build/Beam68LargeIndexQA tests/native/large_index_runner_qa.c src/stack_guard.c

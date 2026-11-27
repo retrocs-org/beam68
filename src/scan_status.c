@@ -52,3 +52,11 @@ int beam_scan_cacheable(const struct BeamScanStatus *s)
            !s->io_errors && !s->overlong &&
            s->roots_done==s->roots_total;
 }
+
+unsigned int beam_scan_root_percent(const struct BeamScanStatus *s)
+{
+    if(!s || !s->roots_total)return 0;
+    if(s->roots_done>=s->roots_total)return 100;
+    /* At most 32 configured roots; avoid multiplication overflow in callers. */
+    return (unsigned int)((s->roots_done*100UL)/s->roots_total);
+}

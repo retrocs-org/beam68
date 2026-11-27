@@ -14,6 +14,7 @@
 #include <graphics/text.h>
 #include <devices/inputevent.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <libraries/gadtools.h>
 #include <libraries/asl.h>
 #include <libraries/keymap.h>
@@ -305,6 +306,7 @@ static int dependency_file(const char *name)
 static void plugin_readiness(const struct BeamPlugin *p,char *out,unsigned int cap)
 {
     struct Library *network;char setting[BEAM_MAX_PATH];
+    setting[0]=0;
     const char *message="Ready: local dependencies available";
     int wiki=beam_equal(p->id,"org.beam68.wikipedia");
     if(wiki || beam_equal(p->id,"org.beam68.aminetbrowser")){
@@ -336,6 +338,9 @@ static void plugin_readiness(const struct BeamPlugin *p,char *out,unsigned int c
         message=*setting?"Ready: player command configured; playback not tested":"Not configured: set the player command in Settings";
     }
     beam_copy(out,message,cap);
+    if(setting[0] && strlen(out)+strlen(setting)+4<cap) {
+        strcat(out," [");strcat(out,setting);strcat(out,"]");
+    }
 }
 static void plugin_test_status(const struct BeamPlugin *p,char *result,unsigned int capacity)
 {
@@ -661,7 +666,7 @@ static int build_window(void)
         g[G_PLUGIN_DOWN]=last;
         last=add_gadget(BUTTON_KIND,last,G_IMPORT_PLUGIN,w-140,(h<230?110:158),120,(h<230?13:17),pstr(PMSG_IMPORT_PLUGIN),PLACETEXT_IN);
         g[G_IMPORT_PLUGIN]=last;
-        if (h>=230) {
+        if (h>=275) {
             last=add_tagged(INTEGER_KIND,last,G_TIMEOUT,w-78,190,58,14,
                             pstr(PMSG_TIMEOUT),PLACETEXT_ABOVE,
                             GTIN_Number,(ULONG)config.plugin_timeout,GTIN_MaxChars,3);
@@ -848,13 +853,13 @@ static int build_window(void)
                         GTTX_Text,(ULONG)launcher_status_text,
                         GTTX_Border,TRUE);
         g[G_MAIN_STATUS]=last;
-        last=add_tagged(BUTTON_KIND,last,G_MAIN_START,right,(h<230?button_y-24:button_y),56,17,
+        last=add_tagged(BUTTON_KIND,last,G_MAIN_START,right,button_y-24,56,17,
                         pstr(PMSG_START),PLACETEXT_IN,GA_Disabled,launcher_running,TAG_IGNORE,0);
         g[G_MAIN_START]=last;
-        last=add_tagged(BUTTON_KIND,last,G_MAIN_RESTART,right+60,(h<230?button_y-24:button_y),76,17,
+        last=add_tagged(BUTTON_KIND,last,G_MAIN_RESTART,right+60,button_y-24,76,17,
                         pstr(PMSG_RESTART),PLACETEXT_IN,GA_Disabled,!launcher_running,TAG_IGNORE,0);
         g[G_MAIN_RESTART]=last;
-        last=add_tagged(BUTTON_KIND,last,G_MAIN_STOP,right+140,(h<230?button_y-24:button_y),56,17,
+        last=add_tagged(BUTTON_KIND,last,G_MAIN_STOP,right+140,button_y-24,56,17,
                         pstr(PMSG_STOP),PLACETEXT_IN,GA_Disabled,!launcher_running,TAG_IGNORE,0);
         g[G_MAIN_STOP]=last;
     }
@@ -1740,6 +1745,14 @@ static void show_selected_plugin(void)
     if(g[G_REMOVE])GT_SetGadgetAttrs(g[G_REMOVE],win,NULL,GA_Disabled,
         (ULONG)(selection<0 || selection>=config.plugin_file_count ||
         beam_catalog_is_bundled(&config,selection,&plugin_metadata[selection])),TAG_DONE);
+    if(g[G_DETAILS])GT_SetGadgetAttrs(g[G_DETAILS],win,NULL,GA_Disabled,
+        (ULONG)(selection<0 || selection>=config.plugin_file_count),TAG_DONE);
+    if(g[G_TOGGLE])GT_SetGadgetAttrs(g[G_TOGGLE],win,NULL,GA_Disabled,
+        (ULONG)(selection<0 || selection>=config.plugin_file_count),TAG_DONE);
+    if(g[G_PLUGIN_UP])GT_SetGadgetAttrs(g[G_PLUGIN_UP],win,NULL,GA_Disabled,
+        (ULONG)(selection<=0 || selection>=config.plugin_file_count),TAG_DONE);
+    if(g[G_PLUGIN_DOWN])GT_SetGadgetAttrs(g[G_PLUGIN_DOWN],win,NULL,GA_Disabled,
+        (ULONG)(selection<0 || selection>=config.plugin_file_count-1),TAG_DONE);
     if(selection<0 || selection>=config.plugin_file_count)return;
     name=plugin_metadata[selection].name[0]?
         plugin_metadata[selection].name:config.plugin_files[selection];
@@ -2152,126 +2165,167 @@ static int save_plugin_settings(void)
 
 /* Plugin settings have an independent modal window and transaction. The main
  * Preferences gadgets, selection, unsaved edits and done flag are untouched. */
+/* Only fill a pending path; the settings window's Save/Cancel owns the edit. */
+static void browse_plugin_setting(struct Window *dialog,struct Gadget *field,int index)
+{
+    struct FileRequester *request;char path[BEAM_MAX_PATH];
+    int kind=beam_catalog_setting_browse_kind(&plugin_settings_meta,index),accepted=0;
+    if(!kind || !AslBase || !field)return;
+    request=AllocAslRequestTags(ASL_FileRequest,ASLFR_Window,(ULONG)dialog,
+        ASLFR_PrivateIDCMP,TRUE,ASLFR_DrawersOnly,(ULONG)(kind==2),
+        ASLFR_TitleText,(ULONG)(kind==2?"Choose a drawer":"Choose the required executable"),TAG_DONE);
+    if(!request)return;
+    if(AslRequest(request,NULL) && request->fr_Drawer && strlen((const char *)request->fr_Drawer)<sizeof(path)) {
+        beam_copy(path,(const char *)request->fr_Drawer,sizeof(path));
+        accepted=kind==2;
+        if(kind==1 && request->fr_File && *request->fr_File && strlen(path)+strlen((const char *)request->fr_File)+2<sizeof(path))
+            accepted=AddPart(path,request->fr_File,sizeof(path));
+        if(accepted && strlen(path)<64)GT_SetGadgetAttrs(field,dialog,NULL,GTST_String,(ULONG)path,TAG_DONE);
+        else if(accepted){DisplayBeep(screen);SetWindowTitles(dialog,"Path exceeds this setting's 63-character limit",(STRPTR)~0UL);}
+    }
+    FreeAslRequest(request);
+}
+
+/* The number of visible settings follows the screen, not the plugin's size. */
+static int plugin_settings_rows(int screen_height,int bar,int border,int step)
+{
+    int rows=(screen_height-bar-4-border-40)/step;
+    return rows<1?1:rows;
+}
 static void plugin_settings_window(void)
 {
     static char choices[BEAM_MAX_PLUGIN_SETTINGS][128];
     static char *choice_labels[BEAM_MAX_PLUGIN_SETTINGS][65];
     static char labels[BEAM_MAX_PLUGIN_SETTINGS][34];
-    static char edited[BEAM_MAX_PLUGIN_SETTINGS][64];
-    struct Gadget *list=NULL,*last,*fields[BEAM_MAX_PLUGIN_SETTINGS];
-    struct Window *dialog=NULL;struct IntuiMessage *message;
+    static char pending[BEAM_MAX_PLUGIN_SETTINGS][64];
+    static char original[BEAM_MAX_PLUGIN_SETTINGS][64];
+    struct Gadget *list,*last,*fields[BEAM_MAX_PLUGIN_SETTINGS];
+    struct Window *dialog;struct IntuiMessage *message;
     struct Hook edit_hook;
     unsigned int active[BEAM_MAX_PLUGIN_SETTINGS],choice_counts[BEAM_MAX_PLUGIN_SETTINGS];
-    int i,width,height,border,row_step,finished=0,valid;
-    char title[120];
+    int i,width,height,border,row_step,finished=0,valid,first=0,rows,end,rebuild;
+    char title[140];
     width=(int)screen->Width-12;if(width>720)width=720;
     border=(int)screen->WBorTop+(int)screen->Font->ta_YSize+10;
-    row_step=screen->Height<300?16:20;
-    height=border+plugin_settings_meta.setting_count*row_step+36;
-    if(width<500 || height>(int)screen->Height-(int)screen->BarHeight-2){DisplayBeep(screen);return;}
-    memset(fields,0,sizeof(fields));memset(active,0,sizeof(active));
-    memset(choice_counts,0,sizeof(choice_counts));
+    row_step=screen->Height<300?18:22;
+    rows=plugin_settings_rows(screen->Height,screen->BarHeight,border,row_step);
+    if(rows>plugin_settings_meta.setting_count)rows=plugin_settings_meta.setting_count;
+    if(width<500 || rows<1){DisplayBeep(screen);return;}
+    memcpy(pending,plugin_setting_values,sizeof(pending));
+    memcpy(original,plugin_setting_values,sizeof(original));
     memset(&edit_hook,0,sizeof(edit_hook));
     edit_hook.h_Entry=(HOOKFUNC)(void (*)(void))preview_delay_edit;
-    last=CreateContext(&list);if(!last)return;
-    for(i=0;i<plugin_settings_meta.setting_count;i++) {
-        const struct BeamPluginSetting *d=&plugin_settings_meta.setting_defs[i];
-        int y=border+i*row_step;
-        beam_copy(labels[i],d->label,sizeof(labels[i]));
-        if(d->type==BEAM_PLUGIN_SETTING_BOOL) {
-            last=add_tagged(CHECKBOX_KIND,last,100+i,285,y,22,12,labels[i],PLACETEXT_LEFT,
-                GTCB_Checked,(ULONG)(beam_equal(plugin_setting_values[i],"YES") ||
-                    beam_equal(plugin_setting_values[i],"TRUE") || !strcmp(plugin_setting_values[i],"1")),TAG_IGNORE,0);
-        } else if(d->type==BEAM_PLUGIN_SETTING_CHOICE) {
-            char *p,*comma;unsigned int n=0;
-            beam_copy(choices[i],d->choices,sizeof(choices[i]));p=choices[i];
-            while(*p && n<64) {
-                comma=strchr(p,',');if(comma)*comma=0;
-                choice_labels[i][n]=beam_trim(p);
-                if(beam_equal(choice_labels[i][n],plugin_setting_values[i]))active[i]=n;
-                n++;if(!comma)break;p=comma+1;
-            }
-            choice_labels[i][n]=NULL;choice_counts[i]=n;
-            last=add_tagged(CYCLE_KIND,last,100+i,285,y,width-300,15,labels[i],PLACETEXT_LEFT,
-                GTCY_Labels,(ULONG)choice_labels[i],GTCY_Active,(ULONG)active[i]);
-        } else {
-            struct NewGadget ng;
-            memset(&ng,0,sizeof(ng));ng.ng_TextAttr=&topaz;ng.ng_VisualInfo=visual;
-            ng.ng_LeftEdge=285;ng.ng_TopEdge=y;ng.ng_Width=width-300;ng.ng_Height=14;
-            ng.ng_GadgetID=100+i;ng.ng_GadgetText=(UBYTE *)labels[i];ng.ng_Flags=PLACETEXT_LEFT;
-            last=CreateGadget(STRING_KIND,last,&ng,GTST_String,(ULONG)plugin_setting_values[i],
-                GTST_MaxChars,63,GTST_EditHook,(ULONG)&edit_hook,TAG_DONE);
-        }
-        fields[i]=last;if(!last)goto cleanup;
-    }
-    last=add_gadget(BUTTON_KIND,last,3,15,height-26,160,18,pstr(PMSG_RESTORE_DEFAULTS),PLACETEXT_IN);
-    if(!last)goto cleanup;
-    last=add_gadget(BUTTON_KIND,last,1,width-210,height-26,90,18,pstr(PMSG_SAVE),PLACETEXT_IN);
-    if(!last)goto cleanup;
-    last=add_gadget(BUTTON_KIND,last,2,width-110,height-26,95,18,pstr(PMSG_CANCEL),PLACETEXT_IN);
-    if(!last)goto cleanup;
-    sprintf(title,"Beam68 - %.64s - %s",plugin_settings_meta.name,pstr(PMSG_SETTINGS));
-    dialog=OpenWindowTags(NULL,WA_PubScreen,(ULONG)screen,WA_Title,(ULONG)title,
-        WA_Left,(ULONG)(((int)screen->Width-width)/2),
-        WA_Top,(ULONG)((int)screen->BarHeight+2),WA_Width,(ULONG)width,WA_Height,(ULONG)height,
-        WA_Gadgets,(ULONG)list,WA_DragBar,TRUE,WA_CloseGadget,TRUE,WA_Activate,TRUE,
-        WA_SmartRefresh,TRUE,WA_IDCMP,IDCMP_GADGETUP|IDCMP_CLOSEWINDOW|IDCMP_RAWKEY|IDCMP_REFRESHWINDOW,TAG_DONE);
-    if(!dialog)goto cleanup;
-    GT_RefreshWindow(dialog,NULL);
     while(!finished) {
-        WaitPort(dialog->UserPort);
-        while((message=GT_GetIMsg(dialog->UserPort))) {
-            ULONG cls=message->Class;UWORD code=message->Code;
-            struct Gadget *gadget=(struct Gadget *)message->IAddress;
-            unsigned int id=cls==IDCMP_GADGETUP && gadget?gadget->GadgetID:0;
-            GT_ReplyIMsg(message);if(finished)continue;
-            if(cls==IDCMP_CLOSEWINDOW || (cls==IDCMP_RAWKEY && code==PREF_RAW_ESCAPE) ||
-                (cls==IDCMP_GADGETUP && (id==2 || (id>=100 && code==0x45))))finished=1;
-            else if(cls==IDCMP_REFRESHWINDOW){GT_BeginRefresh(dialog);GT_EndRefresh(dialog,TRUE);}
-            else if(cls==IDCMP_GADGETUP && id>=100 && id<100U+(unsigned int)plugin_settings_meta.setting_count) {
-                i=id-100;if(plugin_settings_meta.setting_defs[i].type==BEAM_PLUGIN_SETTING_CHOICE)active[i]=code;
-            } else if(cls==IDCMP_GADGETUP && id==3) {
-                /* Stage defaults in the gadgets; no file or resident changes. */
-                if(!beam_catalog_setting_defaults(&plugin_settings_meta,edited)) {
-                    DisplayBeep(screen);continue;
+        list=NULL;dialog=NULL;rebuild=0;
+        end=first+rows;if(end>plugin_settings_meta.setting_count)end=plugin_settings_meta.setting_count;
+        height=border+(end-first)*row_step+40;
+        memset(fields,0,sizeof(fields));memset(active,0,sizeof(active));
+        memset(choice_counts,0,sizeof(choice_counts));
+        last=CreateContext(&list);if(!last)break;
+        for(i=first;i<end;i++) {
+            const struct BeamPluginSetting *d=&plugin_settings_meta.setting_defs[i];
+            int y=border+(i-first)*row_step;
+            beam_copy(labels[i],d->label,sizeof(labels[i]));
+            if(d->type==BEAM_PLUGIN_SETTING_BOOL) {
+                last=add_tagged(CHECKBOX_KIND,last,100+i,285,y,22,12,labels[i],PLACETEXT_LEFT,
+                    GTCB_Checked,(ULONG)(beam_equal(pending[i],"YES") ||
+                        beam_equal(pending[i],"TRUE") || !strcmp(pending[i],"1")),TAG_IGNORE,0);
+            } else if(d->type==BEAM_PLUGIN_SETTING_CHOICE) {
+                char *p,*comma;unsigned int n=0;
+                beam_copy(choices[i],d->choices,sizeof(choices[i]));p=choices[i];
+                while(*p && n<64) {
+                    comma=strchr(p,',');if(comma)*comma=0;
+                    choice_labels[i][n]=beam_trim(p);
+                    if(beam_equal(choice_labels[i][n],pending[i]))active[i]=n;
+                    n++;if(!comma)break;p=comma+1;
                 }
-                for(i=0;i<plugin_settings_meta.setting_count;i++) {
-                    const struct BeamPluginSetting *d=&plugin_settings_meta.setting_defs[i];
-                    const char *value=edited[i];
-                    if(d->type==BEAM_PLUGIN_SETTING_BOOL)
-                        GT_SetGadgetAttrs(fields[i],dialog,NULL,GTCB_Checked,
-                            (ULONG)(beam_equal(value,"YES") || beam_equal(value,"TRUE") || !strcmp(value,"1")),TAG_DONE);
-                    else if(d->type==BEAM_PLUGIN_SETTING_CHOICE) {
-                        unsigned int n;active[i]=0;
-                        for(n=0;n<choice_counts[i];n++)if(beam_equal(value,choice_labels[i][n]))active[i]=n;
-                        GT_SetGadgetAttrs(fields[i],dialog,NULL,GTCY_Active,(ULONG)active[i],TAG_DONE);
-                    } else GT_SetGadgetAttrs(fields[i],dialog,NULL,GTST_String,(ULONG)value,TAG_DONE);
-                }
-            } else if(cls==IDCMP_GADGETUP && id==1) {
-                valid=1;
-                for(i=0;i<plugin_settings_meta.setting_count;i++) {
-                    const struct BeamPluginSetting *d=&plugin_settings_meta.setting_defs[i];
-                    char *value;
-                    if(d->type==BEAM_PLUGIN_SETTING_BOOL)value=(fields[i]->Flags&GFLG_SELECTED)?"YES":"NO";
-                    else if(d->type==BEAM_PLUGIN_SETTING_CHOICE)
-                        value=active[i]<choice_counts[i]?choice_labels[i][active[i]]:"";
-                    else value=((struct StringInfo *)fields[i]->SpecialInfo)->Buffer;
-                    if(!beam_catalog_setting_value(d,value,edited[i],sizeof(edited[i]))) {
-                        valid=0;break;
+                choice_labels[i][n]=NULL;choice_counts[i]=n;
+                last=add_tagged(CYCLE_KIND,last,100+i,285,y,width-300,15,labels[i],PLACETEXT_LEFT,
+                    GTCY_Labels,(ULONG)choice_labels[i],GTCY_Active,(ULONG)active[i]);
+            } else {
+                struct NewGadget ng;
+                memset(&ng,0,sizeof(ng));ng.ng_TextAttr=&topaz;ng.ng_VisualInfo=visual;
+                ng.ng_LeftEdge=285;ng.ng_TopEdge=y;ng.ng_Width=width-(beam_catalog_setting_browse_kind(&plugin_settings_meta,i)?380:300);ng.ng_Height=14;
+                ng.ng_GadgetID=100+i;ng.ng_GadgetText=(UBYTE *)labels[i];ng.ng_Flags=PLACETEXT_LEFT;
+                last=CreateGadget(STRING_KIND,last,&ng,GTST_String,(ULONG)pending[i],
+                    GTST_MaxChars,63,GTST_EditHook,(ULONG)&edit_hook,GA_TabCycle,TRUE,TAG_DONE);
+            }
+            fields[i]=last;if(!last)goto settings_cleanup;
+            if(beam_catalog_setting_browse_kind(&plugin_settings_meta,i)) {
+                last=add_tagged(BUTTON_KIND,last,200+i,width-85,y-1,70,16,pstr(PMSG_BROWSE),PLACETEXT_IN,
+                    GA_Disabled,(ULONG)!AslBase,TAG_IGNORE,0);
+                if(!last)goto settings_cleanup;
+            }
+        }
+        last=add_gadget(BUTTON_KIND,last,3,15,height-26,160,18,pstr(PMSG_RESTORE_DEFAULTS),PLACETEXT_IN);
+        if(!last)goto settings_cleanup;
+        if(rows<plugin_settings_meta.setting_count) {
+            last=add_tagged(BUTTON_KIND,last,4,183,height-26,50,18,"<",PLACETEXT_IN,
+                GA_Disabled,(ULONG)(first==0),TAG_IGNORE,0);if(!last)goto settings_cleanup;
+            last=add_tagged(BUTTON_KIND,last,5,239,height-26,50,18,">",PLACETEXT_IN,
+                GA_Disabled,(ULONG)(end==plugin_settings_meta.setting_count),TAG_IGNORE,0);if(!last)goto settings_cleanup;
+        }
+        last=add_gadget(BUTTON_KIND,last,1,width-210,height-26,90,18,pstr(PMSG_SAVE),PLACETEXT_IN);
+        if(!last)goto settings_cleanup;
+        last=add_gadget(BUTTON_KIND,last,2,width-110,height-26,95,18,pstr(PMSG_CANCEL),PLACETEXT_IN);
+        if(!last)goto settings_cleanup;
+        sprintf(title,"Beam68 - %.64s - %s (%d-%d/%d)",plugin_settings_meta.name,pstr(PMSG_SETTINGS),
+            first+1,end,plugin_settings_meta.setting_count);
+        dialog=OpenWindowTags(NULL,WA_PubScreen,(ULONG)screen,WA_Title,(ULONG)title,
+            WA_Left,(ULONG)(((int)screen->Width-width)/2),WA_Top,(ULONG)((int)screen->BarHeight+2),
+            WA_Width,(ULONG)width,WA_Height,(ULONG)height,WA_Gadgets,(ULONG)list,
+            WA_DragBar,TRUE,WA_CloseGadget,TRUE,WA_Activate,TRUE,WA_SmartRefresh,TRUE,
+            WA_IDCMP,IDCMP_GADGETUP|IDCMP_CLOSEWINDOW|IDCMP_RAWKEY|IDCMP_REFRESHWINDOW,TAG_DONE);
+        if(!dialog)goto settings_cleanup;
+        GT_RefreshWindow(dialog,NULL);
+        for(i=first;i<end;i++)if(plugin_settings_meta.setting_defs[i].type!=BEAM_PLUGIN_SETTING_BOOL &&
+            plugin_settings_meta.setting_defs[i].type!=BEAM_PLUGIN_SETTING_CHOICE) {
+            ActivateGadget(fields[i],dialog,NULL);break;
+        }
+        while(!finished && !rebuild) {
+            WaitPort(dialog->UserPort);
+            while((message=GT_GetIMsg(dialog->UserPort))) {
+                ULONG cls=message->Class;UWORD code=message->Code;
+                struct Gadget *gadget=(struct Gadget *)message->IAddress;
+                unsigned int id=cls==IDCMP_GADGETUP && gadget?gadget->GadgetID:0;
+                GT_ReplyIMsg(message);if(finished || rebuild)continue;
+                if(cls==IDCMP_CLOSEWINDOW || (cls==IDCMP_RAWKEY && code==PREF_RAW_ESCAPE) ||
+                    (cls==IDCMP_GADGETUP && (id==2 || (id>=100 && code==0x45))))finished=1;
+                else if(cls==IDCMP_REFRESHWINDOW){GT_BeginRefresh(dialog);GT_EndRefresh(dialog,TRUE);}
+                else if(cls==IDCMP_GADGETUP && id>=100 && id<100U+(unsigned int)end) {
+                    i=id-100;if(plugin_settings_meta.setting_defs[i].type==BEAM_PLUGIN_SETTING_CHOICE)active[i]=code;
+                } else if(cls==IDCMP_GADGETUP && id>=200 && id<200U+(unsigned int)end) {
+                    i=id-200;browse_plugin_setting(dialog,fields[i],i);
+                } else if(cls==IDCMP_GADGETUP && id==3) {
+                    if(!beam_catalog_setting_defaults(&plugin_settings_meta,pending))DisplayBeep(screen);
+                    else rebuild=1;
+                } else if(cls==IDCMP_GADGETUP && (id==1 || id==4 || id==5)) {
+                    valid=1;
+                    for(i=first;i<end;i++) {
+                        const struct BeamPluginSetting *d=&plugin_settings_meta.setting_defs[i];char *value;
+                        if(d->type==BEAM_PLUGIN_SETTING_BOOL)value=(fields[i]->Flags&GFLG_SELECTED)?"YES":"NO";
+                        else if(d->type==BEAM_PLUGIN_SETTING_CHOICE)value=active[i]<choice_counts[i]?choice_labels[i][active[i]]:"";
+                        else value=((struct StringInfo *)fields[i]->SpecialInfo)->Buffer;
+                        if(!beam_catalog_setting_value(d,value,pending[i],sizeof(pending[i]))){valid=0;break;}
+                    }
+                    if(!valid){DisplayBeep(screen);SetWindowTitles(dialog,(STRPTR)pstr(PMSG_SETTING_INVALID),(STRPTR)~0UL);}
+                    else if(id==4 || id==5) {
+                        first+=id==4?-rows:rows;rebuild=1;
+                    } else {
+                        memcpy(plugin_setting_values,pending,sizeof(plugin_setting_values));
+                        if(save_plugin_settings()){memcpy(original,pending,sizeof(original));finished=1;}
+                        else {DisplayBeep(screen);SetWindowTitles(dialog,(STRPTR)pstr(PMSG_SETTING_SAVE_FAILED),(STRPTR)~0UL);}
                     }
                 }
-                if(!valid){DisplayBeep(screen);SetWindowTitles(dialog,(STRPTR)pstr(PMSG_SETTING_INVALID),(STRPTR)~0UL);}
-                else {
-                    memcpy(plugin_setting_values,edited,sizeof(plugin_setting_values));
-                    if(save_plugin_settings())finished=1;
-                    else {DisplayBeep(screen);SetWindowTitles(dialog,(STRPTR)pstr(PMSG_SETTING_SAVE_FAILED),(STRPTR)~0UL);}
-                }
             }
         }
+settings_cleanup:
+        if(dialog)CloseWindow(dialog);
+        FreeGadgets(list);
+        if(!rebuild)break;
     }
-cleanup:
-    if(dialog)CloseWindow(dialog);
-    FreeGadgets(list);ActivateWindow(win);
+    memcpy(plugin_setting_values,original,sizeof(plugin_setting_values));
+    ActivateWindow(win);
 }
 
 /* Protocol-1 plugins can opt into an integrated page with SETTING records.
@@ -2931,6 +2985,7 @@ static int prefs_main(int argc,char **argv)
 {
     int settings_qa=argc>1 && !strcmp(argv[1],"SETTINGSQA");
     int ok=0,layout_qa=argc>1 && !strcmp(argv[1],"LAYOUTQA");
+    int qa_height=argc>2?atoi(argv[2]):200;
     const char *startup_failure="Required libraries could not be opened (Intuition, graphics, GadTools and keymap). AmigaOS 3.0+ is required.";
     settings_qa_active=settings_qa;
     IntuitionBase=(struct IntuitionBase *)OpenLibrary("intuition.library",39);
@@ -2960,7 +3015,7 @@ static int prefs_main(int argc,char **argv)
     beam_plugin_health_load(&plugin_health,BEAM_PLUGIN_HEALTH_PATH);
     if(settings_qa){ok=plugin_settings_qa();goto cleanup;}
     startup_failure="No public screen is available. Open Workbench and try again.";
-    screen=layout_qa?OpenScreenTags(NULL,SA_Width,640,SA_Height,200,SA_Depth,3,
+    screen=layout_qa?OpenScreenTags(NULL,SA_Width,640,SA_Height,(ULONG)qa_height,SA_Depth,3,
         SA_DisplayID,0x8000UL,SA_Type,PUBLICSCREEN,SA_Title,(ULONG)"Beam68 Preferences layout QA",TAG_DONE):LockPubScreen(NULL);
     if (!screen) goto cleanup;
     startup_failure="Not enough memory for Preferences screen resources.";
@@ -2969,6 +3024,10 @@ static int prefs_main(int argc,char **argv)
     startup_failure="Could not open Preferences. Free memory or use a larger public screen.";
     if(layout_qa) {
         int test_page,a,b,view;ok=1;
+        {int rows=plugin_settings_rows(screen->Height,screen->BarHeight,screen->WBorTop+screen->Font->ta_YSize+10,screen->Height<300?18:22);
+         if(rows<1 || screen->WBorTop+screen->Font->ta_YSize+10+rows*(screen->Height<300?18:22)+40>screen->Height-screen->BarHeight-2) {
+            puts("FAIL: plugin settings pagination exceeds screen");ok=0;
+         }}
         for(test_page=0;test_page<=PAGE_LAST;test_page++) {
             for(view=0;view<(test_page==PAGE_DIRS?2:1);view++) {
                 page=(UBYTE)test_page;index_settings_view=view;
@@ -2991,7 +3050,7 @@ static int prefs_main(int argc,char **argv)
                 close_window();
             }
         }
-        puts(ok?"Preferences 640x200 gadget geometry: PASS":"Preferences layout: FAIL");
+        printf("Preferences 640x%d gadget geometry: %s\n",(int)screen->Height,ok?"PASS":"FAIL");
         goto cleanup;
     }
     if (!build_window()) goto cleanup;

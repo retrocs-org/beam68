@@ -38,9 +38,9 @@ credential setup are covered below. Aminet follows the submission rules in this 
 ### Version and tag
 
 - VERSION, the application, Preferences, package metadata and release notes must
-  identify the same release. Beam68 remains 0.5 until a version change is agreed.
-- Use the exact version as the public tag, for example `0.5`, without a `v`
-  prefix. The default tag is VERSION; pass `--tag 0.5` explicitly for clarity.
+  identify the same release. Beam68 remains 0.6 until a version change is agreed.
+- Use the exact version as the public tag, for example `0.6`, without a `v`
+  prefix. The default tag is VERSION; pass `--tag 0.6` explicitly for clarity.
 - Both services must receive the same annotated tag object and source commit.
   Never move, force-push or recreate a published release tag.
 - Release titles use `Beam68 <version>`. The release description contains the complete
@@ -56,7 +56,7 @@ retain its original feature categories. Older versions stay in CHANGELOG.md.
 The publisher verifies that the description matches the complete current entry.
 
 GitHub and GitLab release titles are always `Beam68 <version>`, for example
-`Beam68 0.5`. Git tag names remain `0.5`; filenames and download URLs use that tag.
+`Beam68 0.6`. Git tag names remain `0.6`; filenames and download URLs use that tag.
 Aminet keeps its separate readme layout with metadata, description, installation,
 source/licence and the version changelog.
 
@@ -65,10 +65,10 @@ source/licence and the version changelog.
 Upload exactly these four assets, substituting VERSION in each name:
 
 ```text
-Beam68-0.5.lha
-Beam68-0.5.lha.sha256
-Beam68-0.5-plugin-sdk.zip
-Beam68-0.5-plugin-sdk.zip.sha256
+Beam68-0.6.lha
+Beam68-0.6.lha.sha256
+Beam68-0.6-plugin-sdk.zip
+Beam68-0.6-plugin-sdk.zip.sha256
 ```
 
 - Repository assets include the version. Only Aminet uses stable filenames.
@@ -98,17 +98,17 @@ Beam68-0.5-plugin-sdk.zip.sha256
 5. Publish explicitly to the intended services, using the same output directory,
    tag and notes throughout. Keep receipts and verify the public release links.
 
-Example for 0.5, with a fresh output directory:
+Example for 0.6, with a fresh output directory:
 
 ```sh
 python3 scripts/release.py source --to gitlab,github --dry-run
 python3 scripts/release.py source --to gitlab,github --confirm-push
-python3 scripts/release.py build --output outputs/release-0.5-new
-python3 scripts/release.py check --output outputs/release-0.5-new
-python3 scripts/release.py prepare --output outputs/release-0.5-new \
-  --tag 0.5 --notes docs/RELEASE-NOTES.md
-python3 scripts/release.py publish --output outputs/release-0.5-new \
-  --tag 0.5 --notes docs/RELEASE-NOTES.md \
+python3 scripts/release.py build --output outputs/release-0.6-new
+python3 scripts/release.py check --output outputs/release-0.6-new
+python3 scripts/release.py prepare --output outputs/release-0.6-new \
+  --tag 0.6 --notes docs/RELEASE-NOTES.md
+python3 scripts/release.py publish --output outputs/release-0.6-new \
+  --tag 0.6 --notes docs/RELEASE-NOTES.md \
   --to gitlab,github --confirm-publish
 ```
 
@@ -260,15 +260,15 @@ To keep a new version separate from earlier artifacts and publication receipts,
 choose an output directory under `outputs/`:
 
 ```sh
-python3 scripts/release.py build --output outputs/release-0.5 --verbose
-python3 scripts/release.py check --output outputs/release-0.5
-python3 scripts/release.py prepare --output outputs/release-0.5 --tag 0.5
+python3 scripts/release.py build --output outputs/release-0.6 --verbose
+python3 scripts/release.py check --output outputs/release-0.6
+python3 scripts/release.py prepare --output outputs/release-0.6 --tag 0.6
 ```
 
-Pass the same `--output outputs/release-0.5` when publishing those artifacts.
+Pass the same `--output outputs/release-0.6` when publishing those artifacts.
 The four release assets go directly into that directory. Logs, manifests and
 receipts go into its `release/` subdirectory, including
-`outputs/release-0.5/release/build.log`. Without `--output`, the existing layout
+`outputs/release-0.6/release/build.log`. Without `--output`, the existing layout
 is unchanged. `outputs/release/` itself remains reserved for the original
 release state and cannot be selected as an artifact destination.
 
@@ -283,10 +283,10 @@ the prepared release stale. Native runtime certification remains a separate task
 The only files packaged at the top level of outputs/ and uploaded to GitHub
 and GitLab tagged releases are:
 
-- Beam68-0.5.lha
-- Beam68-0.5.lha.sha256
-- Beam68-0.5-plugin-sdk.zip
-- Beam68-0.5-plugin-sdk.zip.sha256
+- Beam68-0.6.lha
+- Beam68-0.6.lha.sha256
+- Beam68-0.6-plugin-sdk.zip
+- Beam68-0.6-plugin-sdk.zip.sha256
 
 Names derive from VERSION. The LHA contains the runtime, bundled plugins,
 themes and notices. The SDK ZIP contains the standalone SDK, C/ARexx examples,
@@ -301,7 +301,13 @@ website ZIP or aggregate SHA256SUMS is created by this workflow. The PHP website
 is deployed from public-web/ in the repository.
 
 The LHA uses classic level-0 headers and LH5 compression when LHA is configured,
-with a stored-entry fallback otherwise. Archive contents, extracted bytes and
+with a stored-entry fallback otherwise. Level-0 member names use literal forward
+slashes, including after compression with Unix LHa. The packager normalizes
+legacy separator bytes and recalculates header checksums without changing the
+compressed payload. Verification rejects backslash and 0xFF separators in these
+headers; test extraction with OLHa as well as Unix/Amiga LhA when changing archive
+creation. This rule does not apply to extended directory headers, which have a
+different encoding. Archive contents, extracted bytes and
 per-file checksums are checked against the current source and native records.
 Preparation from an extracted directory is allowed, but publishing requires a
 clean Git checkout, tracked inputs and the exact prepared commit. Finish and
@@ -361,8 +367,8 @@ build. The default selection is gitlab,github. Distinct names are required. Omit
 remote tags, existing assets and Aminet receipts are preflighted before mutations.
 All destinations must use the same annotated tag object pointing to the prepared
 commit. Tags are never forced. The version and default unprefixed tag derive from VERSION.
-Beam68 uses explicit unprefixed tags: pass `prepare --tag 0.5` and
-`publish --tag 0.5` for the current release.
+Beam68 uses explicit unprefixed tags: pass `prepare --tag 0.6` and
+`publish --tag 0.6` for the current release.
 `--tag-message` sets its annotation and must match between preparation and publication.
 Package filenames and embedded app versions do not change with a tag override.
 Release titles use `Beam68 <version>`, while Git tags keep the exact version. Update version-specific website links before
@@ -487,3 +493,11 @@ Do not remove/recreate a shared drawer while Workbench has it open: guest locks
 can continue referencing the old host directory, causing missing-icon/script
 errors. After an earlier whole-directory replacement, close and reopen that
 Workbench drawer once before starting Install. Future staged updates preserve it.
+
+
+Runtime packaging checks exact filename capitalization and references even on a
+case-insensitive host. Source and archive inventories reject case-colliding
+paths, including differently capitalized parent drawers. Run
+`python3 scripts/check-path-case.py` for source/runtime diagnostics, or pass
+`--runtime-only --root <extracted-Beam68-drawer>` to check an extracted package.
+The case-sensitive APFS validation procedure is in TEST_PLAN.md.

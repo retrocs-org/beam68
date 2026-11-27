@@ -208,6 +208,12 @@ int main(void)
         assert(!beam_catalog_setting_defaults(&defaults,values));
         assert(!strcmp(values[0],"unsaved edit"));
     }
+    {struct BeamPlugin p;memset(&p,0,sizeof(p));p.setting_count=1;p.setting_defs[0].type=BEAM_PLUGIN_SETTING_TEXT;
+     strcpy(p.id,"org.beam68.whdload");strcpy(p.setting_defs[0].key,"COMMAND");assert(beam_catalog_setting_browse_kind(&p,0)==1);
+     strcpy(p.id,"org.beam68.musiclibrary");strcpy(p.setting_defs[0].key,"DRAWER");assert(beam_catalog_setting_browse_kind(&p,0)==2);
+     strcpy(p.setting_defs[0].key,"PLAYER_COMMAND");assert(!beam_catalog_setting_browse_kind(&p,0));
+     strcpy(p.id,"org.beam68.wikipedia");strcpy(p.setting_defs[0].key,"CURL");assert(beam_catalog_setting_browse_kind(&p,0)==1);
+     assert(!beam_catalog_setting_browse_kind(&p,2));}
     puts("Plugin details, triggers, disabled, missing files, bundled discovery, safe settings path, install dir: PASS");
     return 0;
 }

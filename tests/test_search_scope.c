@@ -40,6 +40,9 @@ int main(void)
     assert(beam_path_is_excluded("SYS:Trashcan/old",excluded,2));
     assert(!beam_path_is_excluded("SYS:Trashcan2/file",excluded,2));
     assert(beam_path_is_excluded("work:cache",excluded,2));
+    strcpy(excluded[0],"Work:");assert(beam_path_is_excluded("work:Any/Path",excluded,1));
+    strcpy(excluded[0],"SYS:Trashcan/");assert(beam_path_is_excluded("SYS:Trashcan",excluded,1));
+    assert(!beam_path_is_excluded("SYS:Trashcan2",excluded,1));
     assert(beam_search_scope_parse("GAME: turrican",&text)==BEAM_SCOPE_GAME && !strcmp(text,"turrican"));
     assert(beam_search_scope_kind_allowed(BEAM_SCOPE_GAME,BEAM_ITEM_GAME));
     assert(!beam_search_scope_kind_allowed(BEAM_SCOPE_APP,BEAM_ITEM_GAME));

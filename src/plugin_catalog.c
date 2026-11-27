@@ -242,3 +242,15 @@ int beam_catalog_setting_defaults(const struct BeamPlugin *p,
             pending[i],sizeof(pending[i])))return 0;
     memcpy(values,pending,sizeof(pending));return 1;
 }
+
+int beam_catalog_setting_browse_kind(const struct BeamPlugin *p,int index)
+{
+    const char *key;
+    if(!p || index<0 || index>=p->setting_count || p->setting_defs[index].type!=BEAM_PLUGIN_SETTING_TEXT)return 0;
+    key=p->setting_defs[index].key;
+    if((beam_equal(p->id,"org.beam68.wikipedia") && (beam_equal(key,"CURL") || beam_equal(key,"OPENURL"))) ||
+       (beam_equal(p->id,"org.beam68.whdload") && beam_equal(key,"COMMAND")))return 1;
+    if((beam_equal(p->id,"org.beam68.musiclibrary") && beam_equal(key,"DRAWER")) ||
+       (beam_equal(p->id,"org.beam68.aminetbrowser") && beam_equal(key,"DOWNLOAD_DIR")))return 2;
+    return 0;
+}

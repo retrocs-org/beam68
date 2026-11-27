@@ -97,7 +97,7 @@ remain separate from build instructions and SDK documentation. The plugin list s
 examples and default activation states remain in its internal metadata; keep
 those fields in sync with manifests and the installer.
 
-The overview includes six grouped feature summaries and twenty-four collapsible
+The overview includes six grouped feature summaries and twenty-five collapsible
 FAQ answers. Keep examples and dependencies consistent with the
 corresponding plugin manifests and documentation.
 
@@ -108,7 +108,8 @@ counts are omitted; a reported zero is displayed.
 
 ## Current content
 
-The overview, footer and plugin list describe 0.5. The download page queries
+The overview describes the 0.6 source tree and the plugin list reflects its
+independent plugin versions. The footer and download page query
 GitHub for the latest stable package; source-version copy never selects a
 download asset or marks an unpublished package as available. Do not hard-code a release tag into download links.
 
@@ -137,3 +138,11 @@ version number rather than falling back to a hard-coded version.
 The plugin list includes all 19 bundled manifests and current descriptions,
 including optional session clipboard history and Aminet transfer feedback.
 Music Controls supports HippoPlayer, AmigaAMP and EaglePlayer 2.
+
+## Website changelog
+
+[changelog.md](changelog.md) records website changes separately from the root
+application CHANGELOG.md, using the same Features, Enhancements and Bugs sections.
+Update it whenever website content, behavior or presentation changes. Version
+headings identify the application version covered by the site; deployment remains
+a separate manual step. Include changelog.md when copying public-web/ to the server.

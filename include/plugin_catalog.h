@@ -26,6 +26,8 @@ void beam_catalog_format_row(char *out,unsigned int cap,unsigned int columns,
                             const char *state,const char *key);
 int beam_catalog_is_bundled(const struct BeamConfig *c,int index,const struct BeamPlugin *p);
 int beam_catalog_can_preview(const struct BeamPlugin *plugin);
+/* Known executable paths (1) and drawer paths (2), never command templates. */
+int beam_catalog_setting_browse_kind(const struct BeamPlugin *plugin,int index);
 int beam_catalog_has_settings(const struct BeamPlugin *plugin);
 int beam_catalog_setting_defaults(const struct BeamPlugin *p,
     char values[BEAM_MAX_PLUGIN_SETTINGS][64]);

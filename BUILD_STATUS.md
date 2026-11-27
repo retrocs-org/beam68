@@ -1,6 +1,22 @@
 # Beam68 validation status
 
-## Current version: 0.5
+## Current version: 0.6
+
+Updated 24 November 2026. Host tests and native Workbench 3.2.3 / 68020 / 8 MB
+checks passed for incremental subdrawer notifications, sibling-safe reconciliation,
+immediate exclusions, indexed/plugin selection identity and vanished-target
+guards, preview isolation, and explicit Open with WBStartup arguments.
+Preferences layouts passed at 640x200, 640x256 and 640x400; all eight bundled
+settings files passed validation/save/reload checks. Calculator 0.3 adds
+C/F/K and finer small-value results without an FPU requirement.
+
+The fixed 2,000-item, 25-query comparison in before/after/after/before order
+reduced total search time by about 3% in the controlled 68020 guest. These are
+not physical-hardware timings. Raw selected logs and timing data are under
+outputs/testing/0.6-enhancements/. Native binaries are built for 68000.
+The final published-0.5-to-0.6 installer upgrade remains a pre-release check.
+
+## Published 0.5 validation
 
 Prepared 21 November 2026. The full host suite, sensitive-input/source checks,
 translation freshness, independent plugin versions and strict m68000 native
@@ -115,3 +131,31 @@ GitHub and GitLab receive the versioned LHA and plugin SDK ZIP, each with a
 SHA-256 file. Aminet receives Beam68.lha and Beam68.readme without a version in
 the filenames. All bundled native plugins use public Protocol 1. Publication
 instructions and recovery procedures are in docs/RELEASING.md.
+
+## 0.6 cache and lifecycle polish — 26 November 2026
+
+The full host suite and strict native 68000 builds passed. Disposable
+Workbench 3.2.3 / 68060 testing passed 231 assertions for cache isolation
+and supporting-file refresh, late replies and request capacity, visual reload
+without scan/watch restarts, and disconnected-assign recovery. The synchronous
+runner guards both parent and child stacks. Selected reports are under
+outputs/testing/0.6-cache-polish/. Physical media removal, stalled filesystem
+handlers and the separate published 0.5 to 0.6 Installer upgrade remain outside
+this run. No release was published and no website was deployed.
+
+## Scale and case-sensitive checks — 26 November 2026
+
+Exact path-component validation now covers runtime inventory, plugin commands,
+guides/icons, configuration plugin registrations and fixed Installer sources.
+Source includes are checked, and case-colliding archive/source paths are refused.
+Independent case-sensitive APFS extraction, source/runtime reference checks,
+Installer path checks, rendered website checks and a strict native launcher build
+passed. Selected evidence is in outputs/testing/0.6-scale-case/.
+
+The extended native stress benchmark passed on 27 November using disposable
+Workbench 3.2.3 / 68060 with 64 MiB: all 2,000, 10,000 and 50,000 synthetic
+items restored from cache. Median search-plus-render times were 15.9, 77.1
+and 384.3 ms; p95 was 42.0, 199.1 and 909.6 ms respectively. These are
+synthetic guest measurements, not physical key-to-display or OS startup timing.
+The released index setting stays capped at 2048. Selected logs, JUnit and
+machine-readable metrics are in outputs/testing/0.6-scale-case/.

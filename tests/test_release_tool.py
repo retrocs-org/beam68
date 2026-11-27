@@ -587,6 +587,29 @@ class ReleaseTests(unittest.TestCase):
             self.assertEqual([entry.date_time for entry in archive.infolist()],
                              [expected, expected])
 
+    def test_lha_paths_are_portable_and_legacy_separators_are_rejected(self):
+        from release_support import lha_write, verify_lha, lha_normalize_paths
+        entries = {'Beam68/Plugins/Example/readme': b'portable paths'}
+        tools = [None]
+        configured = os.environ.get('BEAM68_TEST_LHA') or os.environ.get('LHA')
+        if configured: tools.append(configured)
+        for i, tool in enumerate(tools):
+            path = Path(self.tmp.name)/('paths-'+str(i)+'.lha')
+            lha_write(path, entries, tool)
+            verify_lha(path, entries, tool)
+            original = path.read_bytes()
+            self.assertEqual(original[22:22+original[21]], next(iter(entries)).encode())
+            for separator in (b'\xff', b'\\'):
+                raw = bytearray(original)
+                raw[22:22+raw[21]] = raw[22:22+raw[21]].replace(b'/', separator)
+                raw[1] = sum(raw[2:2+raw[0]]) & 255
+                path.write_bytes(raw)
+                with self.assertRaisesRegex(ReleaseError, 'directory separator'):
+                    verify_lha(path, entries, tool)
+                lha_normalize_paths(path)
+                self.assertEqual(path.read_bytes(), original)
+                verify_lha(path, entries, tool)
+
     def test_configured_compressed_lha_roundtrip(self):
         tool=os.environ.get('BEAM68_TEST_LHA') or os.environ.get('LHA')
         if not tool: self.skipTest('No optional LHA writer configured')

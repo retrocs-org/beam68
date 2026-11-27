@@ -38,8 +38,8 @@ const char *const beam68_strings[BEAM68_STRING_COUNT]={
     "KEY  ", /* MSG_BADGE_KEY */
     "COMMAND  ", /* MSG_BADGE_COMMAND */
     "PLUGIN  %s%s%s", /* MSG_PLUGIN_LINE */
-    "Type an expression, e.g. =12*(3+4)", /* MSG_CALC_HINT */
-    "Incomplete or invalid expression", /* MSG_CALC_INVALID */
+    "Try =12*(3+4) or =1.5 MiB to KiB", /* MSG_CALC_HINT */
+    "Invalid/incomplete expression, units or range", /* MSG_CALC_INVALID */
     "SHELL  ", /* MSG_BADGE_SHELL */
     "AmigaDOS command", /* MSG_SHELL_COMMAND */
     "disabled", /* MSG_SHELL_DISABLED_LABEL */
@@ -128,10 +128,10 @@ const char *const beam68_strings[BEAM68_STRING_COUNT]={
     "Index cache: %lu applications", /* MSG_PROGRESS_CACHED */
     "Indexing %lu/%lu drawers | %lu entries | %lu apps", /* MSG_PROGRESS_SCANNING */
     "Index full at %lu apps; increase MAX_ITEMS", /* MSG_PROGRESS_FULL */
-    "Index complete: %lu apps | %lu unreadable | %lu errors", /* MSG_PROGRESS_PROBLEMS */
+    "Index complete: %lu apps | %lu skipped | %lu errors; scan:failures", /* MSG_PROGRESS_PROBLEMS */
     "Indexed %lu apps from %lu drawers", /* MSG_PROGRESS_DONE */
     "Indexing directories; results may be incomplete", /* MSG_NORESULT_SCANNING1 */
-    "Keep typing or press F2 to restart the scan", /* MSG_NORESULT_SCANNING2 */
+    "Keep typing; Ctrl+F2 cancels, F2 restarts", /* MSG_NORESULT_SCANNING2 */
     "No indexed applications yet", /* MSG_NORESULT_EMPTY1 */
     "Press F2 to index or F5 to choose directories", /* MSG_NORESULT_EMPTY2 */
     "No matching indexed applications", /* MSG_NORESULT_NONE1 */
@@ -205,4 +205,5 @@ const char *const beam68_strings[BEAM68_STRING_COUNT]={
     "Enter: select | Esc: back", /* MSG_ACTIONS_FOOT_SMALL */
     "%d/%d | Enter: %s | Tab: Actions", /* MSG_RESULTS_ACTIONS */
     "Enter: %s | Tab: Actions", /* MSG_RESULTS_ACTIONS_SMALL */
+    "Unavailable: %s. Reconnect its volume, then press F2 to rescan.", /* MSG_RESULT_UNAVAILABLE */
 };

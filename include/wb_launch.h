@@ -11,6 +11,8 @@
  *
  * Returns 1 on success, 0 on failure (nothing is left allocated). */
 int beam_wb_launch(struct MsgPort *reply_port, const char *path);
+/* Explicit tool plus one project/file argument, using WBStartup on OS3.x. */
+int beam_wb_open_with(struct MsgPort *reply_port,const char *tool,const char *path);
 void beam_wb_launch_reply(struct Message *msg);
 /* Number of launched programs whose WBStartup has not come back yet. */
 int beam_wb_launch_outstanding(void);

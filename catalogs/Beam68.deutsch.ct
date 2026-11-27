@@ -108,10 +108,10 @@ MSG_PLUGIN_LINE
 PLUGIN  %s%s%s
 ;PLUGIN  %s%s%s
 MSG_CALC_HINT
-Ausdruck eingeben, z.B. =12*(3+4)
+Zum Beispiel =12*(3+4) oder =1.5 MiB to KiB
 ;Type an expression, e.g. =12*(3+4)
 MSG_CALC_INVALID
-Unvollständiger oder ungültiger Ausdruck
+Ausdruck, Einheiten oder Wertebereich ungueltig
 ;Incomplete or invalid expression
 MSG_BADGE_SHELL
 SHELL  
@@ -378,7 +378,7 @@ MSG_PROGRESS_FULL
 Index voll bei %lu Programmen; MAX_ITEMS erhöhen
 ;Index full at %lu apps; increase MAX_ITEMS
 MSG_PROGRESS_PROBLEMS
-Index fertig: %lu Programme | %lu unlesbar | %lu Fehler
+Index fertig: %lu Apps | %lu ausgelassen | %lu Fehler; scan:failures
 ;Index complete: %lu apps | %lu unreadable | %lu errors
 MSG_PROGRESS_DONE
 %lu Programme aus %lu Schubladen indiziert
@@ -387,7 +387,7 @@ MSG_NORESULT_SCANNING1
 Indizierung läuft; Ergebnisse evtl. unvollständig
 ;Indexing directories; results may be incomplete
 MSG_NORESULT_SCANNING2
-Weiter tippen oder F2 für neue Suche
+Weitertippen; Ctrl+F2 stoppt, F2 startet neu
 ;Keep typing or press F2 to restart the scan
 MSG_NORESULT_EMPTY1
 Noch keine Programme indiziert
@@ -622,3 +622,6 @@ MSG_RESULTS_ACTIONS
 MSG_RESULTS_ACTIONS_SMALL
 Enter: %s | Tab: Aktionen
 ;Enter: %s | Tab: Actions
+
+MSG_RESULT_UNAVAILABLE
+Nicht verfugbar: %s. Volume verbinden, dann mit F2 neu einlesen.

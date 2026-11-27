@@ -14,4 +14,6 @@ int beam_scan_status_format(const struct BeamScanStatus *s, char *out,
 /* Compact launcher-facing progress/result text. */
 int beam_scan_progress_format(const struct BeamScanStatus *s, char *out,
                               unsigned int capacity);
+/* Completed-root progress only: directory/file totals are not known in advance. */
+unsigned int beam_scan_root_percent(const struct BeamScanStatus *s);
 #endif

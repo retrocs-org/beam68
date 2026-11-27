@@ -104,6 +104,8 @@ const char *beam_action_name(int action,const char *custom_label)
     if (action==BEAM_ACTION_ARGS) return beam_str(MSG_ACTION_ARGS);
     if (action==BEAM_ACTION_DOPUS) return beam_str(MSG_ACTION_DOPUS);
     if (action==BEAM_ACTION_COPY) return beam_str(MSG_ACTION_COPY);
+    if (action==BEAM_ACTION_OPEN_WITH) return "Open with...";
+    if (action==BEAM_ACTION_EXCLUDE) return "Exclude drawer...";
     if (action==BEAM_ACTION_CUSTOM && custom_label && *custom_label)
         return custom_label;
     return beam_str(MSG_ACTION_LAUNCH);
@@ -156,7 +158,7 @@ int beam_action_expand(const char *template_text,const char *path,
 
 int beam_item_actions(int kind,int custom,int dopus,int *out,int capacity)
 {
-    int list[7],n=0,i;
+    int list[BEAM_ACTION_COUNT],n=0,i;
     list[n++]=BEAM_ACTION_LAUNCH;
     if(kind==BEAM_ITEM_WORKBENCH || kind==BEAM_ITEM_SHELL)
         list[n++]=BEAM_ACTION_ARGS;
@@ -166,6 +168,11 @@ int beam_item_actions(int kind,int custom,int dopus,int *out,int capacity)
         list[n++]=BEAM_ACTION_INFO;
     }
     if(kind!=BEAM_ITEM_QUERY && kind!=BEAM_ITEM_SNIPPET)list[n++]=BEAM_ACTION_COPY;
+    if(kind==BEAM_ITEM_FILE || kind==BEAM_ITEM_WORKBENCH || kind==BEAM_ITEM_SHELL ||
+       kind==BEAM_ITEM_SCRIPT || kind==BEAM_ITEM_MODULE || kind==BEAM_ITEM_GAME)
+        list[n++]=BEAM_ACTION_OPEN_WITH;
+    if(kind!=BEAM_ITEM_QUERY && kind!=BEAM_ITEM_BOOKMARK && kind!=BEAM_ITEM_SNIPPET &&
+       kind!=BEAM_ITEM_VOLUME && kind!=BEAM_ITEM_ASSIGN)list[n++]=BEAM_ACTION_EXCLUDE;
     if(custom && kind!=BEAM_ITEM_QUERY)list[n++]=BEAM_ACTION_CUSTOM;
     if(!out || capacity<n)return 0;
     for(i=0;i<n;i++)out[i]=list[i];

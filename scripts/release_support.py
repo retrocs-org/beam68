@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 import time
 import zipfile
+from path_case import PathCaseError, unique_paths, check_runtime
 from pathlib import Path
 
 class ReleaseError(RuntimeError):
@@ -68,6 +69,10 @@ def source_files(root):
             if path.is_symlink() or not path.is_file():
                 raise ReleaseError('Not an ordinary source file: ' + rel)
             files[rel] = {'sha256': sha(path), 'executable': bool(path.stat().st_mode & 0o111)}
+    try:
+        unique_paths(files)
+    except PathCaseError as error:
+        raise ReleaseError(str(error)) from error
     for required in ('VERSION', 'LICENSE', 'README.md', 'Makefile', 'src/main.c',
                      'scripts/release.py', 'public-web/index.php', 'sdk/README.md'):
         if required not in files:
@@ -78,6 +83,11 @@ def fingerprint(files):
     return hashlib.sha256(canonical(files)).hexdigest()
 
 def zip_write(path, entries):
+    entries=list(entries)
+    try:
+        unique_paths(name for name,_,_ in entries)
+    except PathCaseError as error:
+        raise ReleaseError(str(error)) from error
     timestamp = time.localtime(time.time())[:6]
     with zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for name, data, executable in sorted(entries):
@@ -125,6 +135,10 @@ def runtime_files(root):
         path = root / name
         if '..' in Path(name).parts or path.is_symlink() or not path.is_file():
             raise ReleaseError('Missing or linked runtime file: ' + name)
+    try:
+        check_runtime(root,result)
+    except PathCaseError as error:
+        raise ReleaseError(str(error)) from error
     return sorted(result)
 
 def crc16(data):
@@ -139,8 +153,44 @@ def lha_environment():
     return {key:value for key,value in os.environ.items()
             if not key.upper().endswith(('_TOKEN','_PASSWORD','_SECRET'))}
 
+def lha_normalize_paths(path):
+    """Use literal slashes in level-0 names for Amiga/OLHa compatibility.
+
+    Some Unix LHa writers emit 0xff here. OLHa only decodes that byte in
+    extended directory headers. Header lengths and compressed data stay intact.
+    """
+    with path.open('r+b') as stream:
+        end = stream.seek(0, 2)
+        stream.seek(0)
+        while True:
+            offset = stream.tell()
+            size = stream.read(1)
+            if size == b'\0' and stream.tell() == end:
+                return
+            if not size or size == b'\0':
+                raise ReleaseError('Invalid LHA terminator')
+            checksum = stream.read(1)
+            body = bytearray(stream.read(size[0]))
+            if (len(checksum) != 1 or len(body) != size[0] or len(body) < 22
+                    or sum(body) & 255 != checksum[0] or body[18] != 0
+                    or len(body) != 22 + body[19]):
+                raise ReleaseError('Invalid level-0 LHA header')
+            packed = int.from_bytes(body[5:9], 'little')
+            following = stream.tell() + packed
+            if following >= end:
+                raise ReleaseError('Truncated LHA member')
+            body[20:20+body[19]] = body[20:20+body[19]].replace(b'\xff', b'/').replace(b'\\', b'/')
+            stream.seek(offset + 1)
+            stream.write(bytes((sum(body) & 255,)) + body)
+            stream.seek(following)
+
+
 def lha_write(path, entries, tool=None):
-    """LHA level 0, -lh0- stored members. No external compressor required."""
+    """Write portable level-0 LHA: configured LH5 or built-in stored members."""
+    try:
+        unique_paths(entries)
+    except PathCaseError as error:
+        raise ReleaseError(str(error)) from error
     timestamp = int(time.time())
     if tool:
         with tempfile.TemporaryDirectory(dir=path.parent) as directory:
@@ -151,13 +201,14 @@ def lha_write(path, entries, tool=None):
             result=subprocess.run([tool,'ao5g0q2',str(path.resolve()),*sorted(entries)],cwd=stage,capture_output=True,env=lha_environment())
             if result.returncode:
                 raise ReleaseError('LHA compression failed')
+        lha_normalize_paths(path)
         return
     year, month, day, hour, minute, second = time.localtime(timestamp)[:6]
     dos_time = ((year - 1980) << 25 | month << 21 | day << 16 |
                 hour << 11 | minute << 5 | second // 2)
     with path.open('wb') as stream:
         for name, data in sorted(entries.items()):
-            encoded = name.replace('/', '\\').encode('ascii')
+            encoded = name.encode('ascii')
             if len(encoded) > 233 or len(data) > 0xffffffff:
                 raise ReleaseError('LHA member exceeds level-0 limits')
             # Current build-local DOS timestamp; seconds have two-second precision.
@@ -188,7 +239,10 @@ def verify_lha(path, expected, tool=None):
             n = body[19]
             if body[:5] not in (b'-lh0-',b'-lh5-') or body[18] != 0 or len(body) != 22 + n or packed>64*1024*1024:
                 raise ReleaseError('Unexpected LHA format')
-            name = body[20:20+n].replace(b'\xff',b'/').decode('ascii').replace('\\', '/')
+            raw_name = body[20:20+n]
+            if b'\xff' in raw_name or b'\\' in raw_name:
+                raise ReleaseError('Incompatible LHA directory separator')
+            name = raw_name.decode('ascii')
             if name in found or name not in expected or unpacked != len(expected[name]):
                 raise ReleaseError('Unexpected LHA member: ' + name)
             data = stream.read(packed)

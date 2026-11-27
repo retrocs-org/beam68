@@ -54,6 +54,10 @@ int beam_index_set_title(struct BeamIndex *x, int index, const char *title);
  * volume items when include_volumes is non-zero. */
 void beam_index_mark_stale(struct BeamIndex *x, unsigned long root_mask,
                            int include_volumes);
+/* Case-insensitive equal/descendant test with drawer boundaries. */
+int beam_index_path_within(const char *path,const char *drawer);
+/* Mark descendants only, keeping the drawer record and all siblings. */
+void beam_index_mark_subtree(struct BeamIndex *x,const char *drawer);
 /* Drop stale items, compact the pool, rebuild the hash.  Returns removed. */
 /* Remove one path without dropping stale entries of an unfinished scan. */
 int beam_index_remove(struct BeamIndex *x,const char *path,int *tracked,unsigned int tracked_count);

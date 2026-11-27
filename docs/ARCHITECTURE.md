@@ -1,4 +1,4 @@
-# Beam68 architecture — 0.4
+# Beam68 architecture — 0.6
 
 ```text
 Workbench launch (WBStartup/Beam68Start Project)
@@ -21,7 +21,7 @@ Workbench launch (WBStartup/Beam68Start Project)
 ## Current configuration and plugins
 
 The current Preferences layout and activation policy are documented in
-[PREFERENCES.md](PREFERENCES.md). There are 18 independently versioned bundled
+[PREFERENCES.md](PREFERENCES.md). There are 19 independently versioned bundled
 plugins; only the first six essential local tools start enabled. Network and
 other optional integrations are opt-in. Music Library, WHDLoad and DOpus own
 their respective integrations. WHDLoad uses the shared indexing roots, depth and
@@ -613,3 +613,50 @@ changes without a dedicated Reload button. Details uses one screen-sized wrapped
 document with scrolling on smaller screens; Typing preview controls automatic
 requests after a typing pause. Installer startup uses WAITREADY, which responds
 immediately for a ready resident and only polls while waiting for one to start.
+
+## Incremental indexing and stable actions
+
+Root notifications are complemented by at most 64 dynamically allocated
+subdrawer watches. Dirty roots and ancestor/descendant notifications coalesce;
+a complete subtree walk stale-marks only descendants, retaining the drawer and
+all siblings. A missing watched drawer falls back to its configured root. Failed
+or cancelled walks retain prior entries and cannot certify the cache. F2 remains
+a full refresh for unsupported handlers, unwatched paths and external indexes.
+INDEX diagnostics include subwatches and watchcapped so coverage is inspectable.
+WHDLoad refreshes remain queued when a changed subtree contains known games or
+slave files; unrelated main-index changes do not rebuild its plugin index.
+
+A bounded ordered collector uses best/worst fast paths, binary placement and
+bulk moves. Verified real-name prefix/exact score bands can skip the shared
+query prefix during tie comparison. All lower match classes retain full-name
+comparison. Reference-order and memory checks cover both paths.
+
+The selected filesystem path or actionable plugin value is retained across
+asynchronous updates. If absent, activation requires explicit reselection.
+Preview replies cannot mutate actionable rows. Open with uses an owned
+WBStartup message and argument locks, not shell interpolation. Drawer exclusion
+uses the same temporary/permanent settings paths as Preferences and immediately
+reconciles only excluded entries.
+
+## Plugin RAM cache and configuration reloads in 0.6
+
+RAM-cache drawers are keyed by launcher task and outstanding request slot, not
+package basename. Occupied slots cannot be refreshed underneath a running child.
+Both directory trees and file contents are compared before reuse, so changes
+with preserved size/date are detected, as are deleted files. Source validation
+rejects linked trees, more than 1024 entries, more than 16 nested levels or more
+than 4 MiB of data; a failed or unsupported copy falls back to the original.
+Validation reads the source on every cache use and is therefore opt-in.
+
+Each query edit invalidates mismatched visible work before queued edits can
+return to identical text. Cancellation never kills a child or expires its slot.
+Detached native completions release capacity without changing UI or health;
+atomic file publication allows final/partial cleanup before releasing capacity.
+
+A real appearance-only edit uses a configuration comparison that excludes
+visual fields, keeping active scans, notification requests and plugin manifests.
+An explicit unchanged F3 reload still rereads manifests. Other reloads retain
+scans and watches unless indexing inputs changed. Missing-volume requesters are
+suppressed during scan steps; failed roots retain existing entries. Launch
+availability is checked with requesters suppressed and recovery guidance points
+to reconnection followed by an explicit F2 rescan.

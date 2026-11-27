@@ -73,9 +73,9 @@ COMMAND
 MSG_PLUGIN_LINE (35//)
 PLUGIN  %s%s%s
 MSG_CALC_HINT (36//)
-Type an expression, e.g. =12*(3+4)
+Try =12*(3+4) or =1.5 MiB to KiB
 MSG_CALC_INVALID (37//)
-Incomplete or invalid expression
+Invalid/incomplete expression, units or range
 MSG_BADGE_SHELL (38//)
 SHELL  
 MSG_SHELL_COMMAND (39//)
@@ -253,13 +253,13 @@ Indexing %lu/%lu drawers | %lu entries | %lu apps
 MSG_PROGRESS_FULL (125//)
 Index full at %lu apps; increase MAX_ITEMS
 MSG_PROGRESS_PROBLEMS (126//)
-Index complete: %lu apps | %lu unreadable | %lu errors
+Index complete: %lu apps | %lu skipped | %lu errors; scan:failures
 MSG_PROGRESS_DONE (127//)
 Indexed %lu apps from %lu drawers
 MSG_NORESULT_SCANNING1 (128//)
 Indexing directories; results may be incomplete
 MSG_NORESULT_SCANNING2 (129//)
-Keep typing or press F2 to restart the scan
+Keep typing; Ctrl+F2 cancels, F2 restarts
 MSG_NORESULT_EMPTY1 (130//)
 No indexed applications yet
 MSG_NORESULT_EMPTY2 (131//)
@@ -421,3 +421,6 @@ MSG_RESULTS_ACTIONS (201//)
 
 MSG_RESULTS_ACTIONS_SMALL (202//)
 Enter: %s | Tab: Actions
+
+MSG_RESULT_UNAVAILABLE (203//)
+Unavailable: %s. Reconnect its volume, then press F2 to rescan.

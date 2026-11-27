@@ -27,6 +27,9 @@
 #include <graphics/view.h>
 #include <libraries/commodities.h>
 #include <libraries/keymap.h>
+#include <libraries/asl.h>
+#include <proto/asl.h>
+struct Library *AslBase;
 #include <workbench/workbench.h>
 #include <workbench/icon.h>
 #include <utility/tagitem.h>
@@ -178,7 +181,7 @@ static int index_memory_reduced;
 static int results[BEAM_MAX_RESULTS], result_count, selected;
 static int action_mode, result_scroll;
 static int action_menu,action_choice,action_first,action_count,menu_escape_consumed;
-static int action_choices[7];
+static int action_choices[BEAM_ACTION_COUNT];
 static char action_target[BEAM_MAX_PATH];
 
 static struct MsgPort *cx_port;
@@ -192,7 +195,11 @@ static char plugin_feedback[121],plugin_feedback_query[BEAM_QUERY_LEN+1];
 static struct BeamQueryHistory plugin_queries;
 static char plugin_queries_id[64],plugin_queries_path[160];
 static char selection_path[BEAM_MAX_PATH],selection_query[BEAM_QUERY_LEN+1];
-static int selection_is_item;
+static int selection_is_item,selection_lost,plugin_reply_updating;
+static struct Beam68ReplyRow plugin_selected_row;
+static char plugin_selected_query[BEAM_QUERY_LEN+1];
+static int plugin_selection_valid;
+static char selection_guard_query[BEAM_QUERY_LEN+1];
 
 static char rows_title[BEAM_MAX_NAME];
 /* One small diagnostic entry per configured manifest, not per search. */
@@ -302,6 +309,7 @@ struct BeamScanFrame {
 };
 static struct BeamScanFrame *scan_frames[BEAM_SCAN_FRAMES];
 static int plugins_loaded;
+static struct PluginRoute { char name[64],prefix[24],trigger; } plugin_routes[BEAM_MAX_PLUGINS];
 static int whd_enabled,whd_index_wanted,whd_index_busy,whd_index_phase,whd_index_records,whd_index_complete;
 static unsigned long whd_index_serial,whd_index_rules;
 static struct timeval whd_index_started;
@@ -326,11 +334,15 @@ static void scan_failure(const char *path,int root)
     beam_copy(scan_failed_paths[scan_failed_count],path,BEAM_MAX_PATH);
     scan_failed_roots[scan_failed_count++]=(unsigned char)root;
 }
-static int scan_cached;
+static int scan_cached,scan_index_complete,scan_whd_changed;
 static struct MsgPort *notify_port;
 static struct NotifyRequest notify_requests[BEAM_MAX_DIRS];
 static unsigned char notify_active[BEAM_MAX_DIRS];
 static int notify_refresh_ticks;
+#define BEAM_SUBWATCH_CAP 64
+struct BeamSubWatch { struct NotifyRequest request;char path[BEAM_MAX_PATH];int root,depth,pending; };
+static struct BeamSubWatch *notify_children[BEAM_SUBWATCH_CAP];
+static int notify_child_count,notify_watch_capped;
 static struct BeamCompletions completions;
 
 /* One timer only while background work exists: zero idle wakeups. */
@@ -505,6 +517,7 @@ static void help_build(void)
     help_add(BEAM_HELP_COMMAND,beam_str(MSG_HELP_SNIP_TITLE),"snip:",beam_str(MSG_HELP_SNIP));
     help_add(BEAM_HELP_COMMAND,beam_str(MSG_HELP_SCRIPT_TITLE),"script:",beam_str(MSG_HELP_SCRIPT));
     help_add(BEAM_HELP_COMMAND,beam_str(MSG_HELP_PREFS_TITLE),"prefs:",beam_str(MSG_HELP_PREFS));
+    help_add(BEAM_HELP_COMMAND,"Reset learned ranking","history:reset","Clear launch counts and recents after confirmation; favorites stay pinned.");
     help_add(BEAM_HELP_COMMAND,"Plugin health","health:","Failure and timeout history; Enter prepares a retry without running it.");
     help_add(BEAM_HELP_COMMAND,"Failed scan locations","scan:failures","Enter retries the configured root. Up to 16 distinct locations are retained this session.");
     help_add(BEAM_HELP_COMMAND,"Rescan directories","scan:start","Rescan configured directories while keeping current results usable.");
@@ -590,6 +603,7 @@ static int root_bits(unsigned long roots);
 static void scan_snapshot(struct BeamScanStatus *s)
 {
     unsigned long done=scan_root>=32?0xffffffffUL:((1UL<<scan_root)-1UL);
+    if(scan_frames_used)done&=~(1UL<<scan_frames[scan_frames_used-1]->root);
     s->roots_done=(unsigned long)root_bits(scan_roots&done);
     s->roots_total=(unsigned long)root_bits(scan_roots);
     s->entries=(unsigned long)scan_count;
@@ -649,12 +663,30 @@ static void notify_stop(void)
     for (i=0;i<BEAM_MAX_DIRS;i++) if (notify_active[i]) {
         EndNotify(&notify_requests[i]);notify_active[i]=0;
     }
+    for(i=0;i<notify_child_count;i++)EndNotify(&notify_children[i]->request);
     if (notify_port) {
         while ((m=GetMsg(notify_port))) ReplyMsg(m);
         DeleteMsgPort(notify_port);notify_port=NULL;
     }
+    for(i=0;i<notify_child_count;i++){FreeVec(notify_children[i]);notify_children[i]=NULL;}
+    notify_child_count=notify_watch_capped=0;
     notify_refresh_ticks=0;
     notify_pending_roots=0;
+}
+
+static void notify_watch_drawer(const char *path,int root,int depth)
+{
+    struct BeamSubWatch *watch;int i;
+    if(!notify_port || root<0 || root>=cfg.dir_count ||
+       (beam_index_path_within(path,cfg.dirs[root]) && beam_index_path_within(cfg.dirs[root],path)))return;
+    for(i=0;i<notify_child_count;i++)if(beam_equal(path,notify_children[i]->path))return;
+    if(notify_child_count==BEAM_SUBWATCH_CAP){notify_watch_capped=1;return;}
+    watch=AllocVec(sizeof(*watch),MEMF_ANY|MEMF_CLEAR);if(!watch){notify_watch_capped=1;return;}
+    beam_copy(watch->path,path,sizeof(watch->path));watch->root=root;watch->depth=depth;
+    watch->request.nr_Name=watch->path;watch->request.nr_UserData=BEAM_MAX_DIRS+notify_child_count;
+    watch->request.nr_Flags=NRF_SEND_MESSAGE;watch->request.nr_stuff.nr_Msg.nr_Port=notify_port;
+    if(!StartNotify(&watch->request)){FreeVec(watch);return;}
+    notify_children[notify_child_count++]=watch;
 }
 
 static void notify_start(void)
@@ -664,11 +696,20 @@ static void notify_start(void)
     notify_port=CreateMsgPort();if (!notify_port) return;
     memset(notify_requests,0,sizeof(notify_requests));
     for (i=0;i<cfg.dir_count;i++) {
+        if(beam_path_is_excluded(cfg.dirs[i],cfg.excluded_dirs,cfg.excluded_dir_count))continue;
         notify_requests[i].nr_Name=(STRPTR)cfg.dirs[i];
         notify_requests[i].nr_UserData=(ULONG)i; /* which root changed */
         notify_requests[i].nr_Flags=NRF_SEND_MESSAGE;
         notify_requests[i].nr_stuff.nr_Msg.nr_Port=notify_port;
         if (StartNotify(&notify_requests[i])) notify_active[i]=1;
+    }
+    for(i=0;i<item_count && notify_child_count<BEAM_SUBWATCH_CAP;i++) {
+        char parent[BEAM_MAX_PATH];int root=items[i].root,depth=0;const char *part;
+        if(root>=cfg.dir_count || !beam_parent_drawer(items[i].path,parent,sizeof(parent)) ||
+           !beam_index_path_within(parent,cfg.dirs[root]))continue;
+        part=parent+strlen(cfg.dirs[root]);depth=*part && *part!='/'?1:0;
+        while(*part)if(*part++=='/')++depth;
+        notify_watch_drawer(parent,root,depth);
     }
 }
 
@@ -677,8 +718,12 @@ static void notify_drain(void)
     struct NotifyMessage *m;int changed=0;
     if (!notify_port) return;
     while ((m=(struct NotifyMessage *)GetMsg(notify_port))) {
-        if (m->nm_NReq && m->nm_NReq->nr_UserData<32UL)
-            notify_pending_roots|=1UL<<m->nm_NReq->nr_UserData;
+        if(m->nm_NReq) {
+            unsigned long id=m->nm_NReq->nr_UserData;
+            if(id<BEAM_MAX_DIRS)notify_pending_roots|=1UL<<id;
+            else if(id-BEAM_MAX_DIRS<(unsigned long)notify_child_count)
+                notify_children[id-BEAM_MAX_DIRS]->pending=1;
+        }
         ReplyMsg((struct Message *)m);changed=1;
     }
     if (changed) {
@@ -942,17 +987,34 @@ static void scan_cancel(void)
 {
     int i;
     while (scan_frames_used) scan_pop();
+    if(scan_active)scan_index_complete=0;
     if (scan_active)
         for (i=0;i<item_count;i++) items[i].flags&=(unsigned char)~BEAM_ITEM_FLAG_STALE;
     scan_active=0;
 }
+/* Missing removable volumes must not open modal Insert Volume requesters. */
+static BPTR quiet_lock(const char *path)
+{
+    struct Process *process=(struct Process *)FindTask(NULL);
+    APTR saved=process->pr_WindowPtr;BPTR lock;LONG error;
+    process->pr_WindowPtr=(APTR)-1;lock=Lock((STRPTR)path,ACCESS_READ);error=IoErr();
+    process->pr_WindowPtr=saved;SetIoErr(error);return lock;
+}
+static int available_result(const char *path)
+{
+    BPTR lock=quiet_lock(path);
+    if(lock){UnLock(lock);return 1;}
+    snprintf(status,sizeof(status),beam_str(MSG_RESULT_UNAVAILABLE),path);
+    return 0;
+}
+
 static int scan_push(const char *path,int depth,int root)
 {
     struct BeamScanFrame *f;
     if (scan_frames_used==BEAM_SCAN_FRAMES) return 0;
     f=(struct BeamScanFrame *)AllocVec(sizeof(*f),MEMF_ANY|MEMF_CLEAR);
     if(!f)return 0;
-    f->lock=Lock((STRPTR)path,ACCESS_READ);
+    f->lock=quiet_lock(path);
     if (!f->lock) {FreeVec(f);return 0;}
     f->fib=(struct FileInfoBlock *)AllocDosObject(DOS_FIB,NULL);
     if (!f->fib) { UnLock(f->lock);FreeVec(f);return 0; }
@@ -966,6 +1028,7 @@ static int scan_push(const char *path,int depth,int root)
     f->depth=depth;
     f->root=root;
     scan_frames[scan_frames_used++]=f;
+    notify_watch_drawer(path,root,depth);
     return 1;
 }
 static unsigned long all_roots(void)
@@ -984,18 +1047,21 @@ static void reconcile_scan(int complete);
 /* Rescan the given roots.  Existing entries stay searchable throughout:
  * they are marked stale, refreshed when found again, and only the ones that
  * really vanished are removed once the walk completes. */
-static void scan_begin(unsigned long roots)
+static void scan_begin_roots(unsigned long roots,int full)
 {
     int i;
     scan_cancel();
     preview_clear();
     roots&=all_roots();
-    scan_full_rebuild=(roots==all_roots());
+    scan_full_rebuild=full && roots==all_roots();
+    if(scan_full_rebuild)scan_index_complete=0;
     index_full=0; paths_truncated=0;
     beam_index_mark_stale(&beam_index,
         roots|(scan_full_rebuild?(1UL<<BEAM_ROOT_SOURCES):0UL),scan_full_rebuild);
-    scan_stale_marked=0;
-    for (i=0;i<item_count;i++) if (items[i].flags&BEAM_ITEM_FLAG_STALE) ++scan_stale_marked;
+    scan_stale_marked=scan_whd_changed=0;
+    for (i=0;i<item_count;i++) if (items[i].flags&BEAM_ITEM_FLAG_STALE) {
+        ++scan_stale_marked;if(items[i].kind==BEAM_ITEM_GAME)scan_whd_changed=1;
+    }
     if (scan_full_rebuild) {
         /* Volume scope is intentionally bounded to configured roots plus the
            standard RAM: volume; it performs no DosList traversal per query. */
@@ -1014,9 +1080,54 @@ static void scan_begin(unsigned long roots)
     scan_redraw_ticks=0;
     if (TimerBase) GetSysTime(&timing_scan_start);
     scan_active=1;
-    if(plugins_loaded)whd_index_request(1);
+    if(plugins_loaded && scan_full_rebuild)whd_index_request(1);
     if (!roots) scan_complete(); /* nothing to walk: finish (and sweep) now */
     else arm_timer();
+}
+
+static void scan_begin(unsigned long roots)
+{ scan_begin_roots(roots,1); }
+static void scan_begin_subtree(const struct BeamSubWatch *watch)
+{
+    int i;
+    scan_cancel();scan_full_rebuild=0;index_full=paths_truncated=0;
+    beam_index_mark_subtree(&beam_index,watch->path);
+    scan_stale_marked=scan_whd_changed=0;
+    for(i=0;i<item_count;i++)if(items[i].flags&BEAM_ITEM_FLAG_STALE) {
+        ++scan_stale_marked;if(items[i].kind==BEAM_ITEM_GAME)scan_whd_changed=1;
+    }
+    scan_roots=1UL<<watch->root;scan_root=cfg.dir_count;
+    scan_count=0;scan_unreadable=scan_io_errors=0;scan_cached=0;scan_redraw_ticks=0;scan_active=1;
+    if(TimerBase)GetSysTime(&timing_scan_start);
+    if(!scan_push(watch->path,watch->depth,watch->root)) {
+        /* A rename/removal or inaccessible watched drawer needs its root.
+         * An unreadable subtree must never be treated as an empty directory. */
+        scan_begin_roots(1UL<<watch->root,0);return;
+    }
+    arm_timer();
+}
+static int notify_scan_next(void)
+{
+    int i,j,remaining=0;
+    if(notify_pending_roots) {
+        unsigned long roots=notify_pending_roots;notify_pending_roots=0;
+        for(i=0;i<notify_child_count;i++)if(roots&(1UL<<notify_children[i]->root))notify_children[i]->pending=0;
+        scan_begin_roots(roots,0);
+    } else {
+        struct BeamSubWatch *chosen=NULL;
+        for(i=0;i<notify_child_count;i++)if(notify_children[i]->pending) {
+            chosen=notify_children[i];
+            for(j=0;j<notify_child_count;j++)if(notify_children[j]->pending &&
+               beam_index_path_within(chosen->path,notify_children[j]->path))chosen=notify_children[j];
+            break;
+        }
+        if(!chosen)return 0;
+        for(i=0;i<notify_child_count;i++)if(beam_index_path_within(notify_children[i]->path,chosen->path))notify_children[i]->pending=0;
+        scan_begin_subtree(chosen);
+    }
+    for(i=0;i<notify_child_count;i++)if(notify_children[i]->pending)remaining=1;
+    if(remaining)notify_refresh_ticks=BEAM_NOTIFY_DEBOUNCE_TICKS;
+    return 1;
 }
 
 static long micros_since(const struct timeval *start)
@@ -1136,8 +1247,10 @@ static void scan_complete(void)
     search_pending=1;
     /* Preserve pre-sweep failure flags while reporting the final size. */
     completed.applications=(unsigned long)item_count;
+    if(scan_full_rebuild)scan_index_complete=beam_scan_cacheable(&completed);
+    else if(!beam_scan_cacheable(&completed))scan_index_complete=0;
     if (cfg.index_cache && index_cache_path[0]) {
-        if (!beam_scan_cacheable(&completed)) {
+        if (!scan_index_complete) {
             /* A partial result must not appear as a complete cached index
                on the next Workbench startup. */
             DeleteFile((STRPTR)index_cache_path);
@@ -1145,6 +1258,7 @@ static void scan_complete(void)
             beam_cache_save(&cfg,&beam_index,index_cache_path);
         }
     }
+    if(!scan_full_rebuild && scan_whd_changed && plugins_loaded)whd_index_request(1);
     beam_scan_progress_format(&completed,status,sizeof(status));
     if (index_memory_reduced && strlen(status)+28<sizeof(status)) {
         char reduced[32];
@@ -1153,7 +1267,7 @@ static void scan_complete(void)
     }
 }
 
-static void scan_step(void)
+static void scan_step_inner(void)
 {
     int budget=BEAM_SCAN_MAX_CHUNK, previous_items=item_count, i;
     int previous_selection=(selected<result_count && selected>=0) ? results[selected] : -1;
@@ -1177,6 +1291,7 @@ static void scan_step(void)
         if (!scan_frames_used) {
             while (scan_root<cfg.dir_count && !(scan_roots&(1UL<<scan_root))) ++scan_root;
             if (scan_root>=cfg.dir_count) { scan_complete(); break; }
+            if(beam_path_is_excluded(cfg.dirs[scan_root],cfg.excluded_dirs,cfg.excluded_dir_count)){++scan_root;continue;}
             if (!scan_push(cfg.dirs[scan_root],0,scan_root)) {++scan_unreadable;scan_failure(cfg.dirs[scan_root],scan_root);}
             ++scan_root;
             continue;
@@ -1189,6 +1304,7 @@ static void scan_step(void)
         }
         ++scan_count;
         filename=(const char *)f->fib->fib_FileName;
+        if(whd_enabled && has_suffix_ci(filename,".slave"))scan_whd_changed=1;
         if (filename[0]=='.' &&
             (!filename[1] || (filename[1]=='.' && !filename[2]))) continue;
         if (strlen(f->path)+strlen(filename)+2>=sizeof(path)) {
@@ -1241,10 +1357,10 @@ static void scan_step(void)
      * since the sweep renumbers items. */
     if (scan_redraw_ticks>0) --scan_redraw_ticks;
     if (window && (!scan_active ||
-                   ((scan_redraw_ticks==0 || result_count==0) && item_count!=previous_items))) {
+                   (scan_redraw_ticks==0 || (result_count==0 && item_count!=previous_items)))) {
         scan_redraw_ticks=BEAM_SCAN_REDRAW_TICKS;
         if (!scan_active) previous_selection=-1; /* indices may have moved */
-        search_items();
+        if(!scan_active || item_count!=previous_items)search_items();
         if (previous_selection>=0) {
             for (i=0;i<result_count;i++) if (results[i]==previous_selection) {
                 selected=i;action_mode=previous_action;break;
@@ -1255,6 +1371,12 @@ static void scan_step(void)
         result_count=0; /* sweep renumbered items; never keep stale results */
     }
 }
+static void scan_step(void)
+{
+    struct Process *process=(struct Process *)FindTask(NULL);APTR saved=process->pr_WindowPtr;
+    process->pr_WindowPtr=(APTR)-1;scan_step_inner();process->pr_WindowPtr=saved;
+}
+
 
 /* The cache is deliberately not trusted as a live filesystem view. F2 and
  * REINDEX force an incremental real scan. There is no idle filesystem poll. */
@@ -1274,7 +1396,7 @@ static void refresh_index(int force_scan)
         paths_truncated=0;
         scan_root=0; scan_count=0; scan_unreadable=0; scan_io_errors=0;
         scan_roots=all_roots();
-        scan_cached=1;
+        scan_cached=1;scan_index_complete=1;
         index_query_favorites();bind_all_meta();
     } else scan_begin(all_roots());
 }
@@ -1378,6 +1500,30 @@ static struct BeamLauncherPlugin *query_plugin(void)
     for (i=0;i<plugin_count;i++)
         if (query_plugin_input(&plugins[i])) return &plugins[i];
     return NULL;
+}
+
+/* A disabled/unavailable plugin route must not look like a failed app search.
+ * Enabled routes take precedence over conflicting disabled prefixes. */
+static int unavailable_plugin_query(char *first,unsigned int firstcap,
+                                    char *second,unsigned int secondcap)
+{
+    int i;
+    if(!query[0] || query_plugin())return 0;
+    for(i=0;i<cfg.plugin_file_count;i++) {
+        const struct PluginRoute *r=&plugin_routes[i];
+        if(!r->name[0] || plugin_state[i]==BEAM_PLUGIN_OK)continue;
+        if((r->trigger && query[0]==r->trigger) ||
+           (r->prefix[0] && query_prefix(query,r->prefix))) {
+            const char *reason=plugin_state[i]==BEAM_PLUGIN_DISABLED?"Plugin disabled":
+                plugin_state[i]==BEAM_PLUGIN_EXECUTABLE_MISSING?"Plugin executable missing":
+                plugin_state[i]==BEAM_PLUGIN_QUARANTINED?"Plugin paused after failures":"Plugin unavailable";
+            if(first && firstcap){beam_copy(first,reason,firstcap);}
+            if(second && secondcap){beam_copy(second,r->name,secondcap);
+                if(strlen(second)+35<secondcap)strcat(second," - F5: Plugins, Settings or Toggle");}
+            return 1;
+        }
+    }
+    return 0;
 }
 
 static int browse_active;
@@ -1683,7 +1829,7 @@ static int browse_parent(void)
 static int random_pick;
 static void search_items_impl(void)
 {
-    int i,k,score,oldscore,scope;
+    int i,k,score,oldscore,scope,top_count=0;
     const char *search_query;
     char favorite_group[BEAM_FAVORITE_GROUP_LEN];
     int restart_kind=beam_restart_query(query);
@@ -1785,7 +1931,8 @@ static void search_items_impl(void)
         for(k=0;k<cap;k++)if(results[k]>=0)++result_count;
         return;
     }
-    if (query_plugin() || beam_shell_query(query,NULL) || restart_kind) return;
+    if (query_plugin() || unavailable_plugin_query(NULL,0,NULL,0) ||
+        beam_shell_query(query,NULL) || restart_kind) return;
     kick_confirm_item=-1;
     random_pick=0;
     if (scope==BEAM_SCOPE_GAME && beam_equal(search_query,"random")) {
@@ -1839,21 +1986,7 @@ static void search_items_impl(void)
         }
         if (!score) continue;
         if (single) cand_bits[i>>3]|=(unsigned char)(1<<(i&7));
-        /* Keep every match in the narrowing bitmap, but do not walk the
-           whole result list when this score cannot enter the top results.
-           Equal scores retain the original index order. */
-        if (score<=scores[cap-1]) continue;
-        for (k=0;k<cap;k++) {
-            oldscore=scores[k];
-            if (score>oldscore) {
-                int j;
-                for (j=cap-1;j>k;j--) {
-                    scores[j]=scores[j-1]; results[j]=results[j-1];
-                }
-                scores[k]=score; results[k]=i;
-                break;
-            }
-        }
+        beam_search_top_add(items,i,score,results,scores,&top_count,cap,qlen);
     }
         /* The bitmap now holds exactly the matches of this query. */
         cand_valid=single;
@@ -1876,11 +2009,16 @@ static void search_items(void)
 {
     struct timeval started;
     if (plugin_job.active && strcmp(query,plugin_original_query)) plugin_abandon();
+    if(selection_lost && strcmp(selection_guard_query,query))selection_lost=0;
+    if(selection_is_item && strcmp(selection_query,query))selection_is_item=0;
+    if(plugin_selection_valid && strcmp(plugin_selected_query,query))plugin_selection_valid=0;
     if (TimerBase) GetSysTime(&started);
     search_items_impl();
     if(selection_is_item && !strcmp(selection_query,query) && !rows_active &&
        !browse_active && !ext_active && !help_mode && !completions.count && !query_plugin()){
-        selected=beam_search_selection(items,item_count,results,result_count,selection_path);
+        int found=beam_search_find_selection(items,item_count,results,result_count,selection_path);
+        if(found>=0){selected=found;selection_lost=0;}
+        else {selection_lost=1;beam_copy(selection_guard_query,query,sizeof(selection_guard_query));}
     }
     if (TimerBase) timing_search=(unsigned long)micros_since(&started);
 }
@@ -2002,6 +2140,10 @@ static int indexed_results(void)
         !completions.count && !query_plugin() && plugin_discovery<0 && args_item<0 &&
         beam_search_scope_parse(query,NULL)!=BEAM_SCOPE_PLUGIN;
 }
+static int scan_banner_height(void)
+{
+    return window && scan_active?2*launcher_lineheight(window->RPort)+8:0;
+}
 static int category_bar_height(void)
 {
     int lh=launcher_lineheight(window->RPort);
@@ -2009,7 +2151,7 @@ static int category_bar_height(void)
 }
 static int result_top(void)
 {
-    return window->BorderTop+launcher_lineheight(window->RPort)+9+category_bar_height();
+    return window->BorderTop+launcher_lineheight(window->RPort)+9+category_bar_height()+scan_banner_height();
 }
 static int detailed_results(void)
 {
@@ -2024,10 +2166,11 @@ static int result_stride(void)
 }
 static int open_action_menu(void)
 {
+    if(selection_lost){beam_copy(status,"Selected result disappeared. Choose a result first.",sizeof(status));return 0;}
     if(!indexed_results() || selected<0 || selected>=result_count ||
        results[selected]<0 || results[selected]>=item_count)return 0;
     action_count=beam_item_actions(items[results[selected]].kind,
-        selected_has_custom_action(),dopus_running(),action_choices,7);
+        selected_has_custom_action(),dopus_running(),action_choices,BEAM_ACTION_COUNT);
     if(!cfg.shell_commands){
         int i,n=0;for(i=0;i<action_count;i++)
             if(action_choices[i]!=BEAM_ACTION_ARGS)action_choices[n++]=action_choices[i];
@@ -2053,10 +2196,17 @@ static void render_parts(int parts)
     if(!rows_active && !browse_active && !ext_active && !help_mode &&
        !completions.count && !query_plugin() && selected>=0 && selected<result_count &&
        results[selected]>=0 && results[selected]<item_count){
-        beam_copy(selection_path,items[results[selected]].path,sizeof(selection_path));
-        beam_copy(selection_query,query,sizeof(selection_query));selection_is_item=1;
-    }else selection_is_item=0;
+        if(!selection_lost) {
+            beam_copy(selection_path,items[results[selected]].path,sizeof(selection_path));
+            beam_copy(selection_query,query,sizeof(selection_query));selection_is_item=1;
+        }
+    }
 
+    if(rows_active && !selection_lost && selected>=0 && selected<result_count &&
+       results[selected]>=0 && results[selected]<plugin_row_count) {
+        plugin_selected_row=plugin_rows[results[selected]];
+        beam_copy(plugin_selected_query,query,sizeof(plugin_selected_query));plugin_selection_valid=1;
+    }
     struct RastPort *rp;
     struct BeamLauncherPlugin *plugin;
     int i, base, row, y, width, lineheight, reserved=0, result_width;
@@ -2108,6 +2258,24 @@ static void render_parts(int parts)
             RectFill(rp,x,top,x+cell-3,top+lineheight-1);
             SetAPen(rp,active==i?palette.fill_text:palette.text);
             draw_text(rp,x+3,top+(int)rp->TxBaseline+1,beam_str(names[i]),cell-8);
+        }
+    }
+    if(scan_active) {
+        struct BeamScanStatus progress;
+        int top=row-scan_banner_height(),barwidth=width-20;
+        const char *drawer=scan_frames_used?scan_frames[scan_frames_used-1]->path:
+            (scan_root<cfg.dir_count?cfg.dirs[scan_root]:"Finishing index...");
+        scan_snapshot(&progress);
+        sprintf(aux,"Indexing: %lu entries | %lu items | Ctrl+F2 cancels",progress.entries,progress.applications);
+        SetAPen(rp,palette.text);
+        draw_text(rp,window->BorderLeft+9,top+(int)rp->TxBaseline,aux,width-18);
+        draw_text(rp,window->BorderLeft+9,top+lineheight+(int)rp->TxBaseline,drawer,width-18);
+        SetAPen(rp,palette.shadow);
+        RectFill(rp,window->BorderLeft+9,top+2*lineheight,window->BorderLeft+9+barwidth,top+2*lineheight+2);
+        if(progress.roots_done && progress.roots_total) {
+            SetAPen(rp,palette.fill);
+            RectFill(rp,window->BorderLeft+9,top+2*lineheight,
+                window->BorderLeft+9+(int)(barwidth*beam_scan_root_percent(&progress)/100),top+2*lineheight+2);
         }
     }
     if(action_menu && (!indexed_results() || selected<0 || selected>=result_count ||
@@ -2265,11 +2433,10 @@ static void render_parts(int parts)
                external calculator plugin remains the Enter action and the
                calculation stays local. No child per keystroke. */
             const char *expr=query_plugin_input(plugin);
-            long value;
             while (*expr==' ' || *expr=='\t') ++expr;
             if (!*expr) beam_copy(aux,beam_str(MSG_CALC_HINT),sizeof(aux));
-            else if (beam_calculate(expr,&value))
-            { aux[0]='='; aux[1]=' '; beam_calc_format(value,aux+2,sizeof(aux)-2); }
+            else if (beam_calc_result(expr,aux+2,sizeof(aux)-2))
+            { aux[0]='='; aux[1]=' '; }
             else beam_copy(aux,beam_str(MSG_CALC_INVALID),sizeof(aux));
             draw_text(rp,window->BorderLeft+9,row+lineheight+(int)rp->TxBaseline,
                       aux,width-18);
@@ -2304,8 +2471,9 @@ static void render_parts(int parts)
                   beam_str(MSG_EMPTY_LINE2),width-18);
     } else if (!result_count) {
         char first[80],second[80];
-        beam_no_results_assistance(scan_active,item_count,
-            first,sizeof(first),second,sizeof(second));
+        if(!unavailable_plugin_query(first,sizeof(first),second,sizeof(second)))
+            beam_no_results_assistance(scan_active,item_count,
+                first,sizeof(first),second,sizeof(second));
         draw_text(rp,window->BorderLeft+9,row+(int)rp->TxBaseline,
                   first,width-18);
         draw_text(rp,window->BorderLeft+9,row+lineheight+(int)rp->TxBaseline,
@@ -2381,7 +2549,10 @@ static void render_parts(int parts)
         }
     }
     SetAPen(rp,palette.text);
-    if (!status[0] && browse_mode && result_count) {
+    if(selection_lost) {
+        draw_text(rp,window->BorderLeft+9,window->Height-window->BorderBottom-8-
+            (int)(rp->TxHeight-rp->TxBaseline),"Selected result disappeared. Choose a result before Enter.",width-18);
+    } else if (!status[0] && browse_mode && result_count) {
         const struct BeamHelpEntry *entry=&help_entries[results[selected]];
         draw_help_detail(rp,window->BorderLeft+9,
                   window->Height-window->BorderBottom-lineheight-8-(int)(rp->TxHeight-rp->TxBaseline),
@@ -2614,6 +2785,7 @@ static void show_window(void)
     screen_drawinfo=GetScreenDrawInfo(pubscreen);
     palette_apply();
     query[0]=0; query_cursor=0; query_view_start=0;
+    selection_lost=selection_is_item=0;
     if (plugin_job.active) plugin_status(beam_str(MSG_PLUGIN_RUNNING));
     else if (scan_active) {
         struct BeamScanStatus progress;
@@ -2702,8 +2874,12 @@ static void plugin_retired_poll(void)
         if (lock) {
             unsigned long serial=plugin_requests.serial[i];
             UnLock(lock);
-            DeleteFile((STRPTR)plugin_request_path[i]);
-            plugin_request_complete(serial);
+            {char part[BEAM_MAX_PATH+6];BPTR part_lock;
+             beam_copy(part,plugin_request_path[i],BEAM_MAX_PATH);strcat(part,".part");
+             part_lock=Lock(part,ACCESS_READ);
+             if(part_lock){UnLock(part_lock);if(!DeleteFile(part))continue;}
+             if(DeleteFile((STRPTR)plugin_request_path[i]))plugin_request_complete(serial);}
+
         }
     }
 }
@@ -2741,7 +2917,10 @@ static void plugin_finish(const char *reply,int is_error,int terminal)
                 strcat(status," "); strcat(status,reply);
             }
         } else {
-            beam_copy(status,reply,sizeof(status));
+            if(!reply[0] && !rows_active) {
+                beam_copy(plugin_feedback,"No matches. Try fewer words or check this plugin's Settings in F5.",sizeof(plugin_feedback));
+                beam_copy(status,plugin_feedback,sizeof(status));
+            } else beam_copy(status,reply,sizeof(status));
             beam_copy(plugin_last_result,reply,sizeof(plugin_last_result));
             beam_copy(plugin_last_name,plugin_active_name,sizeof(plugin_last_name));
             plugin_last_ms=elapsed;
@@ -2761,7 +2940,7 @@ static void plugin_finish(const char *reply,int is_error,int terminal)
         DeleteFile((STRPTR)part_path);
     }
     if(is_error && !strcmp(query,plugin_original_query))plugin_offer_retry(reply);
-    if (window) render();
+    if (window && !plugin_reply_updating) render();
 }
 /* Detach, never kill, an unsupervised child. Its serial/path remain unique;
  * do not unlink files while an abandoned ARexx process may still write them. */
@@ -2823,53 +3002,96 @@ static void plugin_poll(void)
     }
 
 }
-/* "Resident" plugins, done safely.  AmigaDOS can only keep *pure*
- * (re-entrant) programs resident; ordinary C programs keep static data
- * between runs, so re-running one loaded segment is unsafe for arbitrary
- * plugins.  Instead PLUGIN_CACHE=YES copies a plugin's package drawer to
- * T:Beam68/PluginCache/<Drawer>/ (RAM) on first use and runs it from there:
- * each run still loads a fresh copy, but from RAM instead of floppy/CF.
- * The copy is refreshed whenever the original executable changes. */
-static int same_file(const char *a,const char *b)
+/* Cache slots follow outstanding requests, not drawer basenames. A slot is
+ * never rewritten while its child may still use PROGDIR:. Compare both trees,
+ * including contents, so helper-only edits and removed files invalidate it.
+ * Large/deep/unreadable packages fall back to their original location. */
+static int cache_same_file(const char *a,const char *b,unsigned long *bytes)
 {
-    struct FileInfoBlock *fa,*fb;
-    BPTR la,lb;
-    int same=0;
-    la=Lock((STRPTR)a,ACCESS_READ);
-    lb=Lock((STRPTR)b,ACCESS_READ);
-    fa=(struct FileInfoBlock *)AllocDosObject(DOS_FIB,NULL);
-    fb=(struct FileInfoBlock *)AllocDosObject(DOS_FIB,NULL);
-    if (la && lb && fa && fb && Examine(la,fa) && Examine(lb,fb))
-        same=fa->fib_Size==fb->fib_Size &&
-             fa->fib_Date.ds_Days==fb->fib_Date.ds_Days &&
-             fa->fib_Date.ds_Minute==fb->fib_Date.ds_Minute &&
-             fa->fib_Date.ds_Tick==fb->fib_Date.ds_Tick;
-    if (fa) FreeDosObject(DOS_FIB,fa);
-    if (fb) FreeDosObject(DOS_FIB,fb);
-    if (la) UnLock(la);
-    if (lb) UnLock(lb);
-    return same;
+    BPTR left=0,right=0;LONG n,m;unsigned char x[512],y[512];int ok=0;
+    left=Open((STRPTR)a,MODE_OLDFILE);right=Open((STRPTR)b,MODE_OLDFILE);
+    if(!left || !right)goto done;
+    do {
+        n=Read(left,x,sizeof(x));m=Read(right,y,sizeof(y));
+        if(n<0 || m!=n || (n && memcmp(x,y,(size_t)n)))goto done;
+        if(*bytes+(unsigned long)n>4UL*1024UL*1024UL)goto done;
+        *bytes+=(unsigned long)n;
+    }while(n);
+    ok=1;
+done:
+    if(left)Close(left);
+    if(right)Close(right);
+    return ok;
+}
+static int cache_same_tree(const char *a,const char *b,int depth,
+                           unsigned int *entries,unsigned long *bytes)
+{
+    BPTR left=0,right=0,other=0;struct FileInfoBlock *fib=NULL,*info=NULL;
+    char x[BEAM_MAX_PATH],y[BEAM_MAX_PATH];int ok=0;unsigned int count=0,reverse=0;
+    if(depth>16)return 0;
+    left=Lock((STRPTR)a,ACCESS_READ);right=Lock((STRPTR)b,ACCESS_READ);
+    fib=AllocDosObject(DOS_FIB,NULL);info=AllocDosObject(DOS_FIB,NULL);
+    if(!left || !right || !fib || !info || !Examine(left,fib) || fib->fib_DirEntryType<=0 ||
+       !Examine(right,info) || info->fib_DirEntryType<=0)goto done;
+    while(ExNext(left,fib)) {
+        if(++*entries>1024)goto done;
+        ++count;beam_copy(x,a,sizeof(x));beam_copy(y,b,sizeof(y));
+        if(!AddPart(x,fib->fib_FileName,sizeof(x)) || !AddPart(y,fib->fib_FileName,sizeof(y)))goto done;
+        other=Lock(y,ACCESS_READ);
+        if(!other || !Examine(other,info))goto done;
+        UnLock(other);other=0;
+        /* Do not follow package links/cycles. */
+        if(fib->fib_DirEntryType==ST_USERDIR && info->fib_DirEntryType==ST_USERDIR) {
+            if(!cache_same_tree(x,y,depth+1,entries,bytes))goto done;
+        } else if(fib->fib_DirEntryType==ST_FILE && info->fib_DirEntryType==ST_FILE) {
+            if(fib->fib_Size!=info->fib_Size || !cache_same_file(x,y,bytes))goto done;
+        } else goto done;
+    }
+    if(IoErr()!=ERROR_NO_MORE_ENTRIES)goto done;
+    if(!Examine(right,info))goto done;
+    while(ExNext(right,info))if(++reverse>count)goto done;
+    ok=IoErr()==ERROR_NO_MORE_ENTRIES && count==reverse;
+done:
+    if(other)UnLock(other);
+    if(fib)FreeDosObject(DOS_FIB,fib);
+    if(info)FreeDosObject(DOS_FIB,info);
+    if(left)UnLock(left);
+    if(right)UnLock(right);
+    return ok;
+}
+static int plugin_cached_command_inner(const char *command,char *out,unsigned int cap)
+{
+    char drawer[BEAM_MAX_PATH],cache[100],copy[BEAM_MAX_PATH+160];
+    const char *name=(const char *)FilePart((STRPTR)command);
+    BPTR lock;int slot;unsigned int entries=0;unsigned long bytes=0;
+    if(!cfg.plugin_cache || !*name || !beam_parent_drawer(command,drawer,sizeof(drawer)) ||
+       strpbrk(drawer,"\"*`#?[]()|~\n\r"))return 0;
+    for(slot=0;slot<BEAM_PLUGIN_REQUEST_LIMIT;slot++)if(!plugin_requests.serial[slot])break;
+    if(slot==BEAM_PLUGIN_REQUEST_LIMIT)return 0;
+    sprintf(cache,"T:Beam68/PluginCache/%08lx-%d",(unsigned long)FindTask(NULL),slot);
+    if(strlen(cache)+strlen(name)+2>cap)return 0;
+    beam_copy(out,cache,cap);if(!AddPart(out,(STRPTR)name,(LONG)cap))return 0;
+    if(cache_same_tree(drawer,cache,0,&entries,&bytes))return 1;
+    entries=0;bytes=0;
+    if(!cache_same_tree(drawer,drawer,0,&entries,&bytes))return 0;
+    lock=CreateDir("T:Beam68");if(lock)UnLock(lock);
+    lock=CreateDir("T:Beam68/PluginCache");if(lock)UnLock(lock);
+    /* Only a generated, inactive slot path is ever removed. A failed copy is
+       never executed; the original remains the fallback. */
+    sprintf(copy,"C:Delete \"%s\" ALL QUIET",cache);
+    beam_system(copy,NULL,NULL,0);
+    lock=CreateDir(cache);if(!lock)return 0;UnLock(lock);
+    sprintf(copy,"C:Copy \"%s/#?\" TO \"%s\" ALL CLONE QUIET",drawer,cache);
+    if(beam_system(copy,NULL,NULL,0)!=0)return 0;
+    entries=0;bytes=0;
+    return cache_same_tree(drawer,cache,0,&entries,&bytes);
 }
 
 static int plugin_cached_command(const char *command,char *out,unsigned int cap)
 {
-    char drawer[BEAM_MAX_PATH],cache[BEAM_MAX_PATH],copy[BEAM_MAX_PATH*2+48];
-    const char *name=(const char *)FilePart((STRPTR)command);
-    BPTR lock;
-    if (!cfg.plugin_cache || !*name || !beam_parent_drawer(command,drawer,sizeof(drawer)) ||
-        strchr(drawer,'"')) return 0;
-    beam_copy(cache,"T:Beam68/PluginCache",sizeof(cache));
-    if (!AddPart((STRPTR)cache,FilePart((STRPTR)drawer),sizeof(cache))) return 0;
-    beam_copy(out,cache,cap);
-    if (!AddPart((STRPTR)out,(STRPTR)name,(LONG)cap)) return 0;
-    if (same_file(command,out)) return 1;
-    lock=CreateDir((STRPTR)"T:Beam68"); if (lock) UnLock(lock);
-    lock=CreateDir((STRPTR)"T:Beam68/PluginCache"); if (lock) UnLock(lock);
-    lock=CreateDir((STRPTR)cache); if (lock) UnLock(lock);
-    if (strlen(drawer)+strlen(cache)+40>=sizeof(copy)) return 0;
-    sprintf(copy,"C:Copy \"%s/#?\" TO \"%s\" ALL CLONE QUIET",drawer,cache);
-    if (beam_system(copy,NULL,NULL,0)!=0) return 0;
-    return same_file(command,out);
+    struct Process *process=(struct Process *)FindTask(NULL);APTR saved=process->pr_WindowPtr;int ok;
+    process->pr_WindowPtr=(APTR)-1;ok=plugin_cached_command_inner(command,out,cap);
+    process->pr_WindowPtr=saved;return ok;
 }
 
 static void execute_plugin(struct BeamLauncherPlugin *p);
@@ -2887,6 +3109,8 @@ static int plugin_preview_ticks(const struct BeamLauncherPlugin *p)
 static void schedule_preview(void)
 {
     struct BeamLauncherPlugin *p=query_plugin();
+    /* Invalidate on each edit, before queued edits can return to the same text. */
+    if(plugin_job.active && strcmp(query,plugin_original_query))plugin_abandon();
     preview_ticks=0;
     if (!p || !*query_plugin_input(p)) return;
     preview_ticks=plugin_preview_ticks(p);
@@ -3345,6 +3569,73 @@ static int workbench_open(const char *path,int kind)
     return beam_wb_launch(wb_reply_port,path);
 }
 
+static int choose_open_with(const char *path)
+{
+    struct FileRequester *request;char tool[BEAM_MAX_PATH];int chosen=0,ok=0;
+    AslBase=OpenLibrary("asl.library",38);
+    if(!AslBase){beam_copy(status,"Open with needs asl.library. Install it or use the default action.",sizeof(status));return 0;}
+    request=AllocAslRequestTags(ASL_FileRequest,ASLFR_TitleText,(ULONG)"Choose an application",
+        ASLFR_Window,(ULONG)window,ASLFR_PrivateIDCMP,TRUE,ASLFR_DoSaveMode,FALSE,TAG_DONE);
+    if(request){
+        if(AslRequest(request,NULL) && request->fr_Drawer && request->fr_File && *request->fr_File &&
+           strlen((const char *)request->fr_Drawer)+strlen((const char *)request->fr_File)+2<sizeof(tool)) {
+            beam_copy(tool,(const char *)request->fr_Drawer,sizeof(tool));
+            chosen=AddPart(tool,request->fr_File,sizeof(tool));
+        }
+        FreeAslRequest(request);
+    }
+    CloseLibrary(AslBase);AslBase=NULL;
+    if(chosen)ok=beam_wb_open_with(wb_reply_port,tool,path);
+    beam_copy(status,ok?"Opened with the selected application.":chosen?
+        "Could not start that application. Choose an executable tool.":"Open with cancelled.",sizeof(status));
+    return ok;
+}
+
+static int apply_drawer_exclusion(const char *drawer,int permanent)
+{
+    struct BeamConfig *changed;int i,ok,was_scanning=scan_active;
+    if(!drawer || !*drawer || strlen(drawer)>=BEAM_MAX_PATH || cfg.excluded_dir_count>=BEAM_MAX_EXCLUDED_DIRS ||
+       beam_path_is_excluded(drawer,cfg.excluded_dirs,cfg.excluded_dir_count))return 0;
+    changed=AllocVec(sizeof(*changed),MEMF_ANY);if(!changed)return 0;
+    *changed=cfg;beam_copy(changed->excluded_dirs[changed->excluded_dir_count++],drawer,BEAM_MAX_PATH);
+    ok=(!permanent || beam_config_write(changed,BEAM_CONFIG_ENVARC));
+    if(ok)ok=beam_config_write(changed,BEAM_CONFIG_SESSION);
+    if(ok) {
+        scan_cancel();cfg=*changed;
+        for(i=0;i<item_count;i++)if(beam_path_is_excluded(items[i].path,cfg.excluded_dirs,cfg.excluded_dir_count))
+            items[i].flags|=BEAM_ITEM_FLAG_STALE;
+        reconcile_scan(1);++index_generation;scan_index_complete=0;
+        if(index_cache_path[0])DeleteFile(index_cache_path);
+        notify_start();
+        if(was_scanning)scan_begin_roots(all_roots(),0);
+        if(plugins_loaded)whd_index_request(1);
+    }
+    FreeVec(changed);return ok;
+}
+
+/* Confirmation chooses session-only or permanent configuration explicitly. */
+static void exclude_result_drawer(const struct BeamItem *it)
+{
+    char drawer[BEAM_MAX_PATH];int choice,ok;ULONG arguments[1];
+    struct EasyStruct request={sizeof(struct EasyStruct),0,"Beam68",
+        "Exclude this drawer and its contents?\n%s\nUse lasts this session. Save keeps this exclusion and current settings.","Use|Save|Cancel"};
+    if(it->kind==BEAM_ITEM_DRAWER)beam_copy(drawer,it->path,sizeof(drawer));
+    else if(!beam_parent_drawer(it->path,drawer,sizeof(drawer)))return;
+    if(beam_path_is_excluded(drawer,cfg.excluded_dirs,cfg.excluded_dir_count)) {
+        beam_copy(status,"This drawer is already excluded.",sizeof(status));render();return;
+    }
+    if(cfg.excluded_dir_count>=BEAM_MAX_EXCLUDED_DIRS) {
+        beam_copy(status,"Exclusion list is full. Edit Excluded in Preferences > Indexing.",sizeof(status));render();return;
+    }
+    arguments[0]=(ULONG)drawer;
+    choice=EasyRequestArgs(window,&request,NULL,arguments);
+    if(choice!=1 && choice!=2){beam_copy(status,"Exclusion cancelled.",sizeof(status));render();return;}
+    ok=apply_drawer_exclusion(drawer,choice==2);
+    beam_copy(status,ok?"Drawer excluded. F5 Indexing edits exclusions.":
+        "Could not apply exclusion. Check storage and retry; Save may have written permanent settings.",sizeof(status));
+    search_items();render();
+}
+
 static void launch_selected(void)
 {
     struct BeamItem *it;
@@ -3354,6 +3645,9 @@ static void launch_selected(void)
     const char *shell_command=NULL;
     int restart_kind=beam_restart_query(query);
     int scope=beam_search_scope_parse(query,NULL);
+    if(selection_lost && !strcmp(selection_guard_query,query)) {
+        beam_copy(status,"Selected result disappeared. Choose a result before Enter.",sizeof(status));render();return;
+    }
     if(args_item<0 && !rows_active && !browse_active &&
        (beam_equal(query,"scan:cancel") || beam_equal(query,"scan:status") || beam_equal(query,"scan:start"))) {
         struct BeamScanStatus info;
@@ -3365,6 +3659,23 @@ static void launch_selected(void)
             scan_snapshot(&info);beam_scan_status_format(&info,status,sizeof(status));
         }
         query[0]=0;query_cursor=0;query_view_start=0;search_items();render();return;
+    }
+    if (args_item<0 && !rows_active && beam_equal(query,"history:reset")) {
+        struct EasyStruct request={sizeof(struct EasyStruct),0,"Beam68",
+            "Reset learned application ranking and recent launches?\nFavorites, aliases and plugin query histories are kept.","Reset|Cancel"};
+        if(EasyRequestArgs(window,&request,NULL,NULL)==1) {
+            /* Persist an empty history atomically before changing runtime metadata. */
+            static struct BeamHistory empty;
+            beam_history_reset(&empty);empty.pending=1;
+            if(beam_history_save(&empty,BEAM_HISTORY_PATH)) {
+                usage=empty;bind_all_meta();
+                beam_copy(status,"Learned ranking and recent launches reset. Favorites retained.",sizeof(status));
+            } else beam_copy(status,"Could not reset history; existing ranking retained.",sizeof(status));
+        } else beam_copy(status,"Ranking reset cancelled.",sizeof(status));
+        query[0]=0;query_cursor=0;search_items();render();return;
+    }
+    if(args_item<0 && !rows_active && unavailable_plugin_query(status,sizeof(status),NULL,0)) {
+        render();return;
     }
     if ((help_mode || scope==BEAM_SCOPE_PLUGIN || plugin_discovery>=0) && result_count &&
         selected>=0 && selected<result_count) {
@@ -3413,6 +3724,7 @@ static void launch_selected(void)
                 return;
             }
         }
+        if(!available_result(e->path)){render();return;}
         kind=(e->kind==BEAM_ITEM_VOLUME || e->kind==BEAM_ITEM_ASSIGN)?BEAM_ITEM_DRAWER:e->kind;
         if (kind==BEAM_ITEM_DRAWER && (dopus_options(),cfg.dopus_drawers) && dopus_show(e->path)) {
             hide_window(); return;
@@ -3430,6 +3742,7 @@ static void launch_selected(void)
         if (!result_count || selected>=result_count) return;
         r=&plugin_rows[results[selected]];
         if (r->kind==BEAM68_ROW_OPEN && r->value[0]) {
+            if(!available_result(r->value)){render();return;}
             record_document(r->value,BEAM_ITEM_FILE);
             if (strchr(r->value,'"') || !workbench_open(r->value,BEAM_ITEM_FILE)) {
                 beam_copy(status,beam_str(MSG_WB_LAUNCH_FAILED),sizeof(status));
@@ -3456,6 +3769,7 @@ static void launch_selected(void)
         e=&browse[results[selected]];
         beam_copy(path,browse_dir,sizeof(path));
         if (!AddPart((STRPTR)path,(STRPTR)e->name,sizeof(path))) return;
+        if(!available_result(path)){render();return;}
         if (e->kind==BEAM_ITEM_DRAWER) { browse_enter(path); search_items(); render(); return; }
         record_document(path,e->kind);
         if (!workbench_open(path,e->kind)) {
@@ -3471,6 +3785,7 @@ static void launch_selected(void)
             strlen(items[args_item].path)+strlen(query)+4>=sizeof(command)) {
             args_item=-1; search_items(); render(); return;
         }
+        if(!available_result(items[args_item].path)){render();return;}
         sprintf(command,"\"%s\" %s",items[args_item].path,query);
         args_item=-1;
         if (beam_system(command,NULL,"CON:20/20/600/150/Beam68/AUTO/CLOSE/WAIT",1)==-1) {
@@ -3563,6 +3878,9 @@ static void launch_selected(void)
         beam_copy(query,saved,sizeof(query));query_cursor=(int)strlen(query);query_view_start=0;
         search_items();beam_copy(status,"Saved query loaded. Press Enter to search; enable its plugin if needed.",sizeof(status));render();return;
     }
+    if(action_mode!=BEAM_ACTION_COPY && action_mode!=BEAM_ACTION_EXCLUDE && action_mode!=BEAM_ACTION_ARGS && !available_result(it->path)) {
+        render();return;
+    }
     if (action_mode==BEAM_ACTION_DRAWER) {
         char parent[BEAM_MAX_PATH];
         if (!beam_parent_drawer(it->path,parent,sizeof(parent)) ||
@@ -3592,6 +3910,11 @@ static void launch_selected(void)
         sprintf(status,beam_str(MSG_ARGS_PROMPT),it->name);
         search_items(); render(); return;
     }
+    if(action_mode==BEAM_ACTION_OPEN_WITH) {
+        char path[BEAM_MAX_PATH];beam_copy(path,it->path,sizeof(path));
+        if(choose_open_with(path))hide_window();else render();return;
+    }
+    if(action_mode==BEAM_ACTION_EXCLUDE){exclude_result_drawer(it);return;}
     if (action_mode==BEAM_ACTION_COPY) {
         beam_copy(status,beam_str(beam_clip_write(it->path)?MSG_COPIED:MSG_COPY_FAILED),
                   sizeof(status));
@@ -3859,15 +4182,22 @@ static void load_plugins(void)
     /* ~2.9 KB manifest buffer: static, so a 4 KB Shell stack cannot overflow. */
     static struct BeamPlugin p;
     int i;
-    plugin_count=0;
+    plugin_count=0;plugin_selection_valid=0;
     plugin_load_errors=0;
     memset(plugin_state,0,sizeof(plugin_state));
+    memset(plugin_routes,0,sizeof(plugin_routes));
     memset(plugin_trigger,0,sizeof(plugin_trigger));
     memset(plugin_manifest,0,sizeof(plugin_manifest));
     if (safe_mode) { stop_clipboard_history(0);help_build(); return; }
     for (i=0;i<cfg.plugin_file_count;i++) {
         char manifest_path[BEAM_MAX_PATH];
         int j, collision=0;
+        if(beam_runtime_path(cfg.plugin_files[i],manifest_path,sizeof(manifest_path)) &&
+           beam_plugin_read(&p,manifest_path)) {
+            beam_copy(plugin_routes[i].name,p.name,sizeof(plugin_routes[i].name));
+            beam_copy(plugin_routes[i].prefix,p.prefix,sizeof(plugin_routes[i].prefix));
+            plugin_routes[i].trigger=p.trigger;
+        }
         if (!beam_plugin_enabled(&cfg,cfg.plugin_files[i])) {
             plugin_state[i]=BEAM_PLUGIN_DISABLED;
             continue;
@@ -3877,9 +4207,7 @@ static void load_plugins(void)
             ++plugin_load_errors;
             continue;
         }
-        if (!beam_runtime_path(cfg.plugin_files[i],manifest_path,
-                               sizeof(manifest_path)) ||
-            !beam_plugin_read(&p,manifest_path)) {
+        if (!plugin_routes[i].name[0]) {
             plugin_state[i]=BEAM_PLUGIN_MANIFEST_ERROR;
             ++plugin_load_errors;continue;
         }
@@ -3994,6 +4322,75 @@ static int index_settings_equal(const struct BeamConfig *a,
     return 1;
 }
 
+/* Compare runtime inputs explicitly; ignore padding and appearance fields. */
+static int config_runtime_equal(const struct BeamConfig *a,const struct BeamConfig *b)
+{
+    if(memcmp(&a->hotkey,&b->hotkey,sizeof(a->hotkey)))return 0;
+    if(memcmp(&a->install_dir,&b->install_dir,sizeof(a->install_dir)))return 0;
+    if(memcmp(&a->dirs,&b->dirs,sizeof(a->dirs)))return 0;
+    if(memcmp(&a->dir_count,&b->dir_count,sizeof(a->dir_count)))return 0;
+    if(memcmp(&a->excluded_dirs,&b->excluded_dirs,sizeof(a->excluded_dirs)))return 0;
+    if(memcmp(&a->excluded_dir_count,&b->excluded_dir_count,sizeof(a->excluded_dir_count)))return 0;
+    if(memcmp(&a->file_patterns,&b->file_patterns,sizeof(a->file_patterns)))return 0;
+    if(memcmp(&a->plugin_files,&b->plugin_files,sizeof(a->plugin_files)))return 0;
+    if(memcmp(&a->plugin_file_count,&b->plugin_file_count,sizeof(a->plugin_file_count)))return 0;
+    if(memcmp(&a->plugin_preview_delay,&b->plugin_preview_delay,sizeof(a->plugin_preview_delay)))return 0;
+    if(memcmp(&a->plugin_preview_disabled,&b->plugin_preview_disabled,sizeof(a->plugin_preview_disabled)))return 0;
+    if(memcmp(&a->disabled_plugins,&b->disabled_plugins,sizeof(a->disabled_plugins)))return 0;
+    if(memcmp(&a->disabled_plugin_count,&b->disabled_plugin_count,sizeof(a->disabled_plugin_count)))return 0;
+    if(memcmp(&a->max_items,&b->max_items,sizeof(a->max_items)))return 0;
+    if(memcmp(&a->max_depth,&b->max_depth,sizeof(a->max_depth)))return 0;
+    if(memcmp(&a->scan_icons,&b->scan_icons,sizeof(a->scan_icons)))return 0;
+    if(memcmp(&a->scan_executables,&b->scan_executables,sizeof(a->scan_executables)))return 0;
+    if(memcmp(&a->index_files,&b->index_files,sizeof(a->index_files)))return 0;
+    if(memcmp(&a->index_drawers,&b->index_drawers,sizeof(a->index_drawers)))return 0;
+    if(memcmp(&a->history,&b->history,sizeof(a->history)))return 0;
+    if(memcmp(&a->index_cache,&b->index_cache,sizeof(a->index_cache)))return 0;
+    if(memcmp(&a->plugin_timeout,&b->plugin_timeout,sizeof(a->plugin_timeout)))return 0;
+    if(memcmp(&a->shell_commands,&b->shell_commands,sizeof(a->shell_commands)))return 0;
+    if(memcmp(&a->index_games,&b->index_games,sizeof(a->index_games)))return 0;
+    if(memcmp(&a->whdload_command,&b->whdload_command,sizeof(a->whdload_command)))return 0;
+    if(memcmp(&a->quick_launch,&b->quick_launch,sizeof(a->quick_launch)))return 0;
+    if(memcmp(&a->dopus_port,&b->dopus_port,sizeof(a->dopus_port)))return 0;
+    if(memcmp(&a->dopus_drawers,&b->dopus_drawers,sizeof(a->dopus_drawers)))return 0;
+    if(memcmp(&a->plugin_cache,&b->plugin_cache,sizeof(a->plugin_cache)))return 0;
+    if(memcmp(&a->results_max,&b->results_max,sizeof(a->results_max)))return 0;
+    if(memcmp(&a->browse_max,&b->browse_max,sizeof(a->browse_max)))return 0;
+    if(memcmp(&a->hidden_max,&b->hidden_max,sizeof(a->hidden_max)))return 0;
+    if(memcmp(&a->recent_docs_max,&b->recent_docs_max,sizeof(a->recent_docs_max)))return 0;
+    if(memcmp(&a->catalogue_url,&b->catalogue_url,sizeof(a->catalogue_url)))return 0;
+    if(memcmp(&a->download_command,&b->download_command,sizeof(a->download_command)))return 0;
+    if(memcmp(&a->index_rexx,&b->index_rexx,sizeof(a->index_rexx)))return 0;
+    if(memcmp(&a->index_modules,&b->index_modules,sizeof(a->index_modules)))return 0;
+    if(memcmp(&a->bookmark_files,&b->bookmark_files,sizeof(a->bookmark_files)))return 0;
+    if(memcmp(&a->module_command,&b->module_command,sizeof(a->module_command)))return 0;
+    if(memcmp(&a->module_port,&b->module_port,sizeof(a->module_port)))return 0;
+    if(memcmp(&a->module_arexx,&b->module_arexx,sizeof(a->module_arexx)))return 0;
+    if(memcmp(&a->url_command,&b->url_command,sizeof(a->url_command)))return 0;
+    return 1;
+}
+
+static int config_appearance_equal(const struct BeamConfig *a,const struct BeamConfig *b)
+{
+    if(memcmp(&a->visible,&b->visible,sizeof(a->visible)))return 0;
+    if(memcmp(&a->icon_preview,&b->icon_preview,sizeof(a->icon_preview)))return 0;
+    if(memcmp(&a->window_width,&b->window_width,sizeof(a->window_width)))return 0;
+    if(memcmp(&a->window_height,&b->window_height,sizeof(a->window_height)))return 0;
+    if(memcmp(&a->theme,&b->theme,sizeof(a->theme)))return 0;
+    if(memcmp(&a->custom_colors,&b->custom_colors,sizeof(a->custom_colors)))return 0;
+    if(memcmp(&a->theme_colors,&b->theme_colors,sizeof(a->theme_colors)))return 0;
+    if(memcmp(&a->theme_modified,&b->theme_modified,sizeof(a->theme_modified)))return 0;
+    if(memcmp(&a->font_name,&b->font_name,sizeof(a->font_name)))return 0;
+    if(memcmp(&a->font_size,&b->font_size,sizeof(a->font_size)))return 0;
+    if(memcmp(&a->row_spacing,&b->row_spacing,sizeof(a->row_spacing)))return 0;
+    if(memcmp(&a->high_contrast,&b->high_contrast,sizeof(a->high_contrast)))return 0;
+    if(memcmp(&a->large_gadgets,&b->large_gadgets,sizeof(a->large_gadgets)))return 0;
+    if(memcmp(&a->reduced_colors,&b->reduced_colors,sizeof(a->reduced_colors)))return 0;
+    if(memcmp(&a->detailed_rows,&b->detailed_rows,sizeof(a->detailed_rows)))return 0;
+    if(memcmp(&a->compact_mode,&b->compact_mode,sizeof(a->compact_mode)))return 0;
+    return 1;
+}
+
 /* Validate first, allocate before committing, then update the existing Cx
  * filter in place. No commodity restart required for hotkey or index size.
  * The index is kept (and only re-bound) when no indexing setting changed. */
@@ -4017,6 +4414,21 @@ static int reload_config(void)
         beam_copy(status,beam_str(MSG_HOTKEY_INVALID),sizeof(status)); return 0;
     }
     ix.ix_Version=IX_VERSION; /* ParseIX does not establish the SetFilterIX ABI version. */
+    if(config_runtime_equal(&cfg,next) && !config_appearance_equal(&cfg,next)) {
+        char saved_query[BEAM_QUERY_LEN+1];int cursor=query_cursor;
+        int resized=cfg.window_width!=next->window_width || cfg.window_height!=next->window_height;
+        beam_copy(saved_query,query,sizeof(saved_query));reopen_window=window!=NULL;
+        if(reopen_window)hide_window();
+        cfg=*next;FreeVec(next);
+        beam_favorites_load_active(&favorites);beam_aliases_load_active(&aliases);
+        index_query_favorites();bind_all_meta();
+        if(safe_mode)cfg.theme=BEAM_THEME_WORKBENCH;
+        if(resized)last_width=last_height=0;
+        if(reopen_window){show_window();beam_copy(query,saved_query,sizeof(query));query_cursor=cursor;search_items();}
+        beam_copy(status,beam_str(MSG_SETTINGS_UPDATED),sizeof(status));
+        if(window)render();
+        return 1;
+    }
     memset(&new_index,0,sizeof(new_index));
     if (next->max_items!=cfg.max_items) {
         if (!allocate_index(&new_index,next->max_items,&actual_items)) {
@@ -4047,10 +4459,10 @@ static int reload_config(void)
         last_width=0; last_height=0; /* apply preferred size next popup */
     }
     plugin_abandon();
-    notify_stop();
+    if(rescan)notify_stop();
     reopen_window=window!=NULL;
     if (reopen_window) hide_window();
-    scan_cancel();
+    if(rescan)scan_cancel();
     result_count=0;
     if (new_alloc) {
         if (cand_bits) { FreeVec(cand_bits); cand_bits=NULL; } /* sized by capacity */
@@ -4072,7 +4484,8 @@ static int reload_config(void)
     load_plugins();
     if (rescan) { beam_index_clear(&beam_index); ++index_generation; refresh_index(0); }
     else { index_query_favorites();bind_all_meta(); }
-    notify_start(); search_items();
+    if(rescan)notify_start();
+    search_items();
     if (reopen_window) show_window();
     if (plugin_load_errors)
         sprintf(status,beam_str(MSG_SETTINGS_PLUGIN_ERRORS),
@@ -4223,20 +4636,30 @@ static void drain_replies(void)
                 if (!beam_job_validate_row(m->rows[i].kind,m->rows[i].text,
                         sizeof(m->rows[i].text),m->rows[i].value,sizeof(m->rows[i].value))) valid=0;
             if (!valid) plugin_finish(beam_str(MSG_PLUGIN_INVALID_RESPONSE),1,terminal);
-            else {
-                struct Beam68ReplyRow previous;int had_previous=rows_active && selected>=0 && selected<result_count;
+            else if(was_preview) {
+                /* Preview text never owns or replaces actionable rows. */
+                plugin_finish(m->rows[0].text,m->is_error,1);
+            } else {
+                struct Beam68ReplyRow previous;int had_previous=rows_active && selected>=0 && selected<result_count &&
+                    results[selected]>=0 && results[selected]<plugin_row_count;
                 if(had_previous)previous=plugin_rows[results[selected]];
+                else if(plugin_selection_valid && !strcmp(plugin_selected_query,query)){previous=plugin_selected_row;had_previous=1;}
                 for (i=0;i<n;i++) plugin_rows[i]=m->rows[i];
                 beam_copy(rows_title,plugin_active_name,sizeof(rows_title));
+                plugin_reply_updating=!was_preview && !m->is_error && (n>1 || plugin_rows[0].kind!=BEAM68_ROW_TEXT);
+                if(n==1 && plugin_rows[0].kind==BEAM68_ROW_TEXT){rows_active=0;plugin_row_count=0;result_count=0;selected=0;}
                 plugin_finish(plugin_rows[0].text,m->is_error,1);
+                plugin_reply_updating=0;
                 if (!was_preview && !m->is_error &&
                     (n>1 || plugin_rows[0].kind!=BEAM68_ROW_TEXT)) {
                     plugin_retry_row=0;plugin_row_count=n; rows_active=1;selected=0;
                     sprintf(status,beam_str(MSG_ROWS_STATUS),rows_title,(long)n);
                     search_items();
-                    if(had_previous)for(i=0;i<n;++i)if(beam_job_row_same(previous.kind,previous.value,previous.text,
-                       plugin_rows[i].kind,plugin_rows[i].value,plugin_rows[i].text)){
-                        selected=i;break;
+                    if(had_previous){
+                        int found=0;
+                        for(i=0;i<n;++i)if(beam_job_row_same(previous.kind,previous.value,previous.text,
+                            plugin_rows[i].kind,plugin_rows[i].value,plugin_rows[i].text)){selected=i;found=1;break;}
+                        if(!found){selection_lost=1;beam_copy(selection_guard_query,query,sizeof(selection_guard_query));}
                     }
                     if (window) render();
                 }
@@ -4311,6 +4734,8 @@ static void drain_rexx(void)
                     if (!beam_scan_status_format(&info,output,sizeof(output))) {
                         rc=10;
                         beam_copy(output,"Could not format scan status",sizeof(output));
+                    } else if(strlen(output)+64<sizeof(output)) {
+                        sprintf(output+strlen(output)," subwatches=%ld watchcapped=%ld",(long)notify_child_count,(long)notify_watch_capped);
                     }
                 }
                 break;
@@ -4428,6 +4853,12 @@ static void handle_window_messages(void)
         if(cls==IDCMP_VANILLAKEY && menu_escape_consumed){
             menu_escape_consumed=0;if(code==27)continue;
         }
+        if(selection_lost && result_count>0 && ((cls==IDCMP_RAWKEY && (code==RAW_UP || code==RAW_DOWN)) ||
+           (cls==IDCMP_MOUSEBUTTONS && code==SELECTDOWN &&
+            beam_hit_result(mouse_y,result_top(),result_stride(),
+                window->Height-window->BorderBottom-launcher_lineheight(window->RPort)-8,result_count)>=0))) {
+            selection_lost=0;selection_is_item=0;
+        }
         if(cls==IDCMP_MOUSEBUTTONS && code==SELECTDOWN && args_item<0 && category_bar_height()){
             int lh=launcher_lineheight(window->RPort),top=window->BorderTop+lh+6;
             int width=window->Width-window->BorderLeft-window->BorderRight,cell=(width-12)/5;
@@ -4435,6 +4866,12 @@ static void handle_window_messages(void)
             if(mouse_y>=top && mouse_y<top+lh && x>=0 && x<5*cell){
                 choose_category(x/cell);render();continue;
             }
+        }
+        if(cls==IDCMP_MOUSEBUTTONS && code==SELECTDOWN && scan_active &&
+           mouse_y>=result_top()-scan_banner_height() && mouse_y<result_top()) {
+            scan_cancel();notify_refresh_ticks=0;whd_index_wanted=0;whd_index_close();
+            beam_copy(status,"Indexing cancelled; existing results retained. F2 rescans.",sizeof(status));
+            search_items();render();continue;
         }
         if(action_menu){
             int execute=0,handled=0;
@@ -4887,11 +5324,10 @@ static void event_loop(void)
                 else {
                     /* Rescan only the roots whose drawers changed; the
                        existing entries stay searchable meanwhile. */
-                    unsigned long roots=notify_pending_roots?notify_pending_roots:all_roots();
-                    notify_pending_roots=0;
-                    scan_begin(roots);
-                    beam_copy(status,beam_str(MSG_INDEX_UPDATING),sizeof(status));
-                    if (window) render();
+                    if(notify_scan_next()) {
+                        beam_copy(status,beam_str(MSG_INDEX_UPDATING),sizeof(status));
+                        if (window) render();
+                    }
                 }
             }
             if (icon_preview_ticks && --icon_preview_ticks==0 && window) {
@@ -4959,10 +5395,9 @@ static int beam_main(int argc,char **argv)
     beam_locale_open(); /* optional: built-in English without a catalog */
     if (!IntuitionBase || !GfxBase || !CxBase || !IconBase)
         goto cleanup;
-    if (!WorkbenchBase || WorkbenchBase->lib_Version<44) {
-        wb_reply_port=CreateMsgPort();
-        if (!wb_reply_port) goto cleanup;
-    }
+    /* Explicit Open with uses a WBStartup message on every supported OS. */
+    wb_reply_port=CreateMsgPort();
+    if (!wb_reply_port) goto cleanup;
     startup_failure="Invalid launcher configuration. Check ENV:Beam68/Beam68.cfg and ENVARC:Beam68/Beam68.cfg.";
     beam_config_defaults(&cfg);
     beam_config_read_active(&cfg);

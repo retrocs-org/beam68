@@ -83,6 +83,40 @@ int main(void)
            beam_search_rank_alias("scr","ScreenMode",0,-1,0));
     assert(beam_search_rank_alias("screenmode","ScreenMode","screenmode",0,100)==
            beam_search_rank_alias("screenmode","ScreenMode",0,0,100));
+    assert(beam_search_rank("sh","Shell",-1,144)<beam_search_rank("sh","Shell",0,0));
+    assert(beam_search_rank("srceen","ScreenMode",-1,0)>beam_search_rank("srceen","A ScreenMode",-1,0));
+    assert(beam_search_before(10,"Alpha","SYS:A",10,"Beta","SYS:B"));
+    assert(beam_search_before(10,"Same","SYS:A",10,"same","SYS:B"));
+    assert(!beam_search_before(9,"Alpha","SYS:A",10,"Beta","SYS:B"));
+    assert(beam_search_rank("sh","Shell",-1,0)>beam_search_rank_alias("sh","Other","sh",0,144));
+    {struct BeamItem items[1];int indices[1]={0};memset(items,0,sizeof(items));items[0].path="SYS:Other";
+     assert(beam_search_find_selection(items,1,indices,1,"SYS:Missing")==-1);
+     assert(beam_search_find_selection(items,1,indices,1,"sys:other")==0);}
+    {struct BeamItem items[50];char names[50][20],paths[50][30];int permutation,cap,i,j;
+     for(i=0;i<50;i++){sprintf(names[i],"App%02d",49-i);sprintf(paths[i],"Work:%s",names[i]);items[i].name=names[i];items[i].path=paths[i];}
+     for(permutation=0;permutation<7;permutation++)for(cap=1;cap<20;cap++) {
+       int results[50],scores[50],count=0,reference[50],reference_scores[50];
+       for(i=0;i<50;i++){int index=(i*7+permutation)%50,score=100+(index%3);
+         beam_search_top_add(items,index,score,results,scores,&count,cap,0);
+         reference[i]=index;reference_scores[i]=score;
+       }
+       for(i=1;i<50;i++)for(j=i;j>0 && beam_search_before(reference_scores[j],items[reference[j]].name,items[reference[j]].path,
+           reference_scores[j-1],items[reference[j-1]].name,items[reference[j-1]].path);j--){
+         int t=reference[j];reference[j]=reference[j-1];reference[j-1]=t;
+         t=reference_scores[j];reference_scores[j]=reference_scores[j-1];reference_scores[j-1]=t;
+       }
+       assert(count==cap);for(i=0;i<cap;i++)assert(results[i]==reference[i] && scores[i]==reference_scores[i]);
+     }}
+    {struct BeamItem items[4];int q,i,j;const char *names[]={"App","Application","Other","Application19"};
+     const char *queries[]={"app","application","application19","z"};
+     for(i=0;i<4;i++){memset(&items[i],0,sizeof(items[i]));items[i].name=(char *)names[i];items[i].path=(char *)names[i];}
+     for(q=0;q<4;q++){int results[4],scores[4],n=0,ref[4],refscore[4],rn=0;
+       for(i=0;i<4;i++){int score=beam_search_rank_alias(queries[q],names[i],"application19",i==2?0:-1,i*40);
+         if(score){beam_search_top_add(items,i,score,results,scores,&n,4,(unsigned int)strlen(queries[q]));ref[rn]=i;refscore[rn++]=score;}}
+       for(i=1;i<rn;i++)for(j=i;j>0 && beam_search_before(refscore[j],names[ref[j]],names[ref[j]],refscore[j-1],names[ref[j-1]],names[ref[j-1]]);j--){
+         int t=ref[j];ref[j]=ref[j-1];ref[j-1]=t;t=refscore[j];refscore[j]=refscore[j-1];refscore[j-1]=t;}
+       assert(n==rn);for(i=0;i<n;i++)assert(results[i]==ref[i] && scores[i]==refscore[i]);
+     }}
     puts("Search rank: names, aliases, pins, history and blank-query order: PASS");
     return 0;
 }

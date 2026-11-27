@@ -108,10 +108,10 @@ MSG_PLUGIN_LINE
 TILLÄGG  %s%s%s
 ;PLUGIN  %s%s%s
 MSG_CALC_HINT
-Skriv ett uttryck, t.ex. =12*(3+4)
+Prova =12*(3+4) eller =1.5 MiB to KiB
 ;Type an expression, e.g. =12*(3+4)
 MSG_CALC_INVALID
-Ofullständigt eller ogiltigt uttryck
+Ogiltigt/ofullstaendigt uttryck, enheter eller tal
 ;Incomplete or invalid expression
 MSG_BADGE_SHELL
 SKAL  
@@ -378,7 +378,7 @@ MSG_PROGRESS_FULL
 Indexet fullt vid %lu program; öka MAX_ITEMS
 ;Index full at %lu apps; increase MAX_ITEMS
 MSG_PROGRESS_PROBLEMS
-Index klart: %lu program | %lu oläsbara | %lu fel
+Index klart: %lu appar | %lu hoppas over | %lu fel; scan:failures
 ;Index complete: %lu apps | %lu unreadable | %lu errors
 MSG_PROGRESS_DONE
 %lu program indexerade från %lu lådor
@@ -387,7 +387,7 @@ MSG_NORESULT_SCANNING1
 Indexering pågår; resultaten kan vara ofullständiga
 ;Indexing directories; results may be incomplete
 MSG_NORESULT_SCANNING2
-Fortsätt skriva eller tryck F2 för att börja om
+Fortsaett skriva; Ctrl+F2 avbryter, F2 startar om
 ;Keep typing or press F2 to restart the scan
 MSG_NORESULT_EMPTY1
 Inga indexerade program ännu
@@ -622,3 +622,6 @@ MSG_RESULTS_ACTIONS
 MSG_RESULTS_ACTIONS_SMALL
 Enter: %s | Tab: Atgarder
 ;Enter: %s | Tab: Actions
+
+MSG_RESULT_UNAVAILABLE
+Otillganglig: %s. Anslut volymen igen och tryck F2 for ny sokning.

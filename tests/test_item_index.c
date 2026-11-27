@@ -170,6 +170,20 @@ int main(void)
     }
     assert(beam_index_add(&x,"Work:Overflow",BEAM_ITEM_FILE,0,NULL)==-1 && x.full);
     beam_index_free(&x);
+    {struct BeamIndex sub;assert(beam_index_init(&sub,16));
+     beam_index_add(&sub,"Work:Apps/A",BEAM_ITEM_DRAWER,0,NULL);
+     beam_index_add(&sub,"Work:Apps/A/Tool",BEAM_ITEM_WORKBENCH,0,NULL);
+     beam_index_add(&sub,"Work:Apps/Another/Tool",BEAM_ITEM_WORKBENCH,0,NULL);
+     beam_index_add(&sub,"Work:Apps/B/Tool",BEAM_ITEM_WORKBENCH,0,NULL);
+     assert(beam_index_path_within("work:apps/a/tool","Work:Apps/A/"));
+     assert(!beam_index_path_within("Work:Apps/Another","Work:Apps/A"));
+     beam_index_mark_subtree(&sub,"Work:Apps/A");
+     assert(!(sub.items[0].flags&BEAM_ITEM_FLAG_STALE));
+     assert(sub.items[1].flags&BEAM_ITEM_FLAG_STALE);
+     assert(!(sub.items[2].flags&BEAM_ITEM_FLAG_STALE));
+     assert(!(sub.items[3].flags&BEAM_ITEM_FLAG_STALE));
+     assert(beam_index_reconcile(&sub,1,NULL,0)==1);
+     assert(beam_index_find(&sub,"Work:Apps/B/Tool")>=0);beam_index_free(&sub);}
     puts("Pooled index: hashing, kind upgrade, mark-and-sweep rescans, capacity: PASS");
     return 0;
 }

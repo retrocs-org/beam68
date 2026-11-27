@@ -1,6 +1,7 @@
 #include "search_rank.h"
 #include "matcher.h"
 #include "beam.h"
+#include <string.h>
 
 const char *beam_search_builtin_alias(const char *name)
 {
@@ -116,10 +117,19 @@ int beam_search_rank_alias(const char *query,const char *name,
         if (alias_score>score) score=alias_score;
     }
     if (!score) return 0;
-    if (pinned_position>=0) score+=180;
-    /* A bounded tie-breaker; never outranks a different match class. */
+    /* Reserve separate bands: exact, prefix, alias, boundary, initials/terms,
+     * substring, typo and subsequence. Favorites/frequency never cross bands.
+     * Values remain below signed 16-bit INT_MAX on classic toolchains. */
+    {
+        int band=score>=10000?7:score>7500?6:score>6000?5:
+                 score>=5800?4:score>=5000?3:score>=3500?2:score>=2500?1:0;
+        int floor=band==7?10000:band==6?7501:band==5?6001:
+                  band==4?5800:band==3?5000:band==2?3500:band==1?2500:0;
+        score=band*4000+(score-floor)/2+1;
+    }
+    if (pinned_position>=0) score+=1800;
     if (history_bonus>144) history_bonus=144;
-    score+=(int)history_bonus;
+    score+=(int)history_bonus*4;
     return score;
 }
 
@@ -158,9 +168,68 @@ static int same_path(const char *a,const char *b)
         if(x!=y)return 0;
     }return !*a&&!*b;
 }
-int beam_search_selection(const struct BeamItem *items,int count,const int *results,int n,const char *path)
+int beam_search_find_selection(const struct BeamItem *items,int count,const int *results,int n,const char *path)
 {
-    int i;if(!items||!results||!path||!*path)return 0;
+    int i;if(!items||!results||!path||!*path)return -1;
     for(i=0;i<n;++i)if(results[i]>=0&&results[i]<count&&same_path(items[results[i]].path,path))return i;
-    return 0;
+    return -1;
+}
+int beam_search_selection(const struct BeamItem *items,int count,const int *results,int n,const char *path)
+{ int found=beam_search_find_selection(items,count,results,n,path);return found<0?0:found; }
+
+static int rank_text_compare(const char *a,const char *b)
+{
+    while(*a && *b){int x=(unsigned char)*a++,y=(unsigned char)*b++;
+        if(x>='A'&&x<='Z')x+=32;
+        if(y>='A'&&y<='Z')y+=32;
+        if(x!=y)return x-y;
+    }
+    return (unsigned char)*a-(unsigned char)*b;
+}
+int beam_search_before(int score,const char *name,const char *path,
+                       int oldscore,const char *oldname,const char *oldpath)
+{
+    int order;
+    if(score!=oldscore)return score>oldscore;
+    order=rank_text_compare(name,oldname);
+    if(order)return order<0;
+    order=rank_text_compare(path,oldpath);
+    return order?order<0:strcmp(path,oldpath)<0;
+}
+
+static int result_before(const struct BeamItem *items,int index,int score,
+                         int oldindex,int oldscore,unsigned int shared_prefix)
+{
+    unsigned int skip=score==oldscore && score>=24000?shared_prefix:0;
+    return beam_search_before(score,items[index].name+skip,items[index].path,
+                               oldscore,items[oldindex].name+skip,items[oldindex].path);
+}
+/* Already sorted, bounded collector: cheap best/worst rejection, binary
+ * placement and a single bulk move. Reverse directory order stays fast.
+ * shared_prefix is the query length: only equal real-name prefix/exact
+ * score bands skip those known-equal characters. Alias/fuzzy bands never do. */
+void beam_search_top_add(const struct BeamItem *items,int index,int score,
+                         int *results,int *scores,int *count,int capacity,
+                         unsigned int shared_prefix)
+{
+    int position=0,n=*count,low,high,middle,moved;
+    if(capacity<1)return;
+    if(n && !result_before(items,index,score,results[0],scores[0],shared_prefix)) {
+        if(n==capacity && !result_before(items,index,score,results[n-1],scores[n-1],shared_prefix))return;
+        low=1;high=n;
+        while(low<high) {
+            middle=(low+high)/2;
+            if(result_before(items,index,score,results[middle],scores[middle],shared_prefix))high=middle;
+            else low=middle+1;
+        }
+        position=low;
+    }
+    if(position>=capacity)return;
+    if(n<capacity)++n;
+    moved=n-position-1;
+    if(moved>0) {
+        memmove(results+position+1,results+position,(unsigned int)moved*sizeof(*results));
+        memmove(scores+position+1,scores+position,(unsigned int)moved*sizeof(*scores));
+    }
+    results[position]=index;scores[position]=score;*count=n;
 }

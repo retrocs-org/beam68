@@ -39,6 +39,9 @@ int main(void)
     s.scanning=0;s.cached=0;
     assert(beam_scan_progress_format(&s,line,sizeof(line)));
     assert(!strcmp(line,"Indexed 19 apps from 4 drawers"));
+    assert(beam_scan_root_percent(&s)==100);
+    s.roots_done=2;assert(beam_scan_root_percent(&s)==50);
+    s.roots_total=0;assert(beam_scan_root_percent(&s)==0);
     puts("Index scan progress, cache-completeness policy and diagnostics: PASS");
     return 0;
 }

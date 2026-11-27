@@ -246,3 +246,74 @@ The first installer attempt lost its network helper and is not pass evidence;
 the completed second run is recorded. No QA drawer was left in persistent Builds.
 Final packaging must retain the tested runtime binaries and Install script.
 Physical 68000/minimum-memory and every translated layout remain separate checks.
+
+
+2026-11-23: launcher feedback, ranking, settings layout and Calculator polish
+Runtime: /Applications/Amiga Workbench.app; disposable Workbench 3.2.3,
+68060 guest, binaries compiled -m68000 without an FPU requirement.
+PASS: launcher UI on 640x200 and 640x400; disabled-plugin route explanation,
+index banner space and cancellation retaining entries, native unit conversion.
+PASS: Preferences LAYOUTQA at 640x200, 640x256 and 640x400 after fixing
+launcher-control/footer and plugin-timeout/Remove overlaps at 256 lines.
+PASS: SETTINGSQA validates, saves, reloads and retains unknown keys in all
+8 bundled plugin settings files. Plugin settings page sizing fits each screen.
+PASS: all 79 staged runtime files match the verified build; outer drawer icon
+present; no Installer-QA drawers left in Builds. Disposable guests exited.
+Scope: these checks do not establish physical 68000 timing, live network
+availability or every third-party plugin's interactive settings workflow.
+
+
+2026-11-24: Beam68 0.6 indexing, selection, actions and performance
+PASS: one synchronous disposable Workbench 3.2.3 / 68020 / 8 MB batch.
+PASS: 640x200/400 launcher UI; actual file notifications; queued subtree updates
+scan fewer entries, retain siblings and reconcile deletions/additions correctly.
+PASS: partial cancellation retains entries; session exclusion prunes its drawer
+and descendants immediately and persists in the guest's temporary settings.
+PASS: vanished indexed/plugin targets block Enter until reselection; reordered
+rows retain identity; previews cannot overwrite actionable rows; single text
+replies replace row state and render feedback.
+PASS: explicit Open with starts a real WBStartup receiver, passes the exact
+selected file/parent lock, and cleans up replies; missing executables leave
+no startup request outstanding.
+PASS: Preferences geometry at 640x200, 640x256 and 640x400; all eight bundled
+settings files validate/save/reload and preserve unknown keys.
+PERFORMANCE: two fixed 25-query runs per variant over 2,000 items, ABBA order.
+Before mean search total: 23,803,675.5 us; after: 23,086,760.5 us (3.01% lower).
+These are controlled-guest figures, not physical 68020 timing guarantees.
+Reports: outputs/testing/0.6-enhancements/ (selected logs only, no OS files).
+The disposable session exited normally. No installer QA drawer was staged.
+
+## 0.6 cache and lifecycle polish — 26 November 2026
+
+The full host suite and strict native 68000 builds passed. Disposable
+Workbench 3.2.3 / 68060 testing passed 231 assertions for cache isolation
+and supporting-file refresh, late replies and request capacity, visual reload
+without scan/watch restarts, and disconnected-assign recovery. The synchronous
+runner guards both parent and child stacks. Selected reports are under
+outputs/testing/0.6-cache-polish/. Physical media removal, stalled filesystem
+handlers and the separate published 0.5 to 0.6 Installer upgrade remain outside
+this run. No release was published and no website was deployed.
+
+## Scale and case-sensitive checks — 26 November 2026
+
+Exact path-component validation now covers runtime inventory, plugin commands,
+guides/icons, configuration plugin registrations and fixed Installer sources.
+Source includes are checked, and case-colliding archive/source paths are refused.
+Independent case-sensitive APFS extraction, source/runtime reference checks,
+Installer path checks, rendered website checks and a strict native launcher build
+passed. Selected evidence is in outputs/testing/0.6-scale-case/.
+
+The extended native stress benchmark compiles for 2,000, 10,000 and 50,000
+synthetic items. Its actual Workbench measurements are pending availability
+of the shared native test slot. The released index setting stays capped at
+2048; stress tests do not change the application configuration limit.
+
+2026-11-27: Native synthetic benchmark release completion
+PASS: Workbench 3.2.3 / 68060, 64 MiB, guarded synchronous runner.
+2,000 / 10,000 / 50,000 items: 25 search/render samples each, all item counts
+restored from RAM cache. Median combined latency: 15.907 / 77.097 / 384.331 ms;
+p95: 42.011 / 199.093 / 909.642 ms. Index allocation: 121728 / 829824 /
+3559296 bytes. Cache load: 125459 / 658148 / 3401376 us. No timing threshold
+is inferred for physical hardware. MAX_ITEMS remains limited to 2048 in the app.
+This resolves the earlier pending benchmark entry. Reports:
+outputs/testing/0.6-scale-case/benchmark-summary.json and benchmark-junit.xml.

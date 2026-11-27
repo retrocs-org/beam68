@@ -79,3 +79,32 @@ FINAL RUN — 25 October 2026
 - Beam68.info and Beam68Prefs.info binary DiskObject checks: PASS.
 - `python3 tests/test_public_web.py`: PASS.
 
+
+
+2026-11-23: feedback/ranking/Calculator/Preferences polish
+PASS: make host-test with BEAM68_TEST_LHA pointing to the configured Unix LHa.
+PASS: 62 release-tool tests, including compressed/stored separator regressions.
+PASS: Calculator core under AddressSanitizer and UndefinedBehaviorSanitizer.
+PASS: ranking bands and deterministic ties; scan progress/cache policy.
+PASS: plugin version guard (Calculator 0.2), catalogs, manuals, website and
+native source/binary provenance. No publication performed.
+
+
+2026-11-24: Beam68 0.6 subtree/action/conversion enhancements
+PASS: full make host-test with configured Unix LHa (62 release tests included).
+PASS: adaptive top-results collector equals full reference sorting for multiple
+orders, capacities and actual exact/prefix/alias score bands; sanitizer checks.
+PASS: subtree path boundaries, excluded volume roots/trailing slashes, known
+path-setting Browse rules and expanded applicable file-action menus.
+PASS: C/F/K conversions, absolute-zero rejection, bounded arithmetic and small
+fractional output under address/undefined-behavior checks.
+PASS: native 68000 production/QA builds, catalogs, manuals, public source/site
+checks, Calculator 0.3 independent version and build provenance.
+
+2026-11-26: Scale benchmark tooling and exact-case release validation
+PASS: complete host suite, seven path-case regressions, exact runtime/source
+references, case-colliding ZIP/LHA rejection and all 62 release-tool tests.
+PASS: strict native compilation of the extended benchmark and guarded runner.
+Independent case-sensitive APFS package extraction and source build also passed.
+Native large-index timings remain pending; no timing result is claimed.
+Evidence: outputs/testing/0.6-scale-case/.

@@ -8,6 +8,9 @@
 #define BEAM_ACTION_COPY 4     /* copy the path to the clipboard */
 #define BEAM_ACTION_ARGS 5     /* run with arguments typed next */
 #define BEAM_ACTION_DOPUS 6    /* show the drawer in Directory Opus */
+#define BEAM_ACTION_OPEN_WITH 7
+#define BEAM_ACTION_EXCLUDE 8
+#define BEAM_ACTION_COUNT 9
 #define BEAM_RESTART_NONE 0
 #define BEAM_RESTART_AMIGA 1
 #define BEAM_RESTART_WORKBENCH 2

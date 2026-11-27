@@ -92,7 +92,7 @@ static int resolve_tool(const char *project,const char *tool,char *out,unsigned 
     return 1;
 }
 
-int beam_wb_launch(struct MsgPort *reply_port,const char *path)
+static int launch_object(struct MsgPort *reply_port,const char *path,const char *explicit_tool)
 {
     struct DiskObject *icon,*tool_icon;
     struct BeamWBLaunch *l;
@@ -102,11 +102,17 @@ int beam_wb_launch(struct MsgPort *reply_port,const char *path)
     BPTR home;
     int ok=0;
     if (!reply_port || !path || !*path) return 0;
-    icon=GetDiskObject((STRPTR)path);
-    if (!icon) return 0;
+    icon=GetDiskObject((STRPTR)(explicit_tool?explicit_tool:path));
+    if (!icon && !explicit_tool) return 0;
     l=(struct BeamWBLaunch *)AllocVec(sizeof(*l),MEMF_PUBLIC|MEMF_CLEAR);
-    if (!l) { FreeDiskObject(icon); return 0; }
-    if (icon->do_Type==WBTOOL) {
+    if (!l) { if(icon)FreeDiskObject(icon); return 0; }
+    if(explicit_tool) {
+        if(strlen(explicit_tool)<sizeof(tool)) {
+            strcpy(tool,explicit_tool);ok=set_arg(l,0,tool) && set_arg(l,1,path);
+        }
+        l->startup.sm_NumArgs=2;stack=16384UL;
+        if(icon && (unsigned long)icon->do_StackSize>stack)stack=(unsigned long)icon->do_StackSize;
+    } else if (icon->do_Type==WBTOOL) {
         if (strlen(path)<sizeof(tool)) { strcpy(tool,path); ok=set_arg(l,0,path); }
         l->startup.sm_NumArgs=1;
         if (icon->do_StackSize>0) stack=(unsigned long)icon->do_StackSize;
@@ -122,7 +128,7 @@ int beam_wb_launch(struct MsgPort *reply_port,const char *path)
             FreeDiskObject(tool_icon);
         }
     }
-    FreeDiskObject(icon);
+    if(icon)FreeDiskObject(icon);
     if (!ok) { free_launch(l); return 0; }
     if (stack<WB_LAUNCH_MIN_STACK) stack=WB_LAUNCH_MIN_STACK;
     l->startup.sm_Segment=LoadSeg((STRPTR)tool);
@@ -154,3 +160,8 @@ int beam_wb_launch(struct MsgPort *reply_port,const char *path)
     PutMsg(&proc->pr_MsgPort,(struct Message *)&l->startup);
     return 1;
 }
+
+int beam_wb_launch(struct MsgPort *reply_port,const char *path)
+{ return launch_object(reply_port,path,NULL); }
+int beam_wb_open_with(struct MsgPort *reply_port,const char *tool,const char *path)
+{ return tool && *tool?launch_object(reply_port,path,tool):0; }

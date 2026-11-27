@@ -1,4 +1,4 @@
-# Beam68 0.5 Preferences
+# Beam68 0.6 Preferences
 
 Open Beam68Prefs from SYS:Prefs or press F5 in the launcher.
 
@@ -162,3 +162,17 @@ Recording remains off until explicitly started with `clip:history on`. Restart
 recording after changing its limits. Disabling the plugin or quitting Beam68
 stops it; stopping/clearing removes its temporary RAM: history. Other files saved
 by the user and current clipboard contents are retained.
+
+Plugin settings fit the current screen using pages when needed. Page changes
+retain pending values; Save commits the entire settings file, Cancel discards
+all pending values, and Restore defaults stages defaults across all pages.
+Priority up/down are disabled at their respective boundaries; Settings requires
+a plugin that declares settings and Remove remains disabled for bundled plugins.
+
+Known path settings offer Browse: Wikipedia curl/OpenURL and WHDLoad select
+executables; Music Library and Aminet download settings select drawers. The
+requester fills the current pending field only. Save commits it; Cancel
+preserves the previous settings. Paths longer than the setting's 63-character
+limit are rejected visibly rather than silently shortened. Full command
+expressions remain text fields. Dependency details include the configured path
+or service name without running it or contacting remote services.

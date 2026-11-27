@@ -13,12 +13,10 @@ int main(int argc, char **argv)
 {
     char input[BEAM_PLUGIN_MAX_INPUT+1];
     char reply[BEAM_PLUGIN_MAX_RESULT+32];
-    long answer;
     if (!beam_plugin_input(argc,argv,input,sizeof(input))) return 20;
-    if (!beam_calculate(input,&answer))
-        return beam_plugin_line(argc,argv,plugin_str(PLMSG_CALC_ERROR));
     strcpy(reply,"TEXT=");
-    beam_calc_format(answer,reply+5,BEAM_PLUGIN_MAX_RESULT);
+    if (!beam_calc_result(input,reply+5,BEAM_PLUGIN_MAX_RESULT))
+        return beam_plugin_line(argc,argv,"ERROR=Invalid expression, incompatible units, division by zero or numeric range\n");
     strcat(reply,"\n");
     return beam_plugin_line(argc,argv,reply);
 }

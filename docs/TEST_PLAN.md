@@ -438,9 +438,9 @@ Run each with Installer 42.x (OS 3.1/3.2) and, if available, Installer 43.3:
 5. With DOpus 5 running: Tab offers "Show in Directory Opus" and it opens a
    lister; with DOpus 4 the ScanDir fallback works; without Opus the action
    is skipped. `OPEN_DRAWERS_IN_DOPUS=YES` opens drawer results in Opus.
-6. `PLUGIN_CACHE=YES` on a floppy system: second `find:` run starts
-   noticeably faster; T:Beam68/PluginCache/FileFinder exists; replacing the
-   plugin executable refreshes the copy.
+6. `PLUGIN_CACHE=YES`: inspect the instance/request-slot drawers under
+   T:Beam68/PluginCache. Executable and supporting-file edits refresh the copy;
+   measure startup on the target storage because full validation adds reads.
 
 
 ## Fixes and tidy-ups: native verification
@@ -838,3 +838,111 @@ long names/paths, changing fonts and resized windows. Confirm that plugin rows,
 completion acceptance and argument entry retain their existing controls. Selecting
 a category must not run a command or send a network request. Cancelled action
 menus must not launch anything. Clearing Two-line rows must persist through Save.
+
+
+## Launcher feedback, ranking, small-screen settings and conversions
+
+- Scan a drawer containing files that are not indexed: the current drawer and
+  entry counter must still refresh. The bar counts completed roots only.
+  Click the banner or Ctrl+F2 to cancel; retain existing results. Use
+  scan:failures after unreadable drawers and confirm explicit retry.
+- Query a disabled plugin prefix, then a missing executable: show the reason
+  and direct the user to F5 Plugins. A successful empty reply means no matches;
+  errors and timeouts retain explicit Retry without automatically replaying
+  potentially mutating requests.
+- Exact real names outrank aliases; prefixes outrank lower match classes even
+  against frequent pinned items. Within a match class, favorites take precedence;
+  usage is bounded. Equal scores sort by name/path across scan order changes.
+  Cancel history:reset, then confirm it: retain pins and aliases, clear learned
+  application usage and recents, including after restarting.
+- Run Beam68Prefs LAYOUTQA 200, 256 and 400. Check disabled actions with no
+  plugin selection, first/last priority rows, no-settings plugins and bundled
+  plugin Remove. Open a settings plugin with more fields than fit the screen:
+  navigate pages, edit each, Cancel without writing, then Save all pages. Stage
+  Restore defaults and Cancel. String fields start focused and allow Tab cycling.
+- Calculator: =1.5 MiB to KiB -> 1536 KiB; =90 min to h -> 1.5 h;
+  =1 in to cm -> 2.54 cm; =1 GiB to B -> 1073741824 B;
+  =1 s to min -> ~0.016666666666 min. Reject mixed dimensions and excess precision.
+  Compare live preview and Enter output on a 68000-compatible build.
+
+
+## 0.6 subtree, action and selection checks
+
+- Use Beam68LauncherUIQA to create private sibling drawers, observe a real
+  notification and scan one queued subtree. Confirm fewer entries visited,
+  deleted/new files reconciled, siblings untouched and cancellation retained.
+- Apply a session exclusion: immediately prune only its drawer and children,
+  persist it in the disposable T: settings and retain siblings. Check volume
+  roots, trailing slashes, full exclusion capacity and failed storage.
+- Remove a selected indexed item and reorder/remove plugin reply rows. Enter
+  must never silently operate on a replacement; explicit navigation acknowledges
+  a new target. Changed labels with the same actionable value retain selection.
+- OpenWithReceiver checks the actual WBStartup file argument and parent lock,
+  including a missing-tool failure with no outstanding startup request.
+- Compare PerformanceQA's 25-query, 2,000-item workload with fixed CPU, memory,
+  screen configuration and font before/after optimizations. Timing is controlled-guest
+  evidence, not a physical 68020 latency guarantee. Keep both raw logs.
+- Verify =32 F to C -> 0 C; =-40 C to F -> -40 F; =0 C to K -> 273.15 K;
+  =1 mm to km -> 0.000001 km. Reject negative Kelvin and incompatible units.
+- Browse a plugin executable setting, Cancel its settings window and reopen:
+  the previous path must remain. Save a chosen path, then check readiness.
+
+## 0.6 cache, reload and offline-volume regressions
+
+The native launcher UI QA also exercises:
+
+- Two packages with the same drawer/executable names and different helper files,
+  while the first request remains outstanding; cached paths and data stay isolated.
+- Helper-only byte changes with the same size and timestamp, added nested files,
+  removed helpers and unsupported/deep package fallback.
+- Cancelled native replies arriving during a newer query, replies while hidden,
+  three outstanding jobs and recovery after completion. Repeated detached atomic
+  file replies retain their slots until publication and clean both final/partial files.
+- Actual appearance configuration reload during indexing: retain the notification
+  port, scan frames and plugin catalogue. Runtime changes cannot use that shortcut.
+- A disposable assign removed between scans: retain old entries, report scan
+  failure without a volume requester, reject unavailable launch targets and
+  recover on explicit rescan after reconnecting the assign.
+
+These fixtures do not certify a stalled network filesystem handler or physical
+media removal. Unfinished third-party processes deliberately keep bounded slots;
+there is no unsafe forced termination or deadline-based slot reuse.
+
+## Large synthetic index benchmarks
+
+Build Beam68PerformanceQA and Beam68LargeIndexQA with scripts/build-native-qa.sh.
+The performance program accepts only 2000, 10000 or 50000 (default 2000).
+The guarded runner invokes all three sequentially, checking each return code.
+Use a disposable Workbench guest with 64 MiB of RAM for the complete stress run.
+This test overrides MAX_ITEMS only inside its process; the released setting
+remains capped at 2048. It does not create 50,000 actual filesystem entries.
+
+Each workload fills the real compact index in reverse name order and runs 25
+search/render samples, including broad, narrowed and no-match queries. Logs
+record median/p95/max search and combined search+render latency, p95 rendering,
+allocated index bytes, approximate free-memory delta and largest free block.
+Synthetic build-to-ready and RAM-cache-restore-to-ready timings include the
+launcher popup. They are not OS/process cold-start measurements, physical
+key-to-display latency, disk scanning throughput or real-hardware certification.
+The cache roundtrip must restore the exact item count. The runner writes its
+proof and bench-2000.log, bench-10000.log and bench-50000.log under AutoRun:.
+
+Use scripts/benchmark-summary.py --output summary.json with those three logs;
+incomplete or failed runs are rejected. Compare timings on identical machine
+settings; do not impose a universal timing limit across different CPUs.
+
+## Case-sensitive packaging checks
+
+scripts/check-path-case.py verifies each runtime path component against actual
+directory entries even on case-insensitive development volumes. Plugin commands,
+guides/icons, configuration registrations and fixed Installer source references
+must use exact package spelling. Source includes are checked too. Release runtime
+inventory validation enforces these references; ZIP/LHA writers and source
+inventory validation reject case-colliding files or parent directories.
+
+For an independent filesystem check, use a disposable case-sensitive APFS volume.
+Confirm a mixed-case probe cannot be opened with lowercase spelling, extract the
+actual LHA there, run check-path-case.py --runtime-only on its Beam68 drawer,
+and copy source plus runtime inputs onto the volume. Run the source checker,
+Installer and website tests, and a forced strict native build from that copy.
+Record the archive checksum and outcomes; unmount the disposable volume afterward.

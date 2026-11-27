@@ -20,6 +20,17 @@ int beam_query_masks_reject(const struct BeamQueryMasks *m,unsigned long item_ma
 unsigned long beam_query_marks(const char *query,const char *name);
 struct BeamItem;
 /* Resolve the selected path after result reordering or index compaction. */
+/* Returns -1 when the old target disappeared; callers must not launch a replacement. */
+int beam_search_find_selection(const struct BeamItem *items,int count,const int *results,
+                               int result_count,const char *path);
 int beam_search_selection(const struct BeamItem *items,int count,const int *results,
                           int result_count,const char *path);
+/* Stable alphabetical/path order for equal scores, independent of scan order. */
+int beam_search_before(int score,const char *name,const char *path,
+                       int oldscore,const char *oldname,const char *oldpath);
+/* Bounded sorted collector. shared_prefix is a verified real-name query
+ * prefix length; pass zero when collecting arbitrary scores. */
+void beam_search_top_add(const struct BeamItem *items,int index,int score,
+                         int *results,int *scores,int *count,int capacity,
+                         unsigned int shared_prefix);
 #endif

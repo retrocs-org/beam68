@@ -105,7 +105,7 @@ for item in catalog['plugins']+catalog['themes']:
 assert {x['path'] for x in catalog['plugins']}=={str(p.parent.relative_to(ROOT)) for p in (ROOT/'Plugins').glob('*/*.plugin')}
 aminet=next(x for x in catalog['plugins'] if x['NAME']=='Aminet Browser')
 assert aminet['default_enabled'] is False and aminet['introduced']=='0.2'
-assert b'0.5' in rendered['index.php'] and b'19' in rendered['index.php']
+assert (ROOT/'VERSION').read_text().strip().encode() in rendered['index.php'] and b'19' in rendered['index.php']
 assert all(x['NAME'].encode() in rendered['marketplace.php'] for x in catalog['plugins'])
 assert b'Aminet asks before downloading' in rendered['index.php']
 # Published website copy is independent of the next development version.
@@ -129,7 +129,7 @@ assert b'0.2 views' not in rendered['screenshots.php']
 
 assert b'Earlier versions &amp; additional themes' not in rendered['screenshots.php']
 assert all(shot.get('version')=='0.2' for shot in json.loads((WEB/'images/screenshots.json').read_text()))
-assert rendered['index.php'].count(b'<details>')==24
+assert rendered['index.php'].count(b'<details>')==25
 assert b'wiki:Amiga' in rendered['index.php'] and b'whd:enigma' in rendered['index.php']
 
 assert not any('about' in shot['file'] for shot in json.loads((WEB/'images/screenshots.json').read_text()))
@@ -160,11 +160,11 @@ clock=next(x for x in catalog['plugins'] if x['NAME']=='Clock')
 assert 'date' not in clock['DESCRIPTION'].lower()
 assert next(x for x in catalog['plugins'] if x['NAME']=='Wikipedia')['introduced']=='0.3'
 
-# Footer follows the public release fixture, independently of source version 0.5.
+# Footer follows the public release fixture, independently of the source version.
 for name,raw in rendered.items():
     footer=raw.split(b'<footer ',1)[1]
     assert 'Beam68 0.2 · Classic AmigaOS'.encode() in footer,name
-    assert 'Beam68 0.5 · Classic AmigaOS'.encode() not in footer,name
+    assert ('Beam68 '+(ROOT/'VERSION').read_text().strip()+' · Classic AmigaOS').encode() not in footer,name
 with tempfile.NamedTemporaryFile(mode='w',suffix='.json') as unavailable:
     unavailable.write('null');unavailable.flush()
     env=dict(os.environ,BEAM68_WEB_RELEASE_FIXTURE=unavailable.name)
@@ -172,7 +172,7 @@ with tempfile.NamedTemporaryFile(mode='w',suffix='.json') as unavailable:
     assert not result.stderr
     footer=result.stdout.split(b'<footer ',1)[1]
     assert 'Beam68 · Classic AmigaOS'.encode() in footer
-    assert 'Beam68 0.5'.encode() not in footer
+    assert ('Beam68 '+(ROOT/'VERSION').read_text().strip()).encode() not in footer
 assert b'remaining-time feedback' in plugin_section
 assert b'optional searchable session history' in plugin_section
 assert b'HippoPlayer, AmigaAMP and EaglePlayer 2' in plugin_section

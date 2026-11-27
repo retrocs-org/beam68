@@ -1,14 +1,15 @@
 @database Beam68.guide
-@$VER: Beam68.guide 0.5 (21.11.2026)
+@$VER: Beam68.guide 0.6 (24.11.2026)
 @author "Beam68 contributors"
 @(c) "MIT License"
 @wordwrap
-@node MAIN "Beam68 0.5 - Manual"
+@node MAIN "Beam68 0.6 - Manual"
 
-                    @{b}Beam68 0.5@{ub}
+                    @{b}Beam68 0.6@{ub}
      A keyboard application launcher for AmigaOS 3.x
 
-  @{" New in 0.5         " link NEW05}  Completion and clipboard history
+  @{" New in 0.6         " link NEW06}  Feedback, ranking and unit conversion
+  @{" Earlier 0.5        " link NEW05}  Completion and clipboard history
   @{" Introduction       " link INTRO}  What Beam68 does
   @{" Requirements       " link REQUIREMENTS}  What you need
   @{" Installation       " link INSTALL}  Install, update, uninstall
@@ -148,6 +149,11 @@ Pinned favorites (F6) and frequently launched programs rank a little
 higher.  With @{b}QUICK_LAUNCH=control alt@{ub} in the configuration,
 Ctrl+Alt+1 ... 9 start favorites 1-9 from anywhere.  With an empty search field the launcher shows your favorites
 and recently used programs.
+
+Exact names and prefixes rank ahead of looser matches. Favorites and bounded
+usage counts improve ordering within each match class. Equal scores sort by
+name, then full path. Type history:reset and confirm to clear learned ranking
+and recent launches. Favorites, aliases and plugin query histories remain.
 
 @endnode
 
@@ -363,10 +369,24 @@ eight matches.  Select one and press Enter to open it; Esc goes back.
 The calculator accepts $FF or 0xFF (hexadecimal) and %1010 (binary) and
 shows every result in decimal, hexadecimal and, up to 65535, binary.
 
-@{b}PLUGIN_CACHE=YES@{ub} copies each plugin to T:Beam68/PluginCache the first
-time it runs and starts it from RAM afterwards - much faster on a floppy
-or slow CompactFlash.  (True "resident" programs must be re-entrant, which
-ordinary plugins are not, so each run still starts a fresh copy.)
+@{b}PLUGIN_CACHE=YES@{ub} optionally starts plugins from a RAM copy in
+T:Beam68/PluginCache. Each outstanding request has its own slot, so a running
+plugin's files cannot be replaced by another package. Before reuse, Beam68
+compares the complete package contents, including helpers and nested files.
+This adds source reads; enable it only when useful for your storage. Packages
+over 4 MiB, 1024 entries or 16 nested levels, and linked or unreadable trees,
+run from their original location instead. Each run loads a fresh executable.
+
+Cancelling a request hides its result but does not kill its process. Up to three
+requests may remain outstanding (two for previews). Late replies cannot replace
+newer results. Completed file replies and leftover partial files are cleaned;
+a child that never finishes keeps its slot rather than allowing unlimited jobs.
+
+Appearance-only Preferences edits retain the current query, active indexing and
+directory watches without reloading plugin manifests. F3 with unchanged settings
+still explicitly refreshes the plugin manifests. Missing indexed volumes retain
+their previous entries; reconnect the volume and press F2 to retry indexing.
+Unavailable launch targets remain in the window with recovery guidance.
 
 Press F1 in the launcher for the full list with examples.  Plugins marked
 @{b}SYSTEM@{ub} normally ask for a second Enter. Bundled Wikipedia searches
@@ -378,6 +398,20 @@ Aminet Browser (new in 0.2): type aminet:search tracker to search Aminet,
 read details/readmes and confirm downloads. Installation opens the archive
 with your archive handler; follow the package's own installer. Requires an
 active TCP/IP stack. DOWNLOAD_DIR is available in plugin Settings.
+
+
+Calculator also converts units offline:
+  =1.5 MiB to KiB       =90 min to h       =1 in to cm
+Units: B/KB/MB/GB, KiB/MiB/GiB; ms/s/min/h/day;
+mm/cm/m/km/in/ft/yd/mi; mg/g/kg. Decimal input and output have up to
+three input fractional digits and up to twelve output digits. A leading ~
+marks a truncated approximate result. C/F/K temperature conversions reject
+values below absolute zero. Try =32 F to C or =0 C to K.
+Incompatible units or values exceeding bounded 32-bit ratios are rejected.
+
+Disabled or unavailable plugin prefixes show an explanation. Press F5 and
+open Plugins to enable a plugin or check its Settings. Network plugins stay
+off until you enable them. Failed requests retain explicit retry actions.
 
 @endnode
 
@@ -467,6 +501,11 @@ indexing from these same directories, with this depth and exclusions.
 Changes to drawers are noticed automatically; F2 rebuilds the whole index.
 
 @{"Back to Preferences" link PREFS}
+The launcher shows the current drawer, scanned entries and indexed items.
+The progress bar counts completed configured roots, not estimated files.
+Click the indexing banner or press Ctrl+F2 to cancel and retain results.
+Use scan:failures to inspect unavailable locations and retry their roots.
+
 @endnode
 
 @node PREFS_PLUGINS "Preferences: Plugins"
@@ -485,6 +524,10 @@ opens that plugin's own guide if it has one.
 @{b}Built-in Shell Commands@{ub} enables shell: and >.
 
 @{"Back to Preferences" link PREFS}
+On small screens, larger plugin settings use pages. Page changes preserve
+pending edits; Save applies all pages and Cancel discards all pending edits.
+Restore defaults affects all pages and remains pending until Save.
+
 @endnode
 
 @node PREFS_APPEARANCE "Preferences: Appearance"
@@ -745,4 +788,36 @@ Stopping Beam68 or disabling Clipboard Tools stops the recorder.
 
 Aminet downloads show average speed, ETA for known sizes and byte counts for
 unknown sizes. Cancel and Retry remain explicit.
+@endnode
+
+@node NEW06 "New in Beam68 0.6"
+@{b}Features@{ub}
+- Offline Calculator conversions for bytes, time, length and metric mass.
+- Confirmed history:reset clears learned ranking and recent applications.
+
+@{b}Enhancements@{ub}
+- Current indexing drawer, counters, completed-root bar and click to cancel.
+- Disabled/unavailable plugins explain their state instead of an empty search.
+- Match-class ranking with favorite/usage ordering and stable name/path ties.
+- Screen-sized plugin settings pages with pending Save, Cancel and defaults.
+
+@{b}Bugs@{ub}
+- Correct LHA directory separators for extraction with OLHa.
+- Fix Preferences control overlaps on 640x256 screens.
+
+@{" Main menu " link MAIN}
+Open with asks for an application and passes the selected file as a
+Workbench argument, preserving its default tool. Exclude drawer offers Use
+for this session, Save for this exclusion and current running settings, or
+Cancel. It removes matching indexed entries immediately without restarting.
+
+Notifications update changed roots and up to 64 visited subdrawers; unrelated
+siblings stay searchable. F2 remains the full-rescan fallback for unsupported
+handlers, unwatched drawers and external plugin indexes. No idle polling.
+A selected result keeps its identity during updates. If it disappears, select
+another result explicitly before pressing Enter.
+
+Plugin Settings offers Browse for known executable/drawer paths. It stages a
+value until Save. Dependency details show configured executable/service names.
+
 @endnode

@@ -254,6 +254,23 @@ void beam_index_mark_stale(struct BeamIndex *x,unsigned long root_mask,
     }
 }
 
+int beam_index_path_within(const char *path,const char *drawer)
+{
+    unsigned int i,n;
+    if(!path || !drawer || !(n=(unsigned int)strlen(drawer)))return 0;
+    while(n>1 && drawer[n-1]=='/')--n;
+    for(i=0;i<n;i++)if(!path[i] || fold((unsigned char)path[i])!=fold((unsigned char)drawer[i]))return 0;
+    return !path[n] || path[n]=='/' || drawer[n-1]==':';
+}
+void beam_index_mark_subtree(struct BeamIndex *x,const char *drawer)
+{
+    int i;unsigned int n=(unsigned int)strlen(drawer);
+    while(n>1 && drawer[n-1]=='/')--n;
+    x->full=0;
+    for(i=0;i<x->count;i++)if(beam_index_path_within(x->items[i].path,drawer) &&
+       strlen(x->items[i].path)>n)x->items[i].flags|=BEAM_ITEM_FLAG_STALE;
+}
+
 static int reconcile(struct BeamIndex *x,int complete,int *tracked,unsigned int tracked_count,int remove_index,int keep_stale)
 {
     int i,out=0,removed=0;

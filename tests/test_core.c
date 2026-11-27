@@ -61,6 +61,27 @@ int main(void)
         beam_calc_format(0,out,sizeof(out)); assert(!strcmp(out,"0 $0 %0"));
         beam_calc_format(70000,out,sizeof(out)); assert(!strcmp(out,"70000 $11170"));
     }
+    assert(beam_calc_result("1.5 MiB to KiB",out,sizeof(out)) && !strcmp(out,"1536 KiB"));
+    assert(beam_calc_result("90 min to h",out,sizeof(out)) && !strcmp(out,"1.5 h"));
+    assert(beam_calc_result("1 in to cm",out,sizeof(out)) && !strcmp(out,"2.54 cm"));
+    assert(beam_calc_result("-2 kg to g",out,sizeof(out)) && !strcmp(out,"-2000 g"));
+    assert(beam_calc_result("1 GiB to B",out,sizeof(out)) && !strcmp(out,"1073741824 B"));
+    assert(beam_calc_result("1 s in min",out,sizeof(out)) && !strcmp(out,"~0.016666666666 min"));
+    assert(!beam_calc_result("1 m to kg",out,sizeof(out)) && !out[0]);
+    assert(!beam_calc_result("1.2345 m to cm",out,sizeof(out)));
+    assert(!beam_calc_result("1 MB to KiB junk",out,sizeof(out)));
+    assert(!beam_calc_result("4294967296 B to KB",out,sizeof(out)));
+    assert(!beam_calc_result("1 m to cm",out,2) && !out[0]);
+    assert(beam_calc_result("1 mm to km",out,sizeof(out)) && !strcmp(out,"0.000001 km"));
+    assert(beam_calc_result("1 B to GiB",out,sizeof(out)) && !strcmp(out,"~0.000000000931 GiB"));
+    assert(beam_calc_result("0 C to F",out,sizeof(out)) && !strcmp(out,"32 F"));
+    assert(beam_calc_result("-40 F to C",out,sizeof(out)) && !strcmp(out,"-40 C"));
+    assert(beam_calc_result("0 C to K",out,sizeof(out)) && !strcmp(out,"273.15 K"));
+    assert(beam_calc_result("-273.15 C to K",out,sizeof(out)) && !strcmp(out,"0 K"));
+    assert(beam_calc_result("-459.67 F to K",out,sizeof(out)) && !strcmp(out,"0 K"));
+    assert(!beam_calc_result("-273.151 C to F",out,sizeof(out)));
+    assert(!beam_calc_result("-1 K to C",out,sizeof(out)));
+    assert(!beam_calc_result("1 C to cm",out,sizeof(out)));
     puts("All portable core tests passed.");
     return 0;
 }
